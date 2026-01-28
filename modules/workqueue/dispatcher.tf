@@ -23,7 +23,7 @@ resource "google_service_account" "dispatcher" {
 module "dispatcher-calls-target" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../terraform/public-modules/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.key
@@ -34,7 +34,7 @@ module "dispatcher-calls-target" {
 
 // Stand up the dispatcher service in each of our regions.
 module "dispatcher-service" {
-  source     = "chainguard-dev/common/infra//modules/regional-go-service"
+  source     = "../../../../terraform/public-modules/modules/regional-go-service"
   project_id = var.project_id
   name       = "${var.name}-dsp"
   regions    = var.regions
@@ -116,7 +116,7 @@ resource "google_service_account" "cron-trigger" {
 module "cron-trigger-calls-dispatcher" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../terraform/public-modules/modules/authorize-private-service"
 
   depends_on = [module.dispatcher-service]
 
@@ -191,7 +191,7 @@ resource "google_service_account_iam_binding" "allow-pubsub-to-mint-tokens" {
 module "change-trigger-calls-dispatcher" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../terraform/public-modules/modules/authorize-private-service"
 
   depends_on = [module.dispatcher-service]
 
