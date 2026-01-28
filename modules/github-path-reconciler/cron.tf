@@ -13,7 +13,7 @@ locals {
 }
 
 module "cron" {
-  source = "../../../../terraform/public-modules/modules/cron"
+  source = "chainguard-dev/common/infra//modules/cron"
 
   name       = "${var.name}-enq"
   project_id = var.project_id
