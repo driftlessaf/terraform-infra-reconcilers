@@ -31,8 +31,8 @@ module "receiver-service" {
   containers = {
     "receiver" = {
       source = {
-        working_dir = path.module
-        importpath  = "chainguard.dev/terraform-infra-reconciler/modules/workqueue/cmd/receiver"
+        working_dir = "${path.module}/../.."
+        importpath  = "chainguard.dev/terraform-infra-reconcilers/modules/workqueue/cmd/receiver"
       }
       resources = {
         limits = {

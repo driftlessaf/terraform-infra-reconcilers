@@ -51,8 +51,8 @@ module "dispatcher-service" {
   containers = {
     "dispatcher" = {
       source = {
-        working_dir = path.module
-        importpath  = "chainguard.dev/terraform-infra-reconciler/modules/workqueue/cmd/dispatcher"
+        working_dir = "${path.module}/../.."
+        importpath  = "chainguard.dev/terraform-infra-reconcilers/modules/workqueue/cmd/dispatcher"
       }
       ports = [{
         name           = "h2c"

@@ -89,8 +89,8 @@ module "hyperqueue-service" {
   containers = {
     "hyperqueue" = {
       source = {
-        working_dir = path.module
-        importpath  = "chainguard.dev/terraform-infra-reconciler/modules/workqueue/hyperqueue/cmd/hyperqueue"
+        working_dir = "${path.module}/../../.."
+        importpath  = "chainguard.dev/terraform-infra-reconcilers/modules/workqueue/hyperqueue/cmd/hyperqueue"
       }
       ports = [{ container_port = 8080 }]
       regional-env = [
