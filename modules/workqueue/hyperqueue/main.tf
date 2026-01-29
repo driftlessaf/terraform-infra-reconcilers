@@ -64,7 +64,7 @@ resource "google_service_account" "hyperqueue" {
 module "hyperqueue-calls-receiver" {
   for_each = { for pair in local.auth_pairs : pair.key => pair }
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../../terraform/public-modules/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.value.region
@@ -75,7 +75,7 @@ module "hyperqueue-calls-receiver" {
 
 # Hyperqueue service using regional-go-service
 module "hyperqueue-service" {
-  source     = "chainguard-dev/common/infra//modules/regional-go-service"
+  source     = "../../../../../terraform/public-modules/modules/regional-go-service"
   project_id = var.project_id
   name       = "${var.name}-hq"
   regions    = var.regions
@@ -89,8 +89,8 @@ module "hyperqueue-service" {
   containers = {
     "hyperqueue" = {
       source = {
-        working_dir = path.module
-        importpath  = "chainguard.dev/terraform-infra-reconciler/modules/workqueue/hyperqueue/cmd/hyperqueue"
+        working_dir = "${path.module}/../../.."
+        importpath  = "chainguard.dev/terraform-infra-reconcilers/modules/workqueue/hyperqueue/cmd/hyperqueue"
       }
       ports = [{ container_port = 8080 }]
       regional-env = [

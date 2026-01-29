@@ -17,7 +17,7 @@ resource "google_service_account" "subscriber" {
 
 // Deploy the subscriber service
 module "subscriber" {
-  source = "chainguard-dev/common/infra//modules/regional-go-service"
+  source = "../../../../terraform/public-modules/modules/regional-go-service"
 
   project_id = var.project_id
   name       = var.name
@@ -60,7 +60,7 @@ module "subscriber" {
 module "subscriber-calls-workqueue" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../terraform/public-modules/modules/authorize-private-service"
 
   project_id      = var.project_id
   region          = each.key
@@ -81,7 +81,7 @@ module "trigger" {
     }
   }
 
-  source = "chainguard-dev/common/infra//modules/cloudevent-trigger"
+  source = "../../../../terraform/public-modules/modules/cloudevent-trigger"
 
   project_id = var.project_id
   name       = "${var.name}-${each.value.region}-${each.value.index}"

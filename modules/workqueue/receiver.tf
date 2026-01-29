@@ -17,7 +17,7 @@ resource "google_service_account" "receiver" {
 
 // Stand up the receiver service in each of our regions.
 module "receiver-service" {
-  source     = "chainguard-dev/common/infra//modules/regional-go-service"
+  source     = "../../../../terraform/public-modules/modules/regional-go-service"
   project_id = var.project_id
   name       = "${var.name}-rcv"
   regions    = var.regions
@@ -31,8 +31,8 @@ module "receiver-service" {
   containers = {
     "receiver" = {
       source = {
-        working_dir = path.module
-        importpath  = "chainguard.dev/terraform-infra-reconciler/modules/workqueue/cmd/receiver"
+        working_dir = "${path.module}/../.."
+        importpath  = "chainguard.dev/terraform-infra-reconcilers/modules/workqueue/cmd/receiver"
       }
       resources = {
         limits = {
