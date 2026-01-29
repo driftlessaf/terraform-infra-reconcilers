@@ -1,5 +1,5 @@
 module "workqueue-state" {
-  source = "../../../../../terraform/public-modules/modules/dashboard/sections/workqueue"
+  source = "chainguard-dev/common/infra//modules/dashboard/sections/workqueue"
 
   title           = "Workqueue State"
   service_name    = var.name
@@ -11,14 +11,14 @@ module "workqueue-state" {
 }
 
 module "receiver-logs" {
-  source        = "../../../../../terraform/public-modules/modules/dashboard/sections/logs"
+  source        = "chainguard-dev/common/infra//modules/dashboard/sections/logs"
   title         = "Receiver Logs"
   filter        = ["resource.labels.service_name=\"${var.name}-rcv\""]
   cloudrun_type = "service"
 }
 
 module "dispatcher-logs" {
-  source        = "../../../../../terraform/public-modules/modules/dashboard/sections/logs"
+  source        = "chainguard-dev/common/infra//modules/dashboard/sections/logs"
   title         = "Dispatcher Logs"
   filter        = ["resource.labels.service_name=\"${var.name}-dsp\""]
   cloudrun_type = "service"
@@ -27,15 +27,15 @@ module "dispatcher-logs" {
 module "alerts" {
   for_each = var.alerts
 
-  source = "../../../../../terraform/public-modules/modules/dashboard/sections/alerts"
+  source = "chainguard-dev/common/infra//modules/dashboard/sections/alerts"
   alert  = each.value
   title  = "Alert: ${each.key}"
 }
 
-module "width" { source = "../../../../../terraform/public-modules/modules/dashboard/sections/width" }
+module "width" { source = "chainguard-dev/common/infra//modules/dashboard/sections/width" }
 
 module "layout" {
-  source = "../../../../../terraform/public-modules/modules/dashboard/sections/layout"
+  source = "chainguard-dev/common/infra//modules/dashboard/sections/layout"
 
   sections = concat(
     [for x in keys(var.alerts) : module.alerts[x].section],
@@ -48,7 +48,7 @@ module "layout" {
 }
 
 module "dashboard" {
-  source = "../../../../../terraform/public-modules/modules/dashboard"
+  source = "chainguard-dev/common/infra//modules/dashboard"
 
   object = {
     displayName = "Cloud Workqueue: ${var.name}"

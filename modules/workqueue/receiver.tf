@@ -17,7 +17,7 @@ resource "google_service_account" "receiver" {
 
 // Stand up the receiver service in each of our regions.
 module "receiver-service" {
-  source     = "../../../../terraform/public-modules/modules/regional-go-service"
+  source     = "chainguard-dev/common/infra//modules/regional-go-service"
   project_id = var.project_id
   name       = "${var.name}-rcv"
   regions    = var.regions
