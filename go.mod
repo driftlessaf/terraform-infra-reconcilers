@@ -1,6 +1,6 @@
 module chainguard.dev/terraform-infra-reconcilers
 
-go 1.25.4
+go 1.25.7
 
 require (
 	chainguard.dev/driftlessaf v0.0.0-20260127033538-1be87f1b1ce2
