@@ -10,7 +10,7 @@ locals {
 
 // Workqueue metrics section
 module "workqueue-state" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/workqueue"
+  source = "../../../../../terraform/public-modules/modules/dashboard/sections/workqueue"
 
   title           = "Workqueue State"
   service_name    = local.workqueue_name
@@ -23,7 +23,7 @@ module "workqueue-state" {
 
 // Reconciler service sections
 module "errgrp" {
-  source       = "chainguard-dev/common/infra//modules/dashboard/sections/errgrp"
+  source       = "../../../../../terraform/public-modules/modules/dashboard/sections/errgrp"
   title        = "Reconciler Error Reporting"
   project_id   = var.project_id
   service_name = local.service_name
@@ -31,34 +31,34 @@ module "errgrp" {
 }
 
 module "reconciler-logs" {
-  source        = "chainguard-dev/common/infra//modules/dashboard/sections/logs"
+  source        = "../../../../../terraform/public-modules/modules/dashboard/sections/logs"
   title         = "Reconciler Logs"
   filter        = ["resource.labels.service_name=\"${local.service_name}\""]
   cloudrun_type = "service"
 }
 
 module "http" {
-  source       = "chainguard-dev/common/infra//modules/dashboard/sections/http"
+  source       = "../../../../../terraform/public-modules/modules/dashboard/sections/http"
   title        = "HTTP"
   filter       = []
   service_name = local.service_name
 }
 
 module "grpc" {
-  source       = "chainguard-dev/common/infra//modules/dashboard/sections/grpc"
+  source       = "../../../../../terraform/public-modules/modules/dashboard/sections/grpc"
   title        = "GRPC"
   filter       = []
   service_name = local.service_name
 }
 
 module "github" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/github"
+  source = "../../../../../terraform/public-modules/modules/dashboard/sections/github"
   title  = "GitHub API"
   filter = []
 }
 
 module "agents" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/agents"
+  source = "../../../../../terraform/public-modules/modules/dashboard/sections/agents"
   title  = "Agent Metrics"
   filter = [
     "metric.label.\"service_name\"=\"${local.service_name}\""
@@ -66,7 +66,7 @@ module "agents" {
 }
 
 module "resources" {
-  source                = "chainguard-dev/common/infra//modules/dashboard/sections/resources"
+  source                = "../../../../../terraform/public-modules/modules/dashboard/sections/resources"
   title                 = "Reconciler Resources"
   filter                = []
   cloudrun_name         = local.service_name
@@ -77,15 +77,15 @@ module "resources" {
 module "alerts" {
   for_each = var.alerts
 
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/alerts"
+  source = "../../../../../terraform/public-modules/modules/dashboard/sections/alerts"
   alert  = each.value
   title  = "Alert: ${each.key}"
 }
 
-module "width" { source = "chainguard-dev/common/infra//modules/dashboard/sections/width" }
+module "width" { source = "../../../../../terraform/public-modules/modules/dashboard/sections/width" }
 
 module "layout" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/layout"
+  source = "../../../../../terraform/public-modules/modules/dashboard/sections/layout"
   sections = concat(
     [for x in keys(var.alerts) : module.alerts[x].section],
     [
@@ -102,7 +102,7 @@ module "layout" {
 }
 
 module "dashboard" {
-  source = "chainguard-dev/common/infra//modules/dashboard"
+  source = "../../../../../terraform/public-modules/modules/dashboard"
 
   object = {
     displayName = "Reconciler: ${var.name}"
