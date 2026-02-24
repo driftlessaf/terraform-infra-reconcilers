@@ -17,7 +17,7 @@ resource "google_service_account" "subscriber" {
 
 // Deploy the subscriber service
 module "subscriber" {
-  source = "../../../../terraform/public-modules/modules/regional-go-service"
+  source = "../../../../public/terraform-infra-common/modules/regional-go-service"
 
   project_id = var.project_id
   name       = var.name
@@ -60,7 +60,7 @@ module "subscriber" {
 module "subscriber-calls-workqueue" {
   for_each = var.regions
 
-  source = "../../../../terraform/public-modules/modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id      = var.project_id
   region          = each.key
@@ -81,7 +81,7 @@ module "trigger" {
     }
   }
 
-  source = "../../../../terraform/public-modules/modules/cloudevent-trigger"
+  source = "../../../../public/terraform-infra-common/modules/cloudevent-trigger"
 
   project_id = var.project_id
   name       = "${var.name}-${each.value.region}-${each.value.index}"
