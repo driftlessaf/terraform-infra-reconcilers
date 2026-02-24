@@ -40,7 +40,7 @@ module "receiver-service" {
           cpu    = "1000m"
         }
       }
-      ports = [{ container_port = 8080 }]
+      ports = [{ name = "h2c", container_port = 8080 }]
       env = [
         {
           name  = "WORKQUEUE_MODE"
