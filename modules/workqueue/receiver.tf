@@ -64,5 +64,6 @@ module "receiver-service" {
     }
   }
 
+  ingress               = var.receiver_ingress
   notification_channels = var.notification_channels
 }
