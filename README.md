@@ -348,7 +348,7 @@ module "workqueue-dashboard" {
 }
 ```
 
-Dashboard includes:
+The dashboard includes:
 - Queue depth (work in progress, queued, added)
 - Processing and wait latency
 - Retry patterns and completion rates
