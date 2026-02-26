@@ -94,7 +94,7 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace chainguard.dev/driftlessaf => ../../driftlessaf
+replace chainguard.dev/driftlessaf => ../go-driftlessaf
 
 replace chainguard.dev/sdk => ../../sdk
 
