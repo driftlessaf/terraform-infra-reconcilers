@@ -84,7 +84,7 @@ module "reconciler" {
   project_id = var.project_id
   name       = "${var.name}-rec"
   regions    = var.regions
-  ingress    = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  ingress    = var.ingress
   egress     = var.egress
 
   deletion_protection = var.deletion_protection

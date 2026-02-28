@@ -74,6 +74,18 @@ variable "multi_regional_location" {
 
 // Service-specific variables
 
+variable "ingress" {
+  type        = string
+  description = <<EOD
+Which type of ingress traffic to accept for the reconciler service.
+
+- INGRESS_TRAFFIC_ALL accepts all traffic, enabling the public .run.app URL
+- INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER accepts traffic only from a load balancer
+- INGRESS_TRAFFIC_INTERNAL_ONLY accepts internal traffic only (default)
+EOD
+  default     = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+}
+
 variable "egress" {
   type        = string
   description = <<EOD
