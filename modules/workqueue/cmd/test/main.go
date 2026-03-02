@@ -31,10 +31,10 @@ func main() {
 
 	// Validate required flags
 	if *bucketName == "" {
-		clog.FromContext(ctx).Fatal("Bucket name is required")
+		clog.FatalContext(ctx, "Bucket name is required")
 	}
 	if *key == "" {
-		clog.FromContext(ctx).Fatal("Object key is required")
+		clog.FatalContext(ctx, "Object key is required")
 	}
 
 	var wq workqueue.Interface
@@ -43,7 +43,7 @@ func main() {
 	case "gcs":
 		client, err := storage.NewClient(ctx)
 		if err != nil {
-			clog.FromContext(ctx).Fatalf("Failed to create client: %v", err)
+			clog.FatalContextf(ctx, "Failed to create client: %v", err)
 		}
 		bh := client.Bucket(*bucketName)
 
@@ -55,18 +55,18 @@ func main() {
 		wq = inmem.NewWorkQueue(*limit)
 
 	default:
-		clog.FromContext(ctx).Fatalf("Unknown workqueue type: %s", *t)
+		clog.FatalContextf(ctx, "Unknown workqueue type: %q", *t)
 	}
 
 	// Enqueue the key
 	if err := wq.Queue(ctx, *key, workqueue.Options{}); err != nil {
-		clog.FromContext(ctx).Fatalf("Failed to enqueue key: %v", err)
+		clog.FatalContextf(ctx, "Failed to enqueue key: %v", err)
 	}
 	fmt.Println("Key enqueued successfully")
 
 	wip, qd, _, err := wq.Enumerate(ctx)
 	if err != nil {
-		clog.FromContext(ctx).Fatalf("Failed to enumerate keys: %v", err)
+		clog.FatalContextf(ctx, "Failed to enumerate keys: %v", err)
 	}
 
 	wipKeys := make(map[string]struct{}, len(wip))
@@ -76,7 +76,7 @@ func main() {
 
 		if k.IsOrphaned() {
 			if err := k.Requeue(ctx); err != nil {
-				clog.FromContext(ctx).Fatalf("Failed to requeue orphaned key: %v", err)
+				clog.FatalContextf(ctx, "Failed to requeue orphaned key: %v", err)
 			}
 			fmt.Printf("Requeued orphaned key: %s\n", k.Name())
 		}
@@ -91,12 +91,12 @@ func main() {
 
 		oip, err := k.Start(ctx)
 		if err != nil {
-			clog.FromContext(ctx).Fatalf("Failed to start key: %v", err)
+			clog.FatalContextf(ctx, "Failed to start key: %v", err)
 		}
 		fmt.Printf("Started key: %s\n", oip.Name())
 		time.Sleep(2 * time.Second)
 		if err := oip.Requeue(ctx); err != nil {
-			clog.FromContext(ctx).Fatalf("Failed to requeue key: %v", err)
+			clog.FatalContextf(ctx, "Failed to requeue key: %v", err)
 		}
 		fmt.Printf("Requeued key: %s\n", oip.Name())
 	}
