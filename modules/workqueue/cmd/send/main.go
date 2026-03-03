@@ -49,8 +49,7 @@ func main() {
 
 	eg := errgroup.Group{}
 	eg.SetLimit(5 * runtime.GOMAXPROCS(0))
-	for i := 0; i < *requests; i++ {
-		i := i
+	for i := range *requests {
 		eg.Go(func() error {
 			bi, err := rand.Int(rand.Reader, big.NewInt(*rng))
 			if err != nil {
