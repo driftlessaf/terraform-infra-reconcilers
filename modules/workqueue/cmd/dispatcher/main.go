@@ -29,13 +29,13 @@ import (
 )
 
 type envConfig struct {
-	Port        int    `env:"PORT, required"`
-	Concurrency int    `env:"WORKQUEUE_CONCURRENCY, required"`
-	BatchSize   int    `env:"WORKQUEUE_BATCH_SIZE, required"`
-	Mode        string `env:"WORKQUEUE_MODE, required"`
+	Port        int    `env:"PORT,required"`
+	Concurrency int    `env:"WORKQUEUE_CONCURRENCY,required"`
+	BatchSize   int    `env:"WORKQUEUE_BATCH_SIZE,required"`
+	Mode        string `env:"WORKQUEUE_MODE,required"`
 	Bucket      string `env:"WORKQUEUE_BUCKET"`
-	Target      string `env:"WORKQUEUE_TARGET, required"`
-	MaxRetry    int    `env:"WORKQUEUE_MAX_RETRY, default=0"` // 0 means unlimited retries
+	Target      string `env:"WORKQUEUE_TARGET,required"`
+	MaxRetry    int    `env:"WORKQUEUE_MAX_RETRY,default=0"` // 0 means unlimited retries
 }
 
 func main() {
@@ -84,13 +84,11 @@ func main() {
 	}
 	defer client.Close()
 
-	h := dispatcher.Handler(wq, env.Concurrency, env.BatchSize, dispatcher.ServiceCallback(client), env.MaxRetry)
-	srv := &http.Server{
+	if err := (&http.Server{
 		Addr:              fmt.Sprintf(":%d", env.Port),
-		Handler:           h2c.NewHandler(h, &http2.Server{}),
+		Handler:           h2c.NewHandler(dispatcher.Handler(wq, env.Concurrency, env.BatchSize, dispatcher.ServiceCallback(client), env.MaxRetry), &http2.Server{}),
 		ReadHeaderTimeout: 10 * time.Second,
-	}
-	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+	}).ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		clog.FatalContextf(ctx, "failed to start server: %v", err)
 	}
 }
