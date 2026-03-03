@@ -150,7 +150,7 @@ variable "issue_priority" {
 variable "pr_priority" {
   description = "Priority for PR events in the workqueue"
   type        = number
-  default     = 50
+  default     = 200
 }
 
 variable "dashboard_labels" {

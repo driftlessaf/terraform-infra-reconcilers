@@ -201,7 +201,7 @@ variable "paused" {
 variable "pr_priority" {
   description = "Priority for PR events in the workqueue"
   type        = number
-  default     = 50
+  default     = 200
 }
 
 # Dashboard variables
