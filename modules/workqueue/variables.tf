@@ -108,3 +108,9 @@ variable "cpu_idle" {
     "receiver"   = {}
   }
 }
+
+variable "receiver_ingress" {
+  type        = string
+  description = "The ingress traffic setting for the workqueue receiver service. INGRESS_TRAFFIC_ALL allows callers outside the VPC (e.g. Cloud Run services without VPC egress) to enqueue work."
+  default     = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+}
