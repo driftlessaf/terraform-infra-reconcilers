@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"chainguard.dev/go-grpc-kit/pkg/duplex"
@@ -37,7 +38,7 @@ type envConfig struct {
 }
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	var env envConfig
@@ -85,7 +86,7 @@ func main() {
 	})
 
 	if err := eg.Wait(); err != nil {
-		clog.FromContext(ctx).Errorf("Error group failed: %v", err)
+		clog.ErrorContextf(ctx, "Error group failed: %v", err)
 	}
 }
 

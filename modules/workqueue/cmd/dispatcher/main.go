@@ -9,13 +9,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/chainguard-dev/clog"
 	_ "github.com/chainguard-dev/clog/gcp/init"
 	"github.com/sethvargo/go-envconfig"
 	"golang.org/x/net/http2"
@@ -38,7 +39,7 @@ type envConfig struct {
 }
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	var env envConfig
@@ -51,7 +52,7 @@ func main() {
 	case "gcs":
 		cl, err := storage.NewClient(ctx)
 		if err != nil {
-			log.Panicf("Failed to create client: %v", err)
+			clog.FatalContextf(ctx, "Failed to create client: %v", err)
 		}
 		wq = gcs.NewWorkQueue(cl.Bucket(env.Bucket), env.Concurrency)
 
@@ -67,19 +68,19 @@ func main() {
 				case <-tick.C:
 					_, _, _, err := wq.Enumerate(ctx)
 					if err != nil {
-						log.Printf("Failed to enumerate: %v", err)
+						clog.ErrorContextf(ctx, "Failed to enumerate: %v", err)
 					}
 				}
 			}
 		}()
 
 	default:
-		log.Panicf("Unsupported mode: %q", env.Mode)
+		clog.FatalContextf(ctx, "Unsupported mode: %q", env.Mode)
 	}
 
 	client, err := workqueue.NewWorkqueueClient(ctx, env.Target)
 	if err != nil {
-		log.Panicf("failed to create client: %v", err)
+		clog.FatalContextf(ctx, "failed to create client: %v", err)
 	}
 	defer client.Close()
 
@@ -90,6 +91,6 @@ func main() {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		log.Panicf("failed to start server: %v", err)
+		clog.FatalContextf(ctx, "failed to start server: %v", err)
 	}
 }

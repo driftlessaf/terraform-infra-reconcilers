@@ -9,6 +9,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -27,7 +30,8 @@ func main() {
 	limit := flag.Int("limit", 5, "The concurrency limit")
 	flag.Parse()
 
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	// Validate required flags
 	if *bucketName == "" {

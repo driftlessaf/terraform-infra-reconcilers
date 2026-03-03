@@ -9,12 +9,12 @@ import (
 	"context"
 	"crypto/rand"
 	"flag"
-	"log"
 	"math/big"
 	"net/url"
 	"os"
 	"os/signal"
 	"runtime"
+	"syscall"
 
 	delegate "chainguard.dev/go-grpc-kit/pkg/options"
 	"github.com/chainguard-dev/clog"
@@ -26,7 +26,7 @@ import (
 )
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	httpTarget := flag.String("target", "", "The target to send work to.")
@@ -36,13 +36,13 @@ func main() {
 
 	uri, err := url.Parse(*httpTarget)
 	if err != nil {
-		log.Panicf("failed to parse URI: %v", err)
+		clog.FatalContextf(ctx, "failed to parse URI: %v", err)
 	}
 	target, opts := delegate.GRPCOptions(*uri)
 
 	conn, err := grpc.NewClient(target, opts...)
 	if err != nil {
-		log.Panicf("failed to connect to the server: %v", err)
+		clog.FatalContextf(ctx, "failed to connect to the server: %v", err)
 	}
 	defer conn.Close()
 	client := workqueue.NewWorkqueueServiceClient(conn)
@@ -62,6 +62,6 @@ func main() {
 		})
 	}
 	if err := eg.Wait(); err != nil {
-		log.Panicf("failed to send all requests: %v", err)
+		clog.FatalContextf(ctx, "failed to send all requests: %v", err)
 	}
 }
