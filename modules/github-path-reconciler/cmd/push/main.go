@@ -94,14 +94,12 @@ type pushHandler struct {
 }
 
 func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Event) error {
-	log := clog.FromContext(ctx)
-
 	// Log all events we receive for debugging
-	log.Infof("Received event: type=%s, source=%s, subject=%s", event.Type(), event.Source(), event.Subject())
+	clog.InfoContextf(ctx, "Received event: type=%s, source=%s, subject=%s", event.Type(), event.Source(), event.Subject())
 
 	// Filter for push events in code
 	if event.Type() != "dev.chainguard.github.push" {
-		log.Infof("Ignoring non-push event: %s", event.Type())
+		clog.InfoContextf(ctx, "Ignoring non-push event: %s", event.Type())
 		return nil
 	}
 
@@ -123,7 +121,7 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 	after := pushEvent.GetAfter()
 	defaultBranch := pushEvent.GetRepo().GetDefaultBranch()
 
-	log = log.With(
+	log := clog.FromContext(ctx).With(
 		"owner", owner,
 		"repo", repo,
 		"ref", ref,
