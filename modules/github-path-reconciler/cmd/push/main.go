@@ -173,14 +173,14 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 	}
 
 	// Build maps of file paths to their blob SHAs
-	beforeFiles := make(map[string]string) // path -> SHA
+	beforeFiles := make(map[string]string, len(beforeTree.Entries)) // path -> SHA
 	for _, entry := range beforeTree.Entries {
 		if entry.GetType() == "blob" {
 			beforeFiles[entry.GetPath()] = entry.GetSHA()
 		}
 	}
 
-	afterFiles := make(map[string]string) // path -> SHA
+	afterFiles := make(map[string]string, len(afterTree.Entries)) // path -> SHA
 	for _, entry := range afterTree.Entries {
 		if entry.GetType() == "blob" {
 			afterFiles[entry.GetPath()] = entry.GetSHA()
