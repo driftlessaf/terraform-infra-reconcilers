@@ -8,8 +8,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/chainguard-dev/clog"
 	_ "github.com/chainguard-dev/clog/gcp/init"
@@ -19,60 +21,55 @@ import (
 	"chainguard.dev/driftlessaf/workqueue"
 )
 
-type Config struct {
+var env = envconfig.MustProcess(context.Background(), &struct {
 	Port             int    `env:"PORT,default=8080"`
 	WorkqueueService string `env:"WORKQUEUE_SERVICE,required"`
 	ExtensionKey     string `env:"EXTENSION_KEY,required"`
 	Priority         int64  `env:"PRIORITY,default=0"`
-}
+}{})
 
 func main() {
-	ctx := context.Background()
-	logger := clog.FromContext(ctx)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
-	var cfg Config
-	if err := envconfig.Process(ctx, &cfg); err != nil {
-		logger.Fatalf("Failed to process configuration: %v", err)
-	}
-
-	logger.With(
-		"port", cfg.Port,
-		"workqueue_service", cfg.WorkqueueService,
-		"extension_key", cfg.ExtensionKey,
+	clog.FromContext(ctx).With(
+		"port", env.Port,
+		"workqueue_service", env.WorkqueueService,
+		"extension_key", env.ExtensionKey,
 	).Info("Starting CloudEvents to Workqueue subscriber")
 
 	// Create workqueue client
-	queueClient, err := workqueue.NewWorkqueueClient(ctx, cfg.WorkqueueService)
+	queueClient, err := workqueue.NewWorkqueueClient(ctx, env.WorkqueueService)
 	if err != nil {
-		logger.Fatalf("Failed to create workqueue client: %v", err)
+		clog.FatalContextf(ctx, "Failed to create workqueue client: %v", err)
 	}
 	defer queueClient.Close()
 
 	// Create CloudEvents client
 	p, err := cloudevents.NewHTTP(
-		cloudevents.WithPort(cfg.Port),
+		cloudevents.WithPort(env.Port),
 		cloudevents.WithPath("/"),
 	)
 	if err != nil {
-		logger.Fatalf("Failed to create CloudEvents HTTP transport: %v", err)
+		clog.FatalContextf(ctx, "Failed to create CloudEvents HTTP transport: %v", err)
 	}
 
 	c, err := cloudevents.NewClient(p)
 	if err != nil {
-		logger.Fatalf("Failed to create CloudEvents client: %v", err)
+		clog.FatalContextf(ctx, "Failed to create CloudEvents client: %v", err)
 	}
 
 	// Create handler
 	handler := &eventHandler{
 		queueClient:  queueClient,
-		extensionKey: cfg.ExtensionKey,
-		priority:     cfg.Priority,
+		extensionKey: env.ExtensionKey,
+		priority:     env.Priority,
 	}
 
 	// Start receiving events
-	logger.Info("Ready to receive CloudEvents")
+	clog.InfoContext(ctx, "Ready to receive CloudEvents")
 	if err := c.StartReceiver(ctx, handler.handleEvent); err != nil {
-		logger.Fatalf("Failed to start CloudEvents receiver: %v", err)
+		clog.FatalContextf(ctx, "Failed to start CloudEvents receiver: %v", err)
 	}
 }
 
@@ -136,10 +133,10 @@ func (h *eventHandler) handleEvent(ctx context.Context, event cloudevents.Event)
 }
 
 // Health check endpoint (CloudEvents client will set this up at /health/ready)
-func healthHandler(w http.ResponseWriter, _ *http.Request) {
+func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte("OK\n")); err != nil {
-		log.Printf("Failed to write health response: %v", err)
+		clog.ErrorContextf(r.Context(), "Failed to write health response: %v", err)
 	}
 }
 
