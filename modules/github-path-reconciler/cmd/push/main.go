@@ -217,10 +217,8 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 				continue
 			}
 
-			capturedPath := matches[1] // First capture group
-
 			// Build resource URL using the default branch
-			url := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s", owner, repo, defaultBranch, capturedPath)
+			url := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s", owner, repo, defaultBranch, matches[1])
 
 			// Add to key set (deduplicates automatically)
 			keySet[url] = struct{}{}

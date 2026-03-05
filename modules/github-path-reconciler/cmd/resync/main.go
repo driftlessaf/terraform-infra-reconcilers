@@ -141,10 +141,8 @@ func (h *cronHandler) run(ctx context.Context) error {
 				continue
 			}
 
-			capturedPath := matches[1] // First capture group
-
 			// Build resource URL using the default branch
-			url := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s", h.owner, h.repo, defaultBranch, capturedPath)
+			url := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s", h.owner, h.repo, defaultBranch, matches[1])
 
 			// Add to key set (deduplicates automatically)
 			keySet[url] = struct{}{}
