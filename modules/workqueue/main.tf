@@ -70,7 +70,15 @@ resource "google_pubsub_topic_iam_binding" "global-gcs-publishes-to-topic" {
 resource "google_storage_notification" "global-object-change-notifications" {
   for_each = var.regions
 
-  depends_on = [google_pubsub_topic_iam_binding.global-gcs-publishes-to-topic]
+  // We depend on the IAM binding granting the GCS service account pubsub.publisher
+  // on the topic. GCP IAM is eventually consistent, and the GCS notification API
+  // validates this permission at creation time, so we also depend on the dispatcher
+  // service to provide natural delay for IAM propagation (and to ensure the
+  // processing pipeline is ready before we enable event delivery).
+  depends_on = [
+    google_pubsub_topic_iam_binding.global-gcs-publishes-to-topic,
+    module.dispatcher-service,
+  ]
 
   bucket         = google_storage_bucket.global-workqueue.name
   payload_format = "JSON_API_V1"
