@@ -25,8 +25,9 @@ module "reconciler" {
 
   request_timeout_seconds = var.request_timeout_seconds
 
-  notification_channels = var.notification_channels
-  deletion_protection   = var.deletion_protection
+  notification_channels       = var.notification_channels
+  deletion_protection         = var.deletion_protection
+  enable_dead_letter_alerting = var.enable_dead_letter_alerting
 
   # Path reconciler configuration
   path_patterns     = var.path_patterns

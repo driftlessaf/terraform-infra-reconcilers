@@ -212,6 +212,12 @@ variable "dashboard_labels" {
   default     = {}
 }
 
+variable "enable_dead_letter_alerting" {
+  description = "Whether to enable alerting for dead-lettered keys."
+  type        = bool
+  default     = true
+}
+
 variable "dashboard_alerts" {
   description = "Alert configurations for the dashboard"
   type        = any
