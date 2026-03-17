@@ -7,11 +7,11 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 
 	"chainguard.dev/go-grpc-kit/pkg/duplex"
+	"github.com/chainguard-dev/clog"
 	_ "github.com/chainguard-dev/clog/gcp/init"
 	"github.com/sethvargo/go-envconfig"
 	"google.golang.org/grpc"
@@ -40,7 +40,7 @@ func main() {
 	for i, url := range env.ShardURLs {
 		client, err := workqueue.NewWorkqueueClient(ctx, url)
 		if err != nil {
-			log.Panicf("Failed to create client for shard %d (%s): %v", i, url, err)
+			clog.FatalContextf(ctx, "Failed to create client for shard %d (%s): %v", i, url, err)
 		}
 		defer client.Close()
 		backends[i] = client
@@ -48,7 +48,7 @@ func main() {
 
 	srv, err := hyperqueue.New(backends)
 	if err != nil {
-		log.Panicf("Failed to create hyperqueue server: %v", err)
+		clog.FatalContextf(ctx, "Failed to create hyperqueue server: %v", err)
 	}
 
 	d := duplex.New(
@@ -58,6 +58,6 @@ func main() {
 
 	workqueue.RegisterWorkqueueServiceServer(d.Server, srv)
 	if err := d.ListenAndServe(ctx); err != nil {
-		log.Panicf("ListenAndServe() = %v", err)
+		clog.FatalContextf(ctx, "ListenAndServe() = %v", err)
 	}
 }

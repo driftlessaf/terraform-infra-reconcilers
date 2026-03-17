@@ -32,11 +32,11 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	clog.FromContext(ctx).With(
+	clog.InfoContext(ctx, "Starting CloudEvents to Workqueue subscriber",
 		"port", env.Port,
 		"workqueue_service", env.WorkqueueService,
 		"extension_key", env.ExtensionKey,
-	).Info("Starting CloudEvents to Workqueue subscriber")
+	)
 
 	// Create workqueue client
 	queueClient, err := workqueue.NewWorkqueueClient(ctx, env.WorkqueueService)

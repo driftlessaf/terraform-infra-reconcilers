@@ -121,7 +121,7 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 	after := pushEvent.GetAfter()
 	defaultBranch := pushEvent.GetRepo().GetDefaultBranch()
 
-	log := clog.FromContext(ctx).With(
+	ctx = clog.WithValues(ctx,
 		"owner", owner,
 		"repo", repo,
 		"ref", ref,
@@ -129,18 +129,17 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 		"after", after,
 		"default_branch", defaultBranch,
 	)
-	ctx = clog.WithLogger(ctx, log)
 
 	// Extract branch name from ref (refs/heads/main -> main)
 	branch := strings.TrimPrefix(ref, "refs/heads/")
 
 	// Only process pushes to the default branch
 	if branch != defaultBranch {
-		log.Infof("Ignoring push to non-default branch %q (default is %q)", branch, defaultBranch)
+		clog.InfoContextf(ctx, "Ignoring push to non-default branch %q (default is %q)", branch, defaultBranch)
 		return nil
 	}
 
-	log.Infof("Processing push event for %s/%s on default branch %q", owner, repo, defaultBranch)
+	clog.InfoContextf(ctx, "Processing push event for %s/%s on default branch %q", owner, repo, defaultBranch)
 
 	// Get GitHub client
 	ghClient, err := h.clientCache.Get(ctx, owner, repo)
@@ -204,7 +203,7 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 		}
 	}
 
-	log.Infof("Processing %d changed files", len(changedFiles))
+	clog.InfoContextf(ctx, "Processing %d changed files", len(changedFiles))
 
 	// Extract keys from changed files
 	keySet := make(map[string]struct{})
@@ -224,7 +223,7 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 		}
 	}
 
-	log.Infof("Enqueueing %d unique keys", len(keySet))
+	clog.InfoContextf(ctx, "Enqueueing %d unique keys", len(keySet))
 
 	// Enqueue all unique keys
 	eg, egCtx := errgroup.WithContext(ctx)
