@@ -79,7 +79,7 @@ module "workqueue-sharded" {
 
 // Stand up the reconciler service
 module "reconciler" {
-  source = "../../../../public/terraform-infra-common/modules/regional-go-service"
+  source = "chainguard-dev/common/infra//modules/regional-go-service"
 
   project_id = var.project_id
   name       = "${var.name}-rec"
@@ -107,4 +107,5 @@ module "reconciler" {
   slo = var.slo
 
   notification_channels = var.notification_channels
+  version               = "1.0.0"
 }
