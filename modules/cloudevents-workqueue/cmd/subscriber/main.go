@@ -125,7 +125,7 @@ func (h *eventHandler) handleEvent(ctx context.Context, event cloudevents.Event)
 		Priority: h.priority,
 	})
 	if err != nil {
-		clog.FromContext(ctx).Errorf("Failed to queue work item: %v", err)
+		clog.ErrorContextf(ctx, "Failed to queue work item: %v", err)
 		// Return error to trigger pubsub retry
 		return fmt.Errorf("failed to queue work item: %w", err)
 	}

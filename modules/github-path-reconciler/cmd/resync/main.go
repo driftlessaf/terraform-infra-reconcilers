@@ -27,7 +27,7 @@ import (
 	"github.com/chainguard-dev/terraform-infra-common/pkg/httpmetrics"
 )
 
-type config struct {
+var env = envconfig.MustProcess(context.Background(), &struct {
 	// GitHub configuration
 	GitHubOwner string `env:"GITHUB_OWNER,required"`
 	GitHubRepo  string `env:"GITHUB_REPO,required"`
@@ -43,7 +43,7 @@ type config struct {
 
 	// Period in minutes for time bucketing
 	PeriodMinutes int `env:"PERIOD_MINUTES,required"`
-}
+}{})
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -56,19 +56,14 @@ func main() {
 		"octo-sts.dev":   "octosts",
 	})
 
-	var cfg config
-	if err := envconfig.Process(ctx, &cfg); err != nil {
-		clog.FatalContextf(ctx, "Failed to process environment: %v", err)
-	}
-
 	// Parse path patterns
-	pats, err := patterns.Parse(cfg.PathPatterns)
+	pats, err := patterns.Parse(env.PathPatterns)
 	if err != nil {
 		clog.FatalContextf(ctx, "Failed to parse path patterns: %v", err)
 	}
 
 	// Set up workqueue client
-	wqClient, err := workqueue.NewWorkqueueClient(ctx, cfg.WorkqueueAddr)
+	wqClient, err := workqueue.NewWorkqueueClient(ctx, env.WorkqueueAddr)
 	if err != nil {
 		clog.FatalContextf(ctx, "Failed to create workqueue client: %v", err)
 	}
@@ -76,16 +71,16 @@ func main() {
 
 	handler := &cronHandler{
 		clientCache: githubreconciler.NewClientCache(func(ctx context.Context, org, repo string) (oauth2.TokenSource, error) {
-			return githubreconciler.NewRepoTokenSource(ctx, cfg.OctoSTSIdentity, org, repo), nil
+			return githubreconciler.NewRepoTokenSource(ctx, env.OctoSTSIdentity, org, repo), nil
 		}),
 		wqClient:      wqClient,
-		owner:         cfg.GitHubOwner,
-		repo:          cfg.GitHubRepo,
+		owner:         env.GitHubOwner,
+		repo:          env.GitHubRepo,
 		patterns:      pats,
-		periodMinutes: cfg.PeriodMinutes,
+		periodMinutes: env.PeriodMinutes,
 	}
 
-	clog.InfoContextf(ctx, "Starting cron run for %s/%s", cfg.GitHubOwner, cfg.GitHubRepo)
+	clog.InfoContextf(ctx, "Starting cron run for %s/%s", env.GitHubOwner, env.GitHubRepo)
 	if err := handler.run(ctx); err != nil {
 		clog.FatalContextf(ctx, "Cron run failed: %v", err)
 	}

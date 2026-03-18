@@ -27,7 +27,7 @@ import (
 	"github.com/chainguard-dev/terraform-infra-common/pkg/httpmetrics"
 )
 
-type config struct {
+var env = envconfig.MustProcess(context.Background(), &struct {
 	Port int `env:"PORT,default=8080"`
 
 	// Workqueue configuration
@@ -38,7 +38,7 @@ type config struct {
 
 	// Octo STS identity
 	OctoIdentity string `env:"OCTO_IDENTITY,required"`
-}
+}{})
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -47,26 +47,21 @@ func main() {
 	go httpmetrics.ServeMetrics()
 	defer httpmetrics.SetupTracer(ctx)()
 
-	var cfg config
-	if err := envconfig.Process(ctx, &cfg); err != nil {
-		clog.FatalContextf(ctx, "Failed to process environment: %v", err)
-	}
-
 	// Parse path patterns
-	pats, err := patterns.Parse(cfg.PathPatterns)
+	pats, err := patterns.Parse(env.PathPatterns)
 	if err != nil {
 		clog.FatalContextf(ctx, "Failed to parse path patterns: %v", err)
 	}
 
 	// Set up workqueue client
-	wqClient, err := workqueue.NewWorkqueueClient(ctx, cfg.WorkqueueAddr)
+	wqClient, err := workqueue.NewWorkqueueClient(ctx, env.WorkqueueAddr)
 	if err != nil {
 		clog.FatalContextf(ctx, "Failed to create workqueue client: %v", err)
 	}
 	defer wqClient.Close()
 
 	clientCache := githubreconciler.NewClientCache(func(ctx context.Context, org, repo string) (oauth2.TokenSource, error) {
-		return githubreconciler.NewRepoTokenSource(ctx, cfg.OctoIdentity, org, repo), nil
+		return githubreconciler.NewRepoTokenSource(ctx, env.OctoIdentity, org, repo), nil
 	})
 
 	handler := &pushHandler{
@@ -76,12 +71,12 @@ func main() {
 	}
 
 	// Set up Cloud Events receiver
-	ceClient, err := cloudevents.NewClientHTTP(cloudevents.WithPort(cfg.Port))
+	ceClient, err := cloudevents.NewClientHTTP(cloudevents.WithPort(env.Port))
 	if err != nil {
 		clog.FatalContextf(ctx, "Failed to create CloudEvents client: %v", err)
 	}
 
-	clog.InfoContextf(ctx, "Starting push listener on port %d", cfg.Port)
+	clog.InfoContextf(ctx, "Starting push listener on port %d", env.Port)
 	if err := ceClient.StartReceiver(ctx, handler.handlePushEvent); err != nil {
 		clog.FatalContextf(ctx, "Failed to start receiver: %v", err)
 	}

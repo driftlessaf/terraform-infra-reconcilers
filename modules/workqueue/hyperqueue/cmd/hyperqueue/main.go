@@ -22,17 +22,14 @@ import (
 	"github.com/chainguard-dev/terraform-infra-common/pkg/httpmetrics"
 )
 
-type envConfig struct {
+var env = envconfig.MustProcess(context.Background(), &struct {
 	Port      int      `env:"PORT, required"`
 	ShardURLs []string `env:"SHARD_URLS, required"`
-}
+}{})
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
-
-	var env envConfig
-	envconfig.MustProcess(ctx, &env)
 
 	go httpmetrics.ServeMetrics()
 
