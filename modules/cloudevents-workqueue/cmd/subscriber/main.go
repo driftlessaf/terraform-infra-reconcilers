@@ -80,42 +80,44 @@ type eventHandler struct {
 }
 
 func (h *eventHandler) handleEvent(ctx context.Context, event cloudevents.Event) error {
-	logger := clog.FromContext(ctx).With(
+	ctx = clog.WithValues(ctx,
 		"event_id", event.ID(),
 		"event_type", event.Type(),
 		"event_source", event.Source(),
 		"event_subject", event.Subject(),
 	)
 
-	logger.Debug("Received CloudEvent")
+	clog.DebugContext(ctx, "Received CloudEvent")
 
 	// Extract the workqueue key from the specified extension
 	extensions := event.Extensions()
 	keyValue, ok := extensions[h.extensionKey]
 	if !ok {
-		logger.With("extension_key", h.extensionKey).Warn("Extension key not found in event, skipping")
+		clog.WarnContext(ctx, "Extension key not found in event, skipping",
+			"extension_key", h.extensionKey)
 		// Return success to acknowledge the event (we don't want to retry)
 		return nil
 	}
 
 	key, ok := keyValue.(string)
 	if !ok {
-		logger.With(
+		clog.ErrorContext(ctx, "Extension value is not a string",
 			"extension_key", h.extensionKey,
 			"extension_value", keyValue,
 			"extension_type", fmt.Sprintf("%T", keyValue),
-		).Error("Extension value is not a string")
+		)
 		// Return success to acknowledge the event (we don't want to retry)
 		return nil
 	}
 
 	if key == "" {
-		logger.With("extension_key", h.extensionKey).Warn("Extension value is empty, skipping")
+		clog.WarnContext(ctx, "Extension value is empty, skipping",
+			"extension_key", h.extensionKey)
 		// Return success to acknowledge the event (we don't want to retry)
 		return nil
 	}
 
-	logger = logger.With("workqueue_key", key)
+	ctx = clog.WithValues(ctx, "workqueue_key", key)
 
 	// Queue the work item
 	_, err := h.queueClient.Process(ctx, &workqueue.ProcessRequest{
@@ -123,12 +125,12 @@ func (h *eventHandler) handleEvent(ctx context.Context, event cloudevents.Event)
 		Priority: h.priority,
 	})
 	if err != nil {
-		logger.Errorf("Failed to queue work item: %v", err)
+		clog.FromContext(ctx).Errorf("Failed to queue work item: %v", err)
 		// Return error to trigger pubsub retry
 		return fmt.Errorf("failed to queue work item: %w", err)
 	}
 
-	logger.Info("Successfully queued work item")
+	clog.InfoContext(ctx, "Successfully queued work item")
 	return nil
 }
 
