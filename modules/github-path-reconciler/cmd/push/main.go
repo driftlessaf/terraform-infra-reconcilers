@@ -16,7 +16,7 @@ import (
 	"github.com/chainguard-dev/clog"
 	_ "github.com/chainguard-dev/clog/gcp/init"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/go-github/v75/github"
+	"github.com/google/go-github/v84/github"
 	"github.com/sethvargo/go-envconfig"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
