@@ -23,19 +23,18 @@ resource "google_service_account" "dispatcher" {
 module "dispatcher-calls-target" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.key
   name       = var.reconciler-service.name
 
   service-account = google_service_account.dispatcher.email
-  version         = "1.0.1"
 }
 
 // Stand up the dispatcher service in each of our regions.
 module "dispatcher-service" {
-  source     = "chainguard-dev/common/infra//modules/regional-go-service"
+  source     = "../../../../public/terraform-infra-common/modules/regional-go-service"
   project_id = var.project_id
   name       = "${var.name}-dsp"
   regions    = var.regions
@@ -94,7 +93,6 @@ module "dispatcher-service" {
   }
 
   notification_channels = var.notification_channels
-  version               = "1.0.1"
 }
 
 // Compute a suffix that satisfies the regex:
@@ -118,7 +116,7 @@ resource "google_service_account" "cron-trigger" {
 module "cron-trigger-calls-dispatcher" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   depends_on = [module.dispatcher-service]
 
@@ -127,7 +125,6 @@ module "cron-trigger-calls-dispatcher" {
   name       = "${var.name}-dsp"
 
   service-account = google_service_account.cron-trigger.email
-  version         = "1.0.1"
 }
 
 resource "google_cloud_scheduler_job" "cron" {
@@ -194,7 +191,7 @@ resource "google_service_account_iam_binding" "allow-pubsub-to-mint-tokens" {
 module "change-trigger-calls-dispatcher" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   depends_on = [module.dispatcher-service]
 
@@ -203,7 +200,6 @@ module "change-trigger-calls-dispatcher" {
   name       = "${var.name}-dsp"
 
   service-account = google_service_account.change-trigger.email
-  version         = "1.0.1"
 }
 
 resource "google_pubsub_subscription" "global-this" {

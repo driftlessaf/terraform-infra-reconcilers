@@ -21,18 +21,15 @@ import (
 	"github.com/chainguard-dev/terraform-infra-common/pkg/httpmetrics"
 )
 
-type envConfig struct {
-	Mode        string `env:"WORKQUEUE_MODE, required"`
-	Bucket      string `env:"WORKQUEUE_BUCKET, required"`
-	Concurrency int    `env:"WORKQUEUE_CONCURRENCY, default=100"`
-}
+var env = envconfig.MustProcess(context.Background(), &struct {
+	Mode        string `env:"WORKQUEUE_MODE,required"`
+	Bucket      string `env:"WORKQUEUE_BUCKET,required"`
+	Concurrency int    `env:"WORKQUEUE_CONCURRENCY,default=100"`
+}{})
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-
-	var env envConfig
-	envconfig.MustProcess(ctx, &env)
 
 	go httpmetrics.ServeMetrics()
 
