@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	"os/signal"
-	"regexp"
 	"strings"
 	"syscall"
 
@@ -33,8 +32,8 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	// Workqueue configuration
 	WorkqueueAddr string `env:"WORKQUEUE_ADDR,required"`
 
-	// Path patterns (JSON array)
-	PathPatterns string `env:"PATH_PATTERNS,required"`
+	// Repos config (JSON array of {owner, repo, path_patterns})
+	ReposConfig string `env:"REPOS_CONFIG,required"`
 
 	// Octo STS identity
 	OctoIdentity string `env:"OCTO_IDENTITY,required"`
@@ -47,10 +46,14 @@ func main() {
 	go httpmetrics.ServeMetrics()
 	defer httpmetrics.SetupTracer(ctx)()
 
-	// Parse path patterns
-	pats, err := patterns.Parse(env.PathPatterns)
+	// Parse repos config and build lookup map keyed by "owner/repo"
+	repoConfigs, err := patterns.ParseRepoConfigs(env.ReposConfig)
 	if err != nil {
-		clog.FatalContextf(ctx, "Failed to parse path patterns: %v", err)
+		clog.FatalContextf(ctx, "Failed to parse repos config: %v", err)
+	}
+	repoMap := make(map[string]patterns.RepoConfig, len(repoConfigs))
+	for _, cfg := range repoConfigs {
+		repoMap[cfg.Owner+"/"+cfg.Repo] = cfg
 	}
 
 	// Set up workqueue client
@@ -67,7 +70,7 @@ func main() {
 	handler := &pushHandler{
 		clientCache: clientCache,
 		wqClient:    wqClient,
-		patterns:    pats,
+		repoMap:     repoMap,
 	}
 
 	// Set up Cloud Events receiver
@@ -85,14 +88,12 @@ func main() {
 type pushHandler struct {
 	clientCache *githubreconciler.ClientCache
 	wqClient    workqueue.Client
-	patterns    []*regexp.Regexp
+	repoMap     map[string]patterns.RepoConfig
 }
 
 func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Event) error {
-	// Log all events we receive for debugging
 	clog.InfoContextf(ctx, "Received event: type=%s, source=%s, subject=%s", event.Type(), event.Source(), event.Subject())
 
-	// Filter for push events in code
 	if event.Type() != "dev.chainguard.github.push" {
 		clog.InfoContextf(ctx, "Ignoring non-push event: %s", event.Type())
 		return nil
@@ -106,9 +107,7 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 		return fmt.Errorf("failed to parse event envelope: %w", err)
 	}
 
-	// Use the push event from the envelope body
 	pushEvent := envelope.Body
-
 	owner := pushEvent.GetRepo().GetOwner().GetLogin()
 	repo := pushEvent.GetRepo().GetName()
 	ref := pushEvent.GetRef()
@@ -125,6 +124,13 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 		"default_branch", defaultBranch,
 	)
 
+	// Look up the repo config; ignore events from repos we don't watch
+	cfg, ok := h.repoMap[owner+"/"+repo]
+	if !ok {
+		clog.InfoContextf(ctx, "Ignoring push event for unwatched repo %s/%s", owner, repo)
+		return nil
+	}
+
 	// Extract branch name from ref (refs/heads/main -> main)
 	branch := strings.TrimPrefix(ref, "refs/heads/")
 
@@ -134,7 +140,7 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 		return nil
 	}
 
-	clog.InfoContextf(ctx, "Processing push event for %s/%s on default branch %q", owner, repo, defaultBranch)
+	clog.InfoContextf(ctx, "Processing push event on default branch %q", defaultBranch)
 
 	// Get GitHub client
 	ghClient, err := h.clientCache.Get(ctx, owner, repo)
@@ -142,9 +148,8 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 		return fmt.Errorf("failed to get GitHub client: %w", err)
 	}
 
-	// Use Git Tree comparison to get all changed files
-	// CompareCommits is limited to 300 files, but GetTree has no such limit
-	// Get the commit objects to access their tree SHAs
+	// Use Git Tree comparison to get all changed files.
+	// CompareCommits is limited to 300 files, but GetTree has no such limit.
 	beforeCommit, _, err := ghClient.Git.GetCommit(ctx, owner, repo, before)
 	if err != nil {
 		return fmt.Errorf("failed to get before commit: %w", err)
@@ -167,14 +172,14 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 	}
 
 	// Build maps of file paths to their blob SHAs
-	beforeFiles := make(map[string]string, len(beforeTree.Entries)) // path -> SHA
+	beforeFiles := make(map[string]string, len(beforeTree.Entries))
 	for _, entry := range beforeTree.Entries {
 		if entry.GetType() == "blob" {
 			beforeFiles[entry.GetPath()] = entry.GetSHA()
 		}
 	}
 
-	afterFiles := make(map[string]string, len(afterTree.Entries)) // path -> SHA
+	afterFiles := make(map[string]string, len(afterTree.Entries))
 	for _, entry := range afterTree.Entries {
 		if entry.GetType() == "blob" {
 			afterFiles[entry.GetPath()] = entry.GetSHA()
@@ -183,15 +188,11 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 
 	// Find all changed files (added, modified, or deleted)
 	changedFiles := make(map[string]struct{})
-
-	// Find added or modified files
 	for path, afterSHA := range afterFiles {
 		if beforeSHA, exists := beforeFiles[path]; !exists || beforeSHA != afterSHA {
 			changedFiles[path] = struct{}{}
 		}
 	}
-
-	// Find deleted files
 	for path := range beforeFiles {
 		if _, exists := afterFiles[path]; !exists {
 			changedFiles[path] = struct{}{}
@@ -200,29 +201,18 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 
 	clog.InfoContextf(ctx, "Processing %d changed files", len(changedFiles))
 
-	// Extract keys from changed files
+	// Match changed files against this repo's patterns
 	keySet := make(map[string]struct{})
 	for file := range changedFiles {
-		for _, regex := range h.patterns {
-			matches := regex.FindStringSubmatch(file)
-			if len(matches) <= 1 {
-				continue
-			}
-
-			// Build resource URL using the default branch
-			url := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s", owner, repo, defaultBranch, matches[1])
-
-			// Add to key set (deduplicates automatically)
+		if key := cfg.MatchPath(file); key != "" {
+			url := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s", owner, repo, defaultBranch, key)
 			keySet[url] = struct{}{}
-			break // Only match first pattern
 		}
 	}
 
 	clog.InfoContextf(ctx, "Enqueueing %d unique keys", len(keySet))
 
-	// Enqueue all unique keys
 	eg, egCtx := errgroup.WithContext(ctx)
-
 	for url := range keySet {
 		eg.Go(func() error {
 			_, err := h.wqClient.Process(egCtx, &workqueue.ProcessRequest{
@@ -233,7 +223,6 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 				clog.ErrorContextf(egCtx, "Failed to process key %q: %v", url, err)
 				return err
 			}
-
 			clog.InfoContextf(egCtx, "Enqueued %q", url)
 			return nil
 		})

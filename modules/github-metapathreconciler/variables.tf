@@ -165,19 +165,17 @@ variable "product" {
 
 # Path reconciler variables
 
-variable "path_patterns" {
-  description = "List of regex patterns with one capture group each for matching paths"
-  type        = list(string)
-}
-
-variable "github_owner" {
-  description = "GitHub organization or user"
-  type        = string
-}
-
-variable "github_repo" {
-  description = "GitHub repository name"
-  type        = string
+variable "repos" {
+  description = "Repositories to watch, each with their own path patterns."
+  type = list(object({
+    owner         = string
+    repo          = string
+    path_patterns = list(string)
+  }))
+  validation {
+    condition     = length(var.repos) > 0
+    error_message = "At least one repository must be specified."
+  }
 }
 
 variable "octo_sts_identity" {

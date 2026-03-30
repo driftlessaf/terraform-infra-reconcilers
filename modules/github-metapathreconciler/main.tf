@@ -30,9 +30,7 @@ module "reconciler" {
   enable_dead_letter_alerting = var.enable_dead_letter_alerting
 
   # Path reconciler configuration
-  path_patterns     = var.path_patterns
-  github_owner      = var.github_owner
-  github_repo       = var.github_repo
+  repos             = var.repos
   octo_sts_identity = var.octo_sts_identity
 
   resync_period_hours = var.resync_period_hours
@@ -49,10 +47,8 @@ module "cloudevents-prs" {
   name       = "${var.name}-pr"
   regions    = var.regions
 
-  broker = var.broker
-  filters = [{
-    "subject" = "${var.github_owner}/${var.github_repo}"
-  }]
+  broker  = var.broker
+  filters = [for r in var.repos : { "subject" = "${r.owner}/${r.repo}" }]
 
   # Use pull request URL as the workqueue key
   extension_key = "pullrequesturl"

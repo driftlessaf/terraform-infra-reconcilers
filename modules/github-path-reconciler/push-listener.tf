@@ -4,7 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 */
 
 module "push-listener" {
-  source = "chainguard-dev/common/infra//modules/regional-go-service"
+  source = "../../../../public/terraform-infra-common/modules/regional-go-service"
 
   name       = "${var.name}-push"
   project_id = var.project_id
@@ -22,8 +22,8 @@ module "push-listener" {
         container_port = 8080
       }]
       env = [{
-        name  = "PATH_PATTERNS"
-        value = jsonencode(var.path_patterns)
+        name  = "REPOS_CONFIG"
+        value = jsonencode(var.repos)
         }, {
         name  = "OCTO_IDENTITY"
         value = var.octo_sts_identity
@@ -42,23 +42,30 @@ module "push-listener" {
   labels                = var.labels
   product               = var.product
   team                  = var.team
-  version               = "1.0.2"
 }
 
-# Subscribe to push events in each region
+# Subscribe to push events for each (repo, region) pair
 module "push-subscription" {
-  for_each = var.paused ? {} : var.regions
-  source   = "chainguard-dev/common/infra//modules/cloudevent-trigger"
+  for_each = var.paused ? {} : {
+    for pair in setproduct(keys(var.regions), var.repos) :
+    "${pair[1].owner}/${pair[1].repo}/${pair[0]}" => {
+      region = pair[0]
+      owner  = pair[1].owner
+      repo   = pair[1].repo
+    }
+  }
+
+  source = "../../../../public/terraform-infra-common/modules/cloudevent-trigger"
 
   name   = "${var.name}-push"
-  broker = var.broker[each.key]
+  broker = var.broker[each.value.region]
   filter = {
     type    = "dev.chainguard.github.push"
-    subject = "${var.github_owner}/${var.github_repo}"
+    subject = "${each.value.owner}/${each.value.repo}"
   }
 
   private-service = {
-    region = each.key
+    region = each.value.region
     name   = "${var.name}-push"
   }
 
@@ -70,5 +77,4 @@ module "push-subscription" {
   notification_channels = var.notification_channels
 
   depends_on = [module.push-listener]
-  version    = "1.0.2"
 }

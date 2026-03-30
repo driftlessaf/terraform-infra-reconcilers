@@ -12,15 +12,78 @@ import (
 	"regexp"
 )
 
+// RepoConfig holds the compiled path patterns for a single repository.
+type RepoConfig struct {
+	Owner    string
+	Repo     string
+	Patterns []*regexp.Regexp
+}
+
+// MatchPath returns the first captured key from path, or "" if no pattern matches.
+func (r *RepoConfig) MatchPath(path string) string {
+	for _, re := range r.Patterns {
+		if m := re.FindStringSubmatch(path); len(m) > 1 {
+			return m[1]
+		}
+	}
+	return ""
+}
+
+// repoConfigJSON is the JSON wire format for a single repo entry in REPOS_CONFIG.
+type repoConfigJSON struct {
+	Owner        string   `json:"owner"`
+	Repo         string   `json:"repo"`
+	PathPatterns []string `json:"path_patterns"`
+}
+
+// ParseRepoConfigs parses a JSON array of repo config objects (the REPOS_CONFIG env var)
+// and compiles the path_patterns for each entry.
+func ParseRepoConfigs(configStr string) ([]RepoConfig, error) {
+	var raw []repoConfigJSON
+	if err := json.Unmarshal([]byte(configStr), &raw); err != nil {
+		return nil, fmt.Errorf("failed to parse repos config JSON: %w", err)
+	}
+	if len(raw) == 0 {
+		return nil, errors.New("repos config must contain at least one repository")
+	}
+	configs := make([]RepoConfig, 0, len(raw))
+	for _, r := range raw {
+		if r.Owner == "" {
+			return nil, errors.New("repo entry missing owner")
+		}
+		if r.Repo == "" {
+			return nil, errors.New("repo entry missing repo")
+		}
+		if len(r.PathPatterns) == 0 {
+			return nil, fmt.Errorf("repo %s/%s: no valid patterns found", r.Owner, r.Repo)
+		}
+		pats, err := compilePatterns(r.PathPatterns)
+		if err != nil {
+			return nil, fmt.Errorf("repo %s/%s: %w", r.Owner, r.Repo, err)
+		}
+		configs = append(configs, RepoConfig{
+			Owner:    r.Owner,
+			Repo:     r.Repo,
+			Patterns: pats,
+		})
+	}
+	return configs, nil
+}
+
 // Parse parses a JSON array of regex patterns and validates that each has exactly one capture group.
 func Parse(patternsStr string) ([]*regexp.Regexp, error) {
 	var patternStrings []string
 	if err := json.Unmarshal([]byte(patternsStr), &patternStrings); err != nil {
 		return nil, fmt.Errorf("failed to parse patterns JSON: %w", err)
 	}
+	if len(patternStrings) == 0 {
+		return nil, errors.New("no valid patterns found")
+	}
+	return compilePatterns(patternStrings)
+}
 
+func compilePatterns(patternStrings []string) ([]*regexp.Regexp, error) {
 	patterns := make([]*regexp.Regexp, 0, len(patternStrings))
-
 	for _, patternStr := range patternStrings {
 		// Add implicit ^ and $ anchors unconditionally
 		patternStr = "^" + patternStr + "$"
@@ -38,10 +101,5 @@ func Parse(patternsStr string) ([]*regexp.Regexp, error) {
 
 		patterns = append(patterns, regex)
 	}
-
-	if len(patterns) == 0 {
-		return nil, errors.New("no valid patterns found")
-	}
-
 	return patterns, nil
 }

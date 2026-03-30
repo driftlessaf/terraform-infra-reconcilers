@@ -13,7 +13,7 @@ locals {
 }
 
 module "cron" {
-  source = "chainguard-dev/common/infra//modules/cron"
+  source = "../../../../public/terraform-infra-common/modules/cron"
 
   name       = "${var.name}-enq"
   project_id = var.project_id
@@ -27,11 +27,9 @@ module "cron" {
   paused          = var.paused
 
   env = {
-    GITHUB_OWNER      = var.github_owner
-    GITHUB_REPO       = var.github_repo
     OCTO_STS_IDENTITY = var.octo_sts_identity
     WORKQUEUE_ADDR    = module.authorize-receiver-per-region[var.primary-region].uri
-    PATH_PATTERNS     = jsonencode(var.path_patterns)
+    REPOS_CONFIG      = jsonencode(var.repos)
     PERIOD_MINUTES    = tostring(local.period_minutes)
   }
 
@@ -48,5 +46,4 @@ module "cron" {
   labels                = var.labels
   team                  = var.team
   product               = var.product
-  version               = "1.0.2"
 }
