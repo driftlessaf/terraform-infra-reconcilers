@@ -68,6 +68,8 @@ This module supports two primary reconciliation patterns:
 
 ## Modules
 
+The table below highlights core modules. See [MODULES.md](./MODULES.md) for the complete catalog with descriptions and selection guidance.
+
 | Module | Description | Pattern |
 |--------|-------------|---------|
 | [`regional-go-reconciler`](./modules/regional-go-reconciler/) | Complete reconciler with workqueue + regional Go service | PR Reconciler |

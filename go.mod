@@ -3,11 +3,11 @@ module chainguard.dev/terraform-infra-reconcilers
 go 1.25.7
 
 require (
-	chainguard.dev/driftlessaf v0.1.0
+	chainguard.dev/driftlessaf v0.0.0-20260127033538-1be87f1b1ce2
 	chainguard.dev/go-grpc-kit v0.17.17
 	cloud.google.com/go/storage v1.59.1
 	github.com/chainguard-dev/clog v1.8.0
-	github.com/chainguard-dev/terraform-infra-common v1.0.2
+	github.com/chainguard-dev/terraform-infra-common v0.10.2
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/google/go-github/v84 v84.0.0
 	github.com/sethvargo/go-envconfig v1.3.0
@@ -26,6 +26,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cloud.google.com/go/iam v1.5.3 // indirect
 	cloud.google.com/go/monitoring v1.24.3 // indirect
+	cloud.google.com/go/profiler v0.4.3 // indirect
 	cloud.google.com/go/trace v1.11.7 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.31.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.54.0 // indirect
@@ -44,8 +45,8 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/google/go-github/v75 v75.0.0 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
+	github.com/google/pprof v0.0.0-20250602020802-c6617b811d0e // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.14 // indirect
@@ -96,3 +97,9 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260311181403-84a4fc48630c // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
+
+replace chainguard.dev/driftlessaf => ../go-driftlessaf
+
+replace chainguard.dev/sdk => ../../public/sdk
+
+replace github.com/chainguard-dev/terraform-infra-common => ../terraform-infra-common
