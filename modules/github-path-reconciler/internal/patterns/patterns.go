@@ -10,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+
+	"gopkg.in/yaml.v3"
 )
 
 // RepoConfig holds the compiled path patterns for a single repository.
@@ -42,9 +44,6 @@ func ParseRepoConfigs(configStr string) ([]RepoConfig, error) {
 	var raw []repoConfigJSON
 	if err := json.Unmarshal([]byte(configStr), &raw); err != nil {
 		return nil, fmt.Errorf("failed to parse repos config JSON: %w", err)
-	}
-	if len(raw) == 0 {
-		return nil, errors.New("repos config must contain at least one repository")
 	}
 	configs := make([]RepoConfig, 0, len(raw))
 	for _, r := range raw {
@@ -80,6 +79,30 @@ func Parse(patternsStr string) ([]*regexp.Regexp, error) {
 		return nil, errors.New("no valid patterns found")
 	}
 	return compilePatterns(patternStrings)
+}
+
+// repoConfigFile is the YAML format of the per-repo config file
+// (e.g. .skillup.yaml or .moore-door.yaml).
+type repoConfigFile struct {
+	PathPatterns []string `yaml:"path_patterns"`
+}
+
+// ParseRepoConfigFile parses the content of a .{identity}.yaml repo config
+// file and returns a RepoConfig for the given owner/repo. Returns an error if
+// the file is missing required fields or contains invalid patterns.
+func ParseRepoConfigFile(content []byte, owner, repo string) (RepoConfig, error) {
+	var raw repoConfigFile
+	if err := yaml.Unmarshal(content, &raw); err != nil {
+		return RepoConfig{}, fmt.Errorf("parse repo config file for %s/%s: %w", owner, repo, err)
+	}
+	if len(raw.PathPatterns) == 0 {
+		return RepoConfig{}, fmt.Errorf("repo config file for %s/%s has no path_patterns", owner, repo)
+	}
+	pats, err := compilePatterns(raw.PathPatterns)
+	if err != nil {
+		return RepoConfig{}, fmt.Errorf("%s/%s: %w", owner, repo, err)
+	}
+	return RepoConfig{Owner: owner, Repo: repo, Patterns: pats}, nil
 }
 
 func compilePatterns(patternStrings []string) ([]*regexp.Regexp, error) {

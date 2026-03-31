@@ -286,10 +286,6 @@ variable "repos" {
     repo          = string
     path_patterns = list(string)
   }))
-  validation {
-    condition     = length(var.repos) > 0
-    error_message = "At least one repository must be specified."
-  }
 }
 
 variable "resync_period_hours" {
@@ -302,8 +298,28 @@ variable "resync_period_hours" {
 }
 
 variable "octo_sts_identity" {
-  description = "Octo STS identity for GitHub authentication"
+  description = "Octo STS identity for GitHub authentication. Also used as the config file name."
   type        = string
+}
+
+variable "github_app_id" {
+  description = "GitHub App ID. When non-zero, the push listener and resync cron authenticate using the app instead of Octo STS."
+  type        = number
+  default     = 0
+  validation {
+    condition     = length(var.repos) > 0 || var.github_app_id != 0
+    error_message = "At least one of repos (non-empty) or github_app_id must be specified."
+  }
+}
+
+variable "github_app_key" {
+  description = "Key URI for the GitHub App private key (e.g. gcpkms://...). Required when github_app_id is non-zero."
+  type        = string
+  default     = ""
+  validation {
+    condition     = var.github_app_id == 0 || var.github_app_key != ""
+    error_message = "github_app_key must be set when github_app_id is non-zero."
+  }
 }
 
 variable "primary-region" {

@@ -10,12 +10,14 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
+	"net/http"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/chainguard-dev/clog"
 	_ "github.com/chainguard-dev/clog/gcp/init"
+	"github.com/google/go-github/v84/github"
 	"github.com/sethvargo/go-envconfig"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
@@ -27,13 +29,22 @@ import (
 )
 
 var env = envconfig.MustProcess(context.Background(), &struct {
-	// Octo STS configuration
-	OctoSTSIdentity string `env:"OCTO_STS_IDENTITY,required"`
+	// Identity string used as the reconciler display name and the config file
+	// name (.{identity}.yaml) in repos without explicit REPOS_CONFIG entries.
+	Identity string `env:"OCTO_IDENTITY"`
+
+	// Octo STS identity — used when AppID is zero.
+	OctoSTSIdentity string `env:"OCTO_STS_IDENTITY"`
+
+	// GitHub App credentials — when AppID is non-zero, these override OctoSTSIdentity.
+	AppID  int64  `env:"GITHUB_APP_ID"`
+	AppKey string `env:"GITHUB_APP_KEY"`
 
 	// Workqueue configuration
 	WorkqueueAddr string `env:"WORKQUEUE_ADDR,required"`
 
-	// Repos config (JSON array of {owner, repo, path_patterns})
+	// Repos config (JSON array of {owner, repo, path_patterns}). When empty and
+	// AppID is non-zero, repos are discovered from the app's installations.
 	ReposConfig string `env:"REPOS_CONFIG,required"`
 
 	// Period in minutes for time bucketing
@@ -64,18 +75,31 @@ func main() {
 	}
 	defer wqClient.Close()
 
-	clientCache := githubreconciler.NewClientCache(func(ctx context.Context, org, repo string) (oauth2.TokenSource, error) {
-		return githubreconciler.NewRepoTokenSource(ctx, env.OctoSTSIdentity, org, repo), nil
-	})
+	clientCache, err := buildClientCache(ctx)
+	if err != nil {
+		clog.FatalContextf(ctx, "Failed to create GitHub client cache: %v", err)
+	}
+
+	// When no explicit repos are configured and we have app credentials,
+	// discover repos from the app's installations at runtime.
+	var appClient *github.Client
+	if len(repoConfigs) == 0 && env.AppID != 0 {
+		appClient, err = githubreconciler.NewAppClient(ctx, env.AppID, env.AppKey)
+		if err != nil {
+			clog.FatalContextf(ctx, "Failed to create GitHub App client: %v", err)
+		}
+	}
 
 	handler := &cronHandler{
 		clientCache:   clientCache,
+		appClient:     appClient,
+		identity:      env.Identity,
 		wqClient:      wqClient,
 		repoConfigs:   repoConfigs,
 		periodMinutes: env.PeriodMinutes,
 	}
 
-	clog.InfoContextf(ctx, "Starting cron run for %d repositories", len(repoConfigs))
+	clog.InfoContextf(ctx, "Starting cron run for %d explicit repositories", len(repoConfigs))
 	if err := handler.run(ctx); err != nil {
 		clog.FatalContextf(ctx, "Cron run failed: %v", err)
 	}
@@ -84,19 +108,131 @@ func main() {
 
 type cronHandler struct {
 	clientCache   *githubreconciler.ClientCache
+	appClient     *github.Client // non-nil when repos are discovered from the app
+	identity      string
 	wqClient      workqueue.Client
 	repoConfigs   []patterns.RepoConfig
 	periodMinutes int
 }
 
 func (h *cronHandler) run(ctx context.Context) error {
-	eg, egCtx := errgroup.WithContext(ctx)
-	for _, cfg := range h.repoConfigs {
+	configs := h.repoConfigs
+
+	// When no explicit repos are configured, discover repos from the app's installations.
+	if len(configs) == 0 && h.appClient != nil {
+		discovered, err := h.discoverRepoConfigs(ctx)
+		if err != nil {
+			return fmt.Errorf("discover repos from app installations: %w", err)
+		}
+		configs = discovered
+		clog.InfoContextf(ctx, "Discovered %d repositories from app installations", len(configs))
+	}
+
+	var eg errgroup.Group
+	for _, cfg := range configs {
 		eg.Go(func() error {
-			return h.runRepo(egCtx, cfg)
+			return h.runRepo(ctx, cfg)
 		})
 	}
 	return eg.Wait()
+}
+
+// discoverRepoConfigs lists all repos accessible to the app across its
+// installations, fetches .{identity}.yaml from each, and returns the configs
+// for repos that have the file.
+func (h *cronHandler) discoverRepoConfigs(ctx context.Context) ([]patterns.RepoConfig, error) {
+	var configs []patterns.RepoConfig
+
+	// List all app installations using the app-level JWT client.
+	installPage := 1
+	for installPage != 0 {
+		installs, installsResp, err := h.appClient.Apps.ListInstallations(ctx, &github.ListOptions{
+			Page:    installPage,
+			PerPage: 100,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("list app installations: %w", err)
+		}
+
+		for _, install := range installs {
+			org := install.GetAccount().GetLogin()
+
+			// Get an installation-scoped client for this org, then list its repos.
+			// Apps.ListRepos uses GET /installation/repositories which requires the
+			// installation token (not the app JWT). The empty repo string requests
+			// an org-scoped token rather than a repo-scoped one, which is needed
+			// to enumerate all repositories under the installation.
+			installClient, err := h.clientCache.Get(ctx, org, "")
+			if err != nil {
+				clog.WarnContextf(ctx, "Failed to get client for installation %s, skipping: %v", org, err)
+				continue
+			}
+
+			repoPage := 1
+			for repoPage != 0 {
+				result, reposResp, err := installClient.Apps.ListRepos(ctx, &github.ListOptions{
+					Page:    repoPage,
+					PerPage: 100,
+				})
+				if err != nil {
+					clog.WarnContextf(ctx, "Failed to list repos for installation %s, skipping: %v", org, err)
+					break
+				}
+				for _, repo := range result.Repositories {
+					owner := repo.GetOwner().GetLogin()
+					name := repo.GetName()
+					cfg, ok, err := h.fetchRepoConfig(ctx, owner, name, "")
+					if err != nil {
+						clog.WarnContextf(ctx, "Failed to fetch config for %s/%s, skipping: %v", owner, name, err)
+						continue
+					}
+					if ok {
+						configs = append(configs, cfg)
+					}
+				}
+				repoPage = reposResp.NextPage
+			}
+		}
+		installPage = installsResp.NextPage
+	}
+
+	return configs, nil
+}
+
+// fetchRepoConfig fetches .{identity}.yaml from the repo at the given ref
+// (or the default branch if ref is empty). Returns (config, true, nil) if
+// found, (zero, false, nil) if the file does not exist, or an error.
+func (h *cronHandler) fetchRepoConfig(ctx context.Context, owner, repo, ref string) (patterns.RepoConfig, bool, error) {
+	if h.identity == "" {
+		return patterns.RepoConfig{}, false, nil
+	}
+
+	ghClient, err := h.clientCache.Get(ctx, owner, repo)
+	if err != nil {
+		return patterns.RepoConfig{}, false, err
+	}
+
+	filename := "." + h.identity + ".yaml"
+	opts := &github.RepositoryContentGetOptions{Ref: ref}
+	file, _, resp, err := ghClient.Repositories.GetContents(ctx, owner, repo, filename, opts)
+	if err != nil {
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return patterns.RepoConfig{}, false, nil
+		}
+		return patterns.RepoConfig{}, false, fmt.Errorf("fetch %s from %s/%s: %w", filename, owner, repo, err)
+	}
+
+	decoded, err := file.GetContent()
+	if err != nil {
+		return patterns.RepoConfig{}, false, fmt.Errorf("decode %s from %s/%s: %w", filename, owner, repo, err)
+	}
+	content := []byte(decoded)
+
+	cfg, err := patterns.ParseRepoConfigFile(content, owner, repo)
+	if err != nil {
+		return patterns.RepoConfig{}, false, err
+	}
+	return cfg, true, nil
 }
 
 func (h *cronHandler) runRepo(ctx context.Context, cfg patterns.RepoConfig) error {
@@ -174,4 +310,17 @@ func (h *cronHandler) computeDelay(key string, runTimestamp int64) time.Duration
 	bucket := int(hashValue % uint64(h.periodMinutes)) //nolint:gosec // G115: periodMinutes validated range
 
 	return time.Duration(bucket) * time.Minute
+}
+
+func buildClientCache(ctx context.Context) (*githubreconciler.ClientCache, error) {
+	if env.AppID != 0 {
+		tsf, err := githubreconciler.NewAppTokenSource(ctx, env.AppID, env.AppKey)
+		if err != nil {
+			return nil, err
+		}
+		return githubreconciler.NewClientCache(tsf), nil
+	}
+	return githubreconciler.NewClientCache(func(ctx context.Context, org, repo string) (oauth2.TokenSource, error) {
+		return githubreconciler.NewRepoTokenSource(ctx, env.OctoSTSIdentity, org, repo), nil
+	}), nil
 }

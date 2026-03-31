@@ -230,10 +230,10 @@ func TestParseRepoConfigs(t *testing.T) {
 		wantOwners  []string
 		wantRepos   []string
 	}{{
-		name:        "empty array",
-		input:       `[]`,
-		wantErr:     true,
-		errContains: "at least one repository",
+		name:       "empty array",
+		input:      `[]`,
+		wantOwners: []string{},
+		wantRepos:  []string{},
 	}, {
 		name:        "invalid JSON",
 		input:       `not json`,

@@ -32,6 +32,8 @@ module "reconciler" {
   # Path reconciler configuration
   repos             = var.repos
   octo_sts_identity = var.octo_sts_identity
+  github_app_id     = var.github_app_id
+  github_app_key    = var.github_app_key
 
   resync_period_hours = var.resync_period_hours
   broker              = var.broker
@@ -47,8 +49,13 @@ module "cloudevents-prs" {
   name       = "${var.name}-pr"
   regions    = var.regions
 
-  broker  = var.broker
-  filters = [for r in var.repos : { "subject" = "${r.owner}/${r.repo}" }]
+  broker = var.broker
+  # When repos is non-empty, filter triggers to matching repo subjects.
+  # When repos is empty (e.g. push/resync disabled), use an unfiltered trigger
+  # so PR events still flow. The cloudevents-workqueue module's
+  # filter_has_attributes check on "pullrequesturl" ensures only PR events
+  # actually reach the workqueue.
+  filters = length(var.repos) > 0 ? [for r in var.repos : { "subject" = "${r.owner}/${r.repo}" }] : [{}]
 
   # Use pull request URL as the workqueue key
   extension_key = "pullrequesturl"

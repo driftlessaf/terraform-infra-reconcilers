@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -35,8 +36,13 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	// Repos config (JSON array of {owner, repo, path_patterns})
 	ReposConfig string `env:"REPOS_CONFIG,required"`
 
-	// Octo STS identity
-	OctoIdentity string `env:"OCTO_IDENTITY,required"`
+	// Identity string used as the reconciler display name and the config file
+	// name (.{identity}.yaml) for repos without explicit REPOS_CONFIG entries.
+	Identity string `env:"OCTO_IDENTITY"`
+
+	// GitHub App credentials — when AppID is non-zero, these override OctoIdentity.
+	AppID  int64  `env:"GITHUB_APP_ID"`
+	AppKey string `env:"GITHUB_APP_KEY"`
 }{})
 
 func main() {
@@ -63,12 +69,14 @@ func main() {
 	}
 	defer wqClient.Close()
 
-	clientCache := githubreconciler.NewClientCache(func(ctx context.Context, org, repo string) (oauth2.TokenSource, error) {
-		return githubreconciler.NewRepoTokenSource(ctx, env.OctoIdentity, org, repo), nil
-	})
+	clientCache, err := buildClientCache(ctx)
+	if err != nil {
+		clog.FatalContextf(ctx, "Failed to create GitHub client cache: %v", err)
+	}
 
 	handler := &pushHandler{
 		clientCache: clientCache,
+		identity:    env.Identity,
 		wqClient:    wqClient,
 		repoMap:     repoMap,
 	}
@@ -85,8 +93,57 @@ func main() {
 	}
 }
 
+// fetchRepoConfig fetches .{identity}.yaml from the repo at the given ref.
+// Returns (config, true, nil) if found, (zero, false, nil) if absent, or an error.
+func (h *pushHandler) fetchRepoConfig(ctx context.Context, owner, repo, ref string) (patterns.RepoConfig, bool, error) {
+	if h.identity == "" {
+		return patterns.RepoConfig{}, false, nil
+	}
+
+	ghClient, err := h.clientCache.Get(ctx, owner, repo)
+	if err != nil {
+		return patterns.RepoConfig{}, false, err
+	}
+
+	filename := "." + h.identity + ".yaml"
+	file, _, resp, err := ghClient.Repositories.GetContents(ctx, owner, repo, filename,
+		&github.RepositoryContentGetOptions{Ref: ref})
+	if err != nil {
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return patterns.RepoConfig{}, false, nil
+		}
+		return patterns.RepoConfig{}, false, fmt.Errorf("fetch %s from %s/%s@%s: %w", filename, owner, repo, ref, err)
+	}
+
+	decoded, err := file.GetContent()
+	if err != nil {
+		return patterns.RepoConfig{}, false, fmt.Errorf("decode %s from %s/%s: %w", filename, owner, repo, err)
+	}
+	content := []byte(decoded)
+
+	cfg, err := patterns.ParseRepoConfigFile(content, owner, repo)
+	if err != nil {
+		return patterns.RepoConfig{}, false, err
+	}
+	return cfg, true, nil
+}
+
+func buildClientCache(ctx context.Context) (*githubreconciler.ClientCache, error) {
+	if env.AppID != 0 {
+		tsf, err := githubreconciler.NewAppTokenSource(ctx, env.AppID, env.AppKey)
+		if err != nil {
+			return nil, err
+		}
+		return githubreconciler.NewClientCache(tsf), nil
+	}
+	return githubreconciler.NewClientCache(func(ctx context.Context, org, repo string) (oauth2.TokenSource, error) {
+		return githubreconciler.NewRepoTokenSource(ctx, env.Identity, org, repo), nil
+	}), nil
+}
+
 type pushHandler struct {
 	clientCache *githubreconciler.ClientCache
+	identity    string
 	wqClient    workqueue.Client
 	repoMap     map[string]patterns.RepoConfig
 }
@@ -124,11 +181,19 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 		"default_branch", defaultBranch,
 	)
 
-	// Look up the repo config; ignore events from repos we don't watch
+	// Look up the explicit repo config. If missing, try to fetch it from
+	// .{identity}.yaml at the pushed commit; skip if the file doesn't exist.
 	cfg, ok := h.repoMap[owner+"/"+repo]
 	if !ok {
-		clog.InfoContextf(ctx, "Ignoring push event for unwatched repo %s/%s", owner, repo)
-		return nil
+		var err error
+		cfg, ok, err = h.fetchRepoConfig(ctx, owner, repo, after)
+		if err != nil {
+			return fmt.Errorf("fetch repo config for %s/%s: %w", owner, repo, err)
+		}
+		if !ok {
+			clog.InfoContextf(ctx, "No config for %s/%s, skipping", owner, repo)
+			return nil
+		}
 	}
 
 	// Extract branch name from ref (refs/heads/main -> main)
