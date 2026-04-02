@@ -130,11 +130,11 @@ func (h *pushHandler) fetchRepoConfig(ctx context.Context, owner, repo, ref stri
 
 func buildClientCache(ctx context.Context) (*githubreconciler.ClientCache, error) {
 	if env.AppID != 0 {
-		tsf, err := githubreconciler.NewAppTokenSource(ctx, env.AppID, env.AppKey)
+		app, err := githubreconciler.NewApp(ctx, env.AppID, env.AppKey)
 		if err != nil {
 			return nil, err
 		}
-		return githubreconciler.NewClientCache(tsf), nil
+		return githubreconciler.NewClientCache(app.TokenSourceFunc()), nil
 	}
 	return githubreconciler.NewClientCache(func(ctx context.Context, org, repo string) (oauth2.TokenSource, error) {
 		return githubreconciler.NewRepoTokenSource(ctx, env.Identity, org, repo), nil

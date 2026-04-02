@@ -3,11 +3,11 @@ module chainguard.dev/terraform-infra-reconcilers
 go 1.25.7
 
 require (
-	chainguard.dev/driftlessaf v0.2.0
+	chainguard.dev/driftlessaf v0.0.0-20260127033538-1be87f1b1ce2
 	chainguard.dev/go-grpc-kit v0.17.17
 	cloud.google.com/go/storage v1.59.1
 	github.com/chainguard-dev/clog v1.8.0
-	github.com/chainguard-dev/terraform-infra-common v1.0.2
+	github.com/chainguard-dev/terraform-infra-common v0.10.2
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/google/go-github/v84 v84.0.0
 	github.com/sethvargo/go-envconfig v1.3.0
@@ -103,3 +103,9 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260311181403-84a4fc48630c // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
+
+replace chainguard.dev/driftlessaf => ../go-driftlessaf
+
+replace chainguard.dev/sdk => ../../public/sdk
+
+replace github.com/chainguard-dev/terraform-infra-common => ../terraform-infra-common

@@ -75,19 +75,21 @@ func main() {
 	}
 	defer wqClient.Close()
 
-	clientCache, err := buildClientCache(ctx)
-	if err != nil {
-		clog.FatalContextf(ctx, "Failed to create GitHub client cache: %v", err)
+	var app *githubreconciler.App
+	if env.AppID != 0 {
+		app, err = githubreconciler.NewApp(ctx, env.AppID, env.AppKey)
+		if err != nil {
+			clog.FatalContextf(ctx, "Failed to create GitHub App: %v", err)
+		}
 	}
+
+	clientCache := buildClientCache(app)
 
 	// When no explicit repos are configured and we have app credentials,
 	// discover repos from the app's installations at runtime.
 	var appClient *github.Client
-	if len(repoConfigs) == 0 && env.AppID != 0 {
-		appClient, err = githubreconciler.NewAppClient(ctx, env.AppID, env.AppKey)
-		if err != nil {
-			clog.FatalContextf(ctx, "Failed to create GitHub App client: %v", err)
-		}
+	if len(repoConfigs) == 0 && app != nil {
+		appClient = app.Client()
 	}
 
 	handler := &cronHandler{
@@ -312,15 +314,11 @@ func (h *cronHandler) computeDelay(key string, runTimestamp int64) time.Duration
 	return time.Duration(bucket) * time.Minute
 }
 
-func buildClientCache(ctx context.Context) (*githubreconciler.ClientCache, error) {
-	if env.AppID != 0 {
-		tsf, err := githubreconciler.NewAppTokenSource(ctx, env.AppID, env.AppKey)
-		if err != nil {
-			return nil, err
-		}
-		return githubreconciler.NewClientCache(tsf), nil
+func buildClientCache(app *githubreconciler.App) *githubreconciler.ClientCache {
+	if app != nil {
+		return githubreconciler.NewClientCache(app.TokenSourceFunc())
 	}
 	return githubreconciler.NewClientCache(func(ctx context.Context, org, repo string) (oauth2.TokenSource, error) {
 		return githubreconciler.NewRepoTokenSource(ctx, env.OctoSTSIdentity, org, repo), nil
-	}), nil
+	})
 }
