@@ -25,6 +25,7 @@ import (
 	"chainguard.dev/driftlessaf/workqueue"
 	"chainguard.dev/driftlessaf/workqueue/dispatcher"
 	"chainguard.dev/driftlessaf/workqueue/gcs"
+	"github.com/chainguard-dev/clog/gcp"
 	"github.com/chainguard-dev/terraform-infra-common/pkg/httpmetrics"
 )
 
@@ -83,7 +84,7 @@ func main() {
 
 	if err := (&http.Server{
 		Addr:              fmt.Sprintf(":%d", env.Port),
-		Handler:           h2c.NewHandler(dispatcher.Handler(wq, env.Concurrency, env.BatchSize, dispatcher.ServiceCallback(client), env.MaxRetry), &http2.Server{}),
+		Handler:           h2c.NewHandler(gcp.WithCloudTraceContext(dispatcher.Handler(wq, env.Concurrency, env.BatchSize, dispatcher.ServiceCallback(client), env.MaxRetry)), &http2.Server{}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}).ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		clog.FatalContextf(ctx, "failed to start server: %v", err)
