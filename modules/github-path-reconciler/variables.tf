@@ -285,6 +285,12 @@ variable "repos" {
     owner         = string
     repo          = string
     path_patterns = list(string)
+    # exclude_patterns: optional list of regex patterns (no capture group required).
+    # Anchors ^ and $ are added automatically. A pattern like ".*/testdata/.*" matches
+    # any path containing a testdata/ segment, but NOT a root-level testdata/ path
+    # (e.g. "testdata/fixture.go") since ^ requires a prefix before the first /.
+    # To also exclude root-level testdata, use "(testdata/.*|.*/testdata/.*)".
+    exclude_patterns = optional(list(string), [])
   }))
 }
 

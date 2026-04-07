@@ -340,6 +340,69 @@ func TestRepoConfigMatchPath(t *testing.T) {
 	}
 }
 
+func TestRepoConfigMatchPathWithExcludes(t *testing.T) {
+	configs, err := ParseRepoConfigs(`[{"owner":"chainguard-dev","repo":"mono","path_patterns":["(.*)/[^/]+"],"exclude_patterns":[".*/testdata/.*"]}]`)
+	if err != nil {
+		t.Fatalf("ParseRepoConfigs() unexpected error: %v", err)
+	}
+	cfg := configs[0]
+
+	tests := []struct {
+		path string
+		want string
+	}{{
+		path: "bots/skillup/main.go",
+		want: "bots/skillup",
+	}, {
+		path: "ecosystems/eco-fix-review/testdata/foo/bar.yaml",
+		want: "",
+	}, {
+		path: "pkg/testdata/input.json",
+		want: "",
+	}, {
+		path: "solo-file",
+		want: "",
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			got := cfg.MatchPath(tt.path)
+			if got != tt.want {
+				t.Errorf("MatchPath(%q): got = %q, wanted = %q", tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParseRepoConfigsInvalidExcludePattern(t *testing.T) {
+	_, err := ParseRepoConfigs(`[{"owner":"chainguard-dev","repo":"mono","path_patterns":["(.*)"],"exclude_patterns":["(invalid["]}]`)
+	if err == nil {
+		t.Fatal("ParseRepoConfigs() expected error for invalid exclude pattern, got nil")
+	}
+	if !strings.Contains(err.Error(), "exclude_patterns") {
+		t.Errorf("error should mention exclude_patterns, got: %v", err)
+	}
+}
+
+func TestParseRepoConfigFileExcludePatterns(t *testing.T) {
+	content := []byte(`
+path_patterns:
+  - "(bots/[^/]+)/.*\\.go"
+exclude_patterns:
+  - ".*/testdata/.*"
+`)
+	cfg, err := ParseRepoConfigFile(content, "chainguard-dev", "mono")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if key := cfg.MatchPath("bots/skillup/testdata/foo.go"); key != "" {
+		t.Errorf("excluded path should return empty, got %q", key)
+	}
+	if key := cfg.MatchPath("bots/skillup/main.go"); key == "" {
+		t.Errorf("non-excluded matching path should return non-empty")
+	}
+}
+
 func TestParseAnchoring(t *testing.T) {
 	// Test that anchors are always added unconditionally
 	input := `["(.+\\.yaml)"]`

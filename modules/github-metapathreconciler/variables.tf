@@ -168,9 +168,10 @@ variable "product" {
 variable "repos" {
   description = "Repositories to watch, each with their own path patterns."
   type = list(object({
-    owner         = string
-    repo          = string
-    path_patterns = list(string)
+    owner            = string
+    repo             = string
+    path_patterns    = list(string)
+    exclude_patterns = optional(list(string), [])
   }))
 }
 
