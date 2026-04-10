@@ -12,3 +12,8 @@ output "reconciler-uris" {
   description = "The URIs of the reconciler service by region."
   value       = module.reconciler.uris
 }
+
+output "bucket" {
+  description = "The name of the GCS bucket backing the workqueue."
+  value       = var.shards == 1 ? module.workqueue[0].bucket : null
+}

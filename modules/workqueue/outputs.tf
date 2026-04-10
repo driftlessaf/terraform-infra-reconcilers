@@ -11,3 +11,8 @@ output "dispatcher" {
     name = "${var.name}-dsp"
   }
 }
+
+output "bucket" {
+  description = "The name of the GCS bucket backing the workqueue."
+  value       = google_storage_bucket.global-workqueue.name
+}
