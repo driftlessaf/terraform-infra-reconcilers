@@ -66,7 +66,7 @@ module "cloudevents-prs" {
   priority = var.pr_priority
 
   notification_channels = var.notification_channels
-  deletion_protection   = var.deletion_protection
+  deletion_protection   = var.paused
 
   depends_on = [module.reconciler]
 
