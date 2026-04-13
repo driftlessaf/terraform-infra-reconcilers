@@ -4,7 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 */
 
 module "push-listener" {
-  source = "chainguard-dev/common/infra//modules/regional-go-service"
+  source = "../../../../public/terraform-infra-common/modules/regional-go-service"
 
   name       = "${var.name}-push"
   project_id = var.project_id
@@ -50,7 +50,6 @@ module "push-listener" {
   labels                = var.labels
   product               = var.product
   team                  = var.team
-  version               = "1.0.3"
 }
 
 # Subscribe to push events for each (repo, region) pair
@@ -64,7 +63,7 @@ module "push-subscription" {
     }
   }
 
-  source = "chainguard-dev/common/infra//modules/cloudevent-trigger"
+  source = "../../../../public/terraform-infra-common/modules/cloudevent-trigger"
 
   name   = "${var.name}-push"
   broker = var.broker[each.value.region]
@@ -86,5 +85,4 @@ module "push-subscription" {
   notification_channels = var.notification_channels
 
   depends_on = [module.push-listener]
-  version    = "1.0.3"
 }

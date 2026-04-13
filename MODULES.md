@@ -52,6 +52,14 @@ Opinionated composition of `regional-go-reconciler` + `cloudevents-workqueue` + 
 
 Use this when building a reconciler that automates workflows triggered by Linear issue or comment activity.
 
+## AI and Machine Learning
+
+### [`vertex-ai-vector-search`](./modules/vertex-ai-vector-search/)
+
+Provision a Vertex AI Vector Search (Matching Engine) index with an endpoint, deployed index, and optional GCS bucket for durable embedding storage.
+
+Use this when a service needs vector search infrastructure for RAG (Retrieval-Augmented Generation) or semantic similarity search. Call once per corpus — each corpus with a different embedding model requires its own index.
+
 ## Observability
 
 ### [`dashboard/workqueue`](./modules/dashboard/workqueue/)
