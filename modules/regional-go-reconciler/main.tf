@@ -38,6 +38,8 @@ module "workqueue" {
   multi_regional_location = var.multi_regional_location
   cpu_idle                = var.workqueue_cpu_idle
 
+  error_event_broker = var.error_event_broker
+
   depends_on = [module.reconciler]
 }
 
@@ -73,6 +75,8 @@ module "workqueue-sharded" {
   labels                = var.labels
 
   multi_regional_location = var.multi_regional_location
+
+  error_event_broker = var.error_event_broker
 
   depends_on = [module.reconciler]
 }

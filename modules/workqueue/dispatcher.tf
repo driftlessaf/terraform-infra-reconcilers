@@ -32,6 +32,19 @@ module "dispatcher-calls-target" {
   service-account = google_service_account.dispatcher.email
 }
 
+// Authorize the dispatcher service account to call the error event broker.
+module "dispatcher-calls-error-broker" {
+  for_each = var.error_event_broker != null ? var.regions : {}
+
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
+
+  project_id = var.project_id
+  region     = each.key
+  name       = var.error_event_broker.name
+
+  service-account = google_service_account.dispatcher.email
+}
+
 // Stand up the dispatcher service in each of our regions.
 module "dispatcher-service" {
   source     = "../../../../public/terraform-infra-common/modules/regional-go-service"
@@ -74,9 +87,13 @@ module "dispatcher-service" {
         {
           name  = "WORKQUEUE_BATCH_SIZE"
           value = tostring(local.dispatcher_batch_size)
-        }
+        },
+        {
+          name  = "WORKQUEUE_NAME"
+          value = var.name
+        },
       ]
-      regional-env = [
+      regional-env = concat([
         {
           name = "WORKQUEUE_BUCKET"
           value = {
@@ -87,7 +104,12 @@ module "dispatcher-service" {
           name  = "WORKQUEUE_TARGET"
           value = { for k, v in module.dispatcher-calls-target : k => v.uri }
         },
-      ]
+        ], var.error_event_broker != null ? [
+        {
+          name  = "ERROR_EVENT_BROKER_URL"
+          value = { for k, v in module.dispatcher-calls-error-broker : k => v.uri }
+        },
+      ] : [])
       regional-cpu-idle = lookup(var.cpu_idle, "dispatcher", {})
     }
   }

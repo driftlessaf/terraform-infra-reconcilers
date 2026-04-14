@@ -52,6 +52,8 @@ module "workqueue" {
   notification_channels   = var.notification_channels
   labels                  = var.labels
   multi_regional_location = var.multi_regional_location
+
+  error_event_broker = var.error_event_broker
 }
 
 # Service account for hyperqueue router

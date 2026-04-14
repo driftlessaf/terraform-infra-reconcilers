@@ -98,3 +98,11 @@ variable "multi_regional_location" {
     error_message = "multi_regional_location must be one of 'US', 'EU', or 'ASIA'."
   }
 }
+
+variable "error_event_broker" {
+  description = "Optional CloudEvents broker for emitting reconciler error events."
+  type = object({
+    name = string
+  })
+  default = null
+}
