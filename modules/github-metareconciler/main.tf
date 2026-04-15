@@ -27,6 +27,7 @@ module "reconciler" {
 
   notification_channels = var.notification_channels
   deletion_protection   = var.deletion_protection
+  error_event_broker    = var.error_event_broker
 }
 
 # CloudEvents to Workqueue bridge for issue events

@@ -38,6 +38,7 @@ module "reconciler" {
   resync_period_hours = var.resync_period_hours
   broker              = var.broker
   paused              = var.paused
+  error_event_broker  = var.error_event_broker
 }
 
 # CloudEvents to Workqueue bridge for pull request events

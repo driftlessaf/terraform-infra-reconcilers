@@ -31,6 +31,7 @@ module "reconciler" {
   notification_channels       = var.notification_channels
   workqueue_cpu_idle          = var.workqueue_cpu_idle
   slo                         = var.slo
+  error_event_broker          = var.error_event_broker
 }
 
 # Authorize the service account to call the receiver in each region

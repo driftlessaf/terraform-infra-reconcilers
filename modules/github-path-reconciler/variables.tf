@@ -343,3 +343,11 @@ variable "broker" {
   description = "A map from each of the input region names to the name of the Broker topic in that region."
   type        = map(string)
 }
+
+variable "error_event_broker" {
+  description = "Optional CloudEvents broker for emitting reconciler error events. When set, the dispatcher publishes a CloudEvent for each reconciliation error (requeue, dead-letter, or drop). Set to null to disable."
+  type = object({
+    name = string
+  })
+  default = null
+}
