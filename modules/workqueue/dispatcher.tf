@@ -34,13 +34,13 @@ module "dispatcher-calls-target" {
 
 // Authorize the dispatcher service account to call the error event broker.
 module "dispatcher-calls-error-broker" {
-  for_each = var.error_event_broker != null ? var.regions : {}
+  for_each = var.error_event_broker
 
   source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.key
-  name       = var.error_event_broker.name
+  name       = each.value
 
   service-account = google_service_account.dispatcher.email
 }
@@ -104,7 +104,7 @@ module "dispatcher-service" {
           name  = "WORKQUEUE_TARGET"
           value = { for k, v in module.dispatcher-calls-target : k => v.uri }
         },
-        ], var.error_event_broker != null ? [
+        ], length(var.error_event_broker) > 0 ? [
         {
           name  = "ERROR_EVENT_BROKER_URL"
           value = { for k, v in module.dispatcher-calls-error-broker : k => v.uri }

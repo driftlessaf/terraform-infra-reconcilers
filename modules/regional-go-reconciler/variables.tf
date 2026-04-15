@@ -283,11 +283,9 @@ variable "workqueue_cpu_idle" {
 }
 
 variable "error_event_broker" {
-  description = "Optional CloudEvents broker for emitting reconciler error events. When set, the dispatcher publishes a CloudEvent for each reconciliation error (requeue, dead-letter, or drop). Set to null to disable."
-  type = object({
-    name = string
-  })
-  default = null
+  description = "Optional CloudEvents broker ingress for emitting reconciler error events. Set to {} to disable."
+  type        = map(string)
+  default     = {}
 }
 
 variable "slo" {

@@ -100,9 +100,7 @@ variable "multi_regional_location" {
 }
 
 variable "error_event_broker" {
-  description = "Optional CloudEvents broker for emitting reconciler error events."
-  type = object({
-    name = string
-  })
-  default = null
+  description = "Optional CloudEvents broker ingress for emitting reconciler error events. Set to {} to disable."
+  type        = map(string)
+  default     = {}
 }
