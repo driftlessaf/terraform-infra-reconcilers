@@ -282,7 +282,7 @@ variable "workqueue_cpu_idle" {
   }
 }
 
-variable "error_event_broker" {
+variable "error_event_ingress" {
   description = "Optional CloudEvents broker ingress for emitting reconciler error events. Set to {} to disable."
   type        = map(string)
   default     = {}

@@ -31,19 +31,18 @@ module "reconciler" {
   notification_channels       = var.notification_channels
   workqueue_cpu_idle          = var.workqueue_cpu_idle
   slo                         = var.slo
-  error_event_broker          = var.error_event_broker
+  error_event_ingress         = var.error_event_ingress
 }
 
 # Authorize the service account to call the receiver in each region
 # This is used by both the cron job and push listener
 module "authorize-receiver-per-region" {
   for_each = var.regions
-  source   = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source   = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.key
   name       = module.reconciler.receiver.name
 
   service-account = var.service_account
-  version         = "1.0.3"
 }

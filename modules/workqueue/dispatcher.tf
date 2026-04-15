@@ -23,33 +23,31 @@ resource "google_service_account" "dispatcher" {
 module "dispatcher-calls-target" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.key
   name       = var.reconciler-service.name
 
   service-account = google_service_account.dispatcher.email
-  version         = "1.0.3"
 }
 
 // Authorize the dispatcher service account to call the error event broker.
 module "dispatcher-calls-error-broker" {
-  for_each = var.error_event_broker
+  for_each = var.error_event_ingress != null ? var.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.key
-  name       = each.value
+  name       = var.error_event_ingress.name
 
   service-account = google_service_account.dispatcher.email
-  version         = "1.0.3"
 }
 
 // Stand up the dispatcher service in each of our regions.
 module "dispatcher-service" {
-  source     = "chainguard-dev/common/infra//modules/regional-go-service"
+  source     = "../../../../public/terraform-infra-common/modules/regional-go-service"
   project_id = var.project_id
   name       = "${var.name}-dsp"
   regions    = var.regions
@@ -106,9 +104,9 @@ module "dispatcher-service" {
           name  = "WORKQUEUE_TARGET"
           value = { for k, v in module.dispatcher-calls-target : k => v.uri }
         },
-        ], length(var.error_event_broker) > 0 ? [
+        ], var.error_event_ingress != null ? [
         {
-          name  = "ERROR_EVENT_BROKER_URL"
+          name  = "ERROR_EVENT_INGRESS_URI"
           value = { for k, v in module.dispatcher-calls-error-broker : k => v.uri }
         },
       ] : [])
@@ -117,7 +115,6 @@ module "dispatcher-service" {
   }
 
   notification_channels = var.notification_channels
-  version               = "1.0.3"
 }
 
 // Compute a suffix that satisfies the regex:
@@ -141,7 +138,7 @@ resource "google_service_account" "cron-trigger" {
 module "cron-trigger-calls-dispatcher" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   depends_on = [module.dispatcher-service]
 
@@ -150,7 +147,6 @@ module "cron-trigger-calls-dispatcher" {
   name       = "${var.name}-dsp"
 
   service-account = google_service_account.cron-trigger.email
-  version         = "1.0.3"
 }
 
 resource "google_cloud_scheduler_job" "cron" {
@@ -217,7 +213,7 @@ resource "google_service_account_iam_binding" "allow-pubsub-to-mint-tokens" {
 module "change-trigger-calls-dispatcher" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   depends_on = [module.dispatcher-service]
 
@@ -226,7 +222,6 @@ module "change-trigger-calls-dispatcher" {
   name       = "${var.name}-dsp"
 
   service-account = google_service_account.change-trigger.email
-  version         = "1.0.3"
 }
 
 resource "google_pubsub_subscription" "global-this" {

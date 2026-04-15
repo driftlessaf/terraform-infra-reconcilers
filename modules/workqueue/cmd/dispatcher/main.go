@@ -39,9 +39,9 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	MaxRetry    int    `env:"WORKQUEUE_MAX_RETRY,default=0"` // 0 means unlimited retries
 
 	// Optional: emit dispatch errors as CloudEvents.
-	// When ErrorEventBrokerURL is empty, error events are disabled.
-	ErrorEventBrokerURL string `env:"ERROR_EVENT_BROKER_URL"`
-	WorkqueueName       string `env:"WORKQUEUE_NAME"`
+	// When ErrorEventIngressURI is empty, error events are disabled.
+	ErrorEventIngressURI string `env:"ERROR_EVENT_INGRESS_URI"`
+	WorkqueueName        string `env:"WORKQUEUE_NAME"`
 }{})
 
 func main() {
@@ -91,7 +91,7 @@ func main() {
 		Addr: fmt.Sprintf(":%d", env.Port),
 		Handler: h2c.NewHandler(gcp.WithCloudTraceContext(dispatcher.Handler(
 			wq, env.Concurrency, env.BatchSize, dispatcher.ServiceCallback(client), env.MaxRetry,
-			dispatcher.WithErrorBrokerURL(ctx, env.ErrorEventBrokerURL, env.WorkqueueName),
+			dispatcher.WithErrorIngressURI(ctx, env.ErrorEventIngressURI, env.WorkqueueName),
 		)), &http2.Server{}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}).ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
