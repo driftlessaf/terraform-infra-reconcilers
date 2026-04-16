@@ -40,7 +40,7 @@ module "dispatcher-calls-error-broker" {
 
   project_id = var.project_id
   region     = each.key
-  name       = try(var.error_event_ingress.name, "")
+  name       = var.error_event_ingress.name
 
   service-account = google_service_account.dispatcher.email
 }
