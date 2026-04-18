@@ -4,7 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 */
 
 module "push-listener" {
-  source = "chainguard-dev/common/infra//modules/regional-go-service"
+  source = "../../../../public/terraform-infra-common/modules/regional-go-service"
 
   name       = "${var.name}-push"
   project_id = var.project_id
@@ -50,27 +50,51 @@ module "push-listener" {
   labels                = var.labels
   product               = var.product
   team                  = var.team
-  version               = "1.0.4"
 }
 
-# Subscribe to push events for each (repo, region) pair
-module "push-subscription" {
-  for_each = var.paused ? {} : {
-    for pair in setproduct(keys(var.regions), var.repos) :
-    "${pair[1].owner}/${pair[1].repo}/${pair[0]}" => {
-      region = pair[0]
-      owner  = pair[1].owner
-      repo   = pair[1].repo
+locals {
+  # Subscription map for push triggers.
+  #
+  # When var.repos is non-empty, create one trigger per (repo, region) pair
+  # with a subject filter scoped to "owner/repo".
+  #
+  # When var.repos is empty (GitHub App installation mode — repos are
+  # determined by where the app is installed), create one trigger per region
+  # with no subject filter, so all pushes for every repo the app receives
+  # webhooks for reach the handler. The handler discovers per-repo config by
+  # fetching .{identity}.yaml at the pushed SHA. This mirrors the pattern in
+  # cloudevents-prs in the github-metapathreconciler module.
+  push_subscriptions = var.paused ? {} : (
+    length(var.repos) > 0 ? {
+      for pair in setproduct(keys(var.regions), var.repos) :
+      "${pair[1].owner}/${pair[1].repo}/${pair[0]}" => {
+        region  = pair[0]
+        subject = "${pair[1].owner}/${pair[1].repo}"
+      }
+      } : {
+      for region in keys(var.regions) :
+      region => {
+        region  = region
+        subject = null
+      }
     }
-  }
+  )
+}
 
-  source = "chainguard-dev/common/infra//modules/cloudevent-trigger"
+# Subscribe to push events. Shape depends on whether var.repos is set; see
+# local.push_subscriptions above.
+module "push-subscription" {
+  for_each = local.push_subscriptions
+
+  source = "../../../../public/terraform-infra-common/modules/cloudevent-trigger"
 
   name   = "${var.name}-push"
   broker = var.broker[each.value.region]
-  filter = {
+  filter = each.value.subject == null ? {
+    type = "dev.chainguard.github.push"
+    } : {
     type    = "dev.chainguard.github.push"
-    subject = "${each.value.owner}/${each.value.repo}"
+    subject = each.value.subject
   }
 
   private-service = {
@@ -86,5 +110,4 @@ module "push-subscription" {
   notification_channels = var.notification_channels
 
   depends_on = [module.push-listener]
-  version    = "1.0.4"
 }
