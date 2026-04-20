@@ -100,6 +100,7 @@ resource "google_vertex_ai_index_endpoint_deployed_index" "this" {
   index             = google_vertex_ai_index.this.id
   deployed_index_id = replace(var.name, "-", "_")
   display_name      = var.name
+  region            = var.region
 
   dedicated_resources {
     machine_spec {
@@ -108,6 +109,14 @@ resource "google_vertex_ai_index_endpoint_deployed_index" "this" {
     min_replica_count = var.min_replica_count
     max_replica_count = var.max_replica_count
   }
+
+  # Explicit region is required - project inherits from provider
+  # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/vertex_ai_index_endpoint_deployed_index
+
+  depends_on = [
+    google_vertex_ai_index_endpoint.this,
+    google_vertex_ai_index.this
+  ]
 }
 
 # ── IAM ─────────────────────────────────────────────────────────────────
