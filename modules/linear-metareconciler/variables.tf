@@ -70,13 +70,19 @@ variable "comment_filters" {
   description = <<EOD
 CloudEvents filters for selecting Linear comment events to process.
 
-Note: comment events do not have a team extension, so team-level filtering
-must be handled by the reconciler logic.
+Comment events carry a `team` extension extracted from the embedded issue
+URL by the linear-events trampoline, so they can be filtered by team the
+same way as issue events.
 
 Examples:
   # All comment events
   comment_filters = [
     { "type" = "dev.chainguard.linear.comment" }
+  ]
+
+  # Comment events from a specific team
+  comment_filters = [
+    { "type" = "dev.chainguard.linear.comment", "team" = "ENG" }
   ]
 EOD
   type        = list(map(string))
