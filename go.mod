@@ -5,7 +5,7 @@ go 1.25.7
 require (
 	chainguard.dev/driftlessaf v0.4.1
 	chainguard.dev/go-grpc-kit v0.17.17
-	cloud.google.com/go/storage v1.59.2
+	cloud.google.com/go/storage v1.62.1
 	github.com/chainguard-dev/clog v1.8.0
 	github.com/chainguard-dev/terraform-infra-common v0.10.4
 	github.com/cloudevents/sdk-go/v2 v2.16.2
@@ -25,9 +25,9 @@ require (
 	cloud.google.com/go/auth v0.20.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
-	cloud.google.com/go/iam v1.5.3 // indirect
+	cloud.google.com/go/iam v1.7.0 // indirect
 	cloud.google.com/go/kms v1.26.0 // indirect
-	cloud.google.com/go/longrunning v0.8.0 // indirect
+	cloud.google.com/go/longrunning v0.9.0 // indirect
 	cloud.google.com/go/monitoring v1.24.3 // indirect
 	cloud.google.com/go/profiler v0.4.3 // indirect
 	cloud.google.com/go/trace v1.11.7 // indirect
@@ -55,7 +55,7 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.14 // indirect
-	github.com/googleapis/gax-go/v2 v2.21.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.22.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.1.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
