@@ -20,7 +20,7 @@ require (
 
 require (
 	cel.dev/expr v0.25.1 // indirect
-	chainguard.dev/sdk v0.1.52 // indirect
+	chainguard.dev/sdk v0.1.54 // indirect
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/auth v0.20.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
