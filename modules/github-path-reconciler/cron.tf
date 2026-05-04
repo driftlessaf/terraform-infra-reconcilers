@@ -4,16 +4,17 @@ SPDX-License-Identifier: Apache-2.0
 */
 
 locals {
-  # Construct cron schedule from resync period:
-  # If < 24 hours, use "0 */N * * *" (every N hours)
-  # If >= 24 hours, use "0 0 */D * * *" (every D days)
-  cron_schedule = var.resync_period_hours < 24 ? "0 */${var.resync_period_hours} * * *" : "0 0 */${floor(var.resync_period_hours / 24)} * *"
-  # Period in minutes for time bucketing
-  period_minutes = var.resync_period_hours * 60
+  # The cron fires every resync_floor_hours; each firing enqueues only the
+  # shard of keys assigned to that tick of each repo's resync period.
+  cron_schedule = "0 */${var.resync_floor_hours} * * *"
+  # Tick (= shard size = floor) in minutes — the unit the resync sharder
+  # works in. Per-repo resync periods are sourced from var.repos and
+  # .{identity}.yaml.
+  tick_minutes = var.resync_floor_hours * 60
 }
 
 module "cron" {
-  source = "chainguard-dev/common/infra//modules/cron"
+  source = "../../../../public/terraform-infra-common/modules/cron"
 
   name       = "${var.name}-enq"
   project_id = var.project_id
@@ -31,7 +32,7 @@ module "cron" {
     OCTO_IDENTITY     = var.octo_sts_identity
     WORKQUEUE_ADDR    = module.authorize-receiver-per-region[var.primary-region].uri
     REPOS_CONFIG      = jsonencode(var.repos)
-    PERIOD_MINUTES    = tostring(local.period_minutes)
+    TICK_MINUTES      = tostring(local.tick_minutes)
     },
     var.github_app_id != 0 ? {
       GITHUB_APP_ID  = tostring(var.github_app_id)
@@ -52,5 +53,4 @@ module "cron" {
   labels                = var.labels
   team                  = var.team
   product               = var.product
-  version               = "1.0.4"
 }

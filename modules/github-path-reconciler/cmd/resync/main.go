@@ -7,8 +7,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/binary"
 	"fmt"
 	"net/http"
 	"os/signal"
@@ -23,6 +21,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"chainguard.dev/driftlessaf/reconcilers/githubreconciler"
+	"chainguard.dev/driftlessaf/reconcilers/resync"
 	"chainguard.dev/driftlessaf/workqueue"
 	"chainguard.dev/terraform-infra-reconcilers/modules/github-path-reconciler/internal/patterns"
 	"github.com/chainguard-dev/terraform-infra-common/pkg/httpmetrics"
@@ -47,8 +46,9 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	// AppID is non-zero, repos are discovered from the app's installations.
 	ReposConfig string `env:"REPOS_CONFIG,required"`
 
-	// Period in minutes for time bucketing
-	PeriodMinutes int `env:"PERIOD_MINUTES,required"`
+	// TickMinutes is the cron firing cadence (= shard size = floor for any
+	// per-repo resync period).
+	TickMinutes int `env:"TICK_MINUTES,required"`
 }{})
 
 func main() {
@@ -92,13 +92,18 @@ func main() {
 		appClient = app.Client()
 	}
 
+	tick := time.Duration(env.TickMinutes) * time.Minute
+	sharder, err := resync.New(tick, wqClient)
+	if err != nil {
+		clog.FatalContextf(ctx, "Failed to create resync sharder: %v", err)
+	}
+
 	handler := &cronHandler{
-		clientCache:   clientCache,
-		appClient:     appClient,
-		identity:      env.Identity,
-		wqClient:      wqClient,
-		repoConfigs:   repoConfigs,
-		periodMinutes: env.PeriodMinutes,
+		clientCache: clientCache,
+		appClient:   appClient,
+		identity:    env.Identity,
+		sharder:     sharder,
+		repoConfigs: repoConfigs,
 	}
 
 	clog.InfoContextf(ctx, "Starting cron run for %d explicit repositories", len(repoConfigs))
@@ -109,12 +114,11 @@ func main() {
 }
 
 type cronHandler struct {
-	clientCache   *githubreconciler.ClientCache
-	appClient     *github.Client // non-nil when repos are discovered from the app
-	identity      string
-	wqClient      workqueue.Client
-	repoConfigs   []patterns.RepoConfig
-	periodMinutes int
+	clientCache *githubreconciler.ClientCache
+	appClient   *github.Client // non-nil when repos are discovered from the app
+	identity    string
+	sharder     *resync.Sharder
+	repoConfigs []patterns.RepoConfig
 }
 
 func (h *cronHandler) run(ctx context.Context) error {
@@ -238,9 +242,7 @@ func (h *cronHandler) fetchRepoConfig(ctx context.Context, owner, repo, ref stri
 }
 
 func (h *cronHandler) runRepo(ctx context.Context, cfg patterns.RepoConfig) error {
-	runTimestamp := time.Now().Unix()
-
-	ctx = clog.WithValues(ctx, "owner", cfg.Owner, "repo", cfg.Repo)
+	ctx = clog.WithValues(ctx, "owner", cfg.Owner, "repo", cfg.Repo, "period", cfg.Period)
 	clog.InfoContextf(ctx, "Starting resync")
 
 	ghClient, err := h.clientCache.Get(ctx, cfg.Owner, cfg.Repo)
@@ -273,45 +275,11 @@ func (h *cronHandler) runRepo(ctx context.Context, cfg patterns.RepoConfig) erro
 		}
 	}
 
-	// Enqueue all unique keys with their computed delays
-	eg, egCtx := errgroup.WithContext(ctx)
-	for url := range keySet {
-		eg.Go(func() error {
-			delay := h.computeDelay(url, runTimestamp)
-			_, err := h.wqClient.Process(egCtx, &workqueue.ProcessRequest{
-				Key:          url,
-				Priority:     0,
-				DelaySeconds: int64(delay.Seconds()),
-			})
-			if err != nil {
-				clog.ErrorContextf(egCtx, "Failed to process key %q: %v", url, err)
-				return err
-			}
-			clog.InfoContextf(egCtx, "Enqueued %q with delay %v", url, delay)
-			return nil
-		})
+	if err := h.sharder.Process(ctx, cfg.Period, keySet); err != nil {
+		return fmt.Errorf("enqueue resync shard for %s/%s: %w", cfg.Owner, cfg.Repo, err)
 	}
-
-	if err := eg.Wait(); err != nil {
-		return fmt.Errorf("failed to enqueue keys for %s/%s: %w", cfg.Owner, cfg.Repo, err)
-	}
-
-	clog.InfoContextf(ctx, "Enqueued %d keys", len(keySet))
+	clog.InfoContextf(ctx, "Considered %d keys for resync", len(keySet))
 	return nil
-}
-
-func (h *cronHandler) computeDelay(key string, runTimestamp int64) time.Duration {
-	// Hash the key + timestamp to get a consistent bucket.
-	// We include runTimestamp in the hash so that we don't end up with the same
-	// key ordering every single time things run.
-	hashInput := fmt.Sprintf("%s-%d", key, runTimestamp)
-	hash := sha256.Sum256([]byte(hashInput))
-	hashValue := binary.BigEndian.Uint64(hash[:8])
-
-	// Compute bucket (periodMinutes is validated to be 60-1440, so conversion is safe)
-	bucket := int(hashValue % uint64(h.periodMinutes)) //nolint:gosec // G115: periodMinutes validated range
-
-	return time.Duration(bucket) * time.Minute
 }
 
 func buildClientCache(app *githubreconciler.App) *githubreconciler.ClientCache {

@@ -174,12 +174,13 @@ variable "product" {
 # Path reconciler variables
 
 variable "repos" {
-  description = "Repositories to watch, each with their own path patterns."
+  description = "Repositories to watch, each with their own path patterns and resync period."
   type = list(object({
-    owner            = string
-    repo             = string
-    path_patterns    = list(string)
-    exclude_patterns = optional(list(string), [])
+    owner               = string
+    repo                = string
+    path_patterns       = list(string)
+    exclude_patterns    = optional(list(string), [])
+    resync_period_hours = number
   }))
 }
 
@@ -208,9 +209,10 @@ variable "github_app_key" {
   }
 }
 
-variable "resync_period_hours" {
-  description = "How often to resync all paths (in hours)"
+variable "resync_floor_hours" {
+  description = "Cron firing cadence and shard size, in hours. This is the minimum granularity for any per-repo resync_period_hours."
   type        = number
+  default     = 1
 }
 
 variable "paused" {

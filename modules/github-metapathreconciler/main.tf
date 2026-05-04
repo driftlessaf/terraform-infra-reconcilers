@@ -35,7 +35,7 @@ module "reconciler" {
   github_app_id     = var.github_app_id
   github_app_key    = var.github_app_key
 
-  resync_period_hours = var.resync_period_hours
+  resync_floor_hours  = var.resync_floor_hours
   broker              = var.broker
   paused              = var.paused
   error_event_ingress = var.error_event_ingress

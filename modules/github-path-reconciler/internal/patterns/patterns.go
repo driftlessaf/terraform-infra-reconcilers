@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -20,6 +21,9 @@ type RepoConfig struct {
 	Repo            string
 	Patterns        []*regexp.Regexp
 	ExcludePatterns []*regexp.Regexp
+	// Period is the per-repo resync period. Required; every repo declares
+	// its own value either in its REPOS_CONFIG entry or in .{identity}.yaml.
+	Period time.Duration
 }
 
 // MatchPath returns the first captured key from path, or "" if the path is
@@ -40,10 +44,11 @@ func (r *RepoConfig) MatchPath(path string) string {
 
 // repoConfigJSON is the JSON wire format for a single repo entry in REPOS_CONFIG.
 type repoConfigJSON struct {
-	Owner           string   `json:"owner"`
-	Repo            string   `json:"repo"`
-	PathPatterns    []string `json:"path_patterns"`
-	ExcludePatterns []string `json:"exclude_patterns,omitempty"`
+	Owner             string   `json:"owner"`
+	Repo              string   `json:"repo"`
+	PathPatterns      []string `json:"path_patterns"`
+	ExcludePatterns   []string `json:"exclude_patterns,omitempty"`
+	ResyncPeriodHours int      `json:"resync_period_hours"`
 }
 
 // ParseRepoConfigs parses a JSON array of repo config objects (the REPOS_CONFIG env var)
@@ -72,11 +77,16 @@ func ParseRepoConfigs(configStr string) ([]RepoConfig, error) {
 		if err != nil {
 			return nil, fmt.Errorf("repo %s/%s exclude_patterns: %w", r.Owner, r.Repo, err)
 		}
+		period, err := periodFromHours(r.ResyncPeriodHours)
+		if err != nil {
+			return nil, fmt.Errorf("repo %s/%s: %w", r.Owner, r.Repo, err)
+		}
 		configs = append(configs, RepoConfig{
 			Owner:           r.Owner,
 			Repo:            r.Repo,
 			Patterns:        pats,
 			ExcludePatterns: excludePats,
+			Period:          period,
 		})
 	}
 	return configs, nil
@@ -97,8 +107,9 @@ func Parse(patternsStr string) ([]*regexp.Regexp, error) {
 // repoConfigFile is the YAML format of the per-repo config file
 // (e.g. .skillup.yaml or .moore-door.yaml).
 type repoConfigFile struct {
-	PathPatterns    []string `yaml:"path_patterns"`
-	ExcludePatterns []string `yaml:"exclude_patterns"`
+	PathPatterns      []string `yaml:"path_patterns"`
+	ExcludePatterns   []string `yaml:"exclude_patterns"`
+	ResyncPeriodHours int      `yaml:"resync_period_hours"`
 }
 
 // ParseRepoConfigFile parses the content of a .{identity}.yaml repo config
@@ -120,7 +131,20 @@ func ParseRepoConfigFile(content []byte, owner, repo string) (RepoConfig, error)
 	if err != nil {
 		return RepoConfig{}, fmt.Errorf("%s/%s exclude_patterns: %w", owner, repo, err)
 	}
-	return RepoConfig{Owner: owner, Repo: repo, Patterns: pats, ExcludePatterns: excludePats}, nil
+	period, err := periodFromHours(raw.ResyncPeriodHours)
+	if err != nil {
+		return RepoConfig{}, fmt.Errorf("%s/%s: %w", owner, repo, err)
+	}
+	return RepoConfig{Owner: owner, Repo: repo, Patterns: pats, ExcludePatterns: excludePats, Period: period}, nil
+}
+
+// periodFromHours converts a positive hour count to a Duration. Zero or
+// negative is rejected — every repo must declare a resync period.
+func periodFromHours(hours int) (time.Duration, error) {
+	if hours <= 0 {
+		return 0, fmt.Errorf("resync_period_hours must be positive, got %d", hours)
+	}
+	return time.Duration(hours) * time.Hour, nil
 }
 
 func compilePatterns(patternStrings []string) ([]*regexp.Regexp, error) {

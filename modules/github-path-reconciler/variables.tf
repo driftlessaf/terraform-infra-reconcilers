@@ -280,7 +280,7 @@ variable "slo" {
 # New variables for github-path-reconciler
 
 variable "repos" {
-  description = "Repositories to watch, each with their own path patterns."
+  description = "Repositories to watch, each with their own path patterns and resync period."
   type = list(object({
     owner         = string
     repo          = string
@@ -291,15 +291,24 @@ variable "repos" {
     # (e.g. "testdata/fixture.go") since ^ requires a prefix before the first /.
     # To also exclude root-level testdata, use "(testdata/.*|.*/testdata/.*)".
     exclude_patterns = optional(list(string), [])
+    # resync_period_hours: how often this repo's matched paths are reconciled
+    # by the resync cron. Must be a positive multiple of resync_floor_hours
+    # and at most 744 (31 days).
+    resync_period_hours = number
   }))
+  validation {
+    condition     = alltrue([for r in var.repos : r.resync_period_hours >= 1 && r.resync_period_hours <= 744 && r.resync_period_hours % var.resync_floor_hours == 0])
+    error_message = "Each repo's resync_period_hours must be between 1 and 744 and a positive multiple of resync_floor_hours."
+  }
 }
 
-variable "resync_period_hours" {
-  description = "How often to resync all paths (in hours, must be between 1 and 744 (31 days), and a multiple of 24 if greater than 24)"
+variable "resync_floor_hours" {
+  description = "Cron firing cadence and shard size, in hours. This is the minimum granularity for any per-repo resync_period_hours; all per-repo periods must be a positive multiple of this value."
   type        = number
+  default     = 1
   validation {
-    condition     = var.resync_period_hours >= 1 && var.resync_period_hours <= 744 && (var.resync_period_hours < 24 || var.resync_period_hours % 24 == 0)
-    error_message = "resync_period_hours must be between 1 and 744 hours, and if greater than 24, must be a multiple of 24."
+    condition     = var.resync_floor_hours >= 1 && var.resync_floor_hours <= 24 && 24 % var.resync_floor_hours == 0
+    error_message = "resync_floor_hours must be between 1 and 24 hours and divide 24 evenly."
   }
 }
 

@@ -8,6 +8,7 @@ package patterns
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestParse(t *testing.T) {
@@ -260,13 +261,18 @@ func TestParseRepoConfigs(t *testing.T) {
 		wantErr:     true,
 		errContains: "chainguard-dev/wolfi-os",
 	}, {
+		name:        "missing resync_period_hours",
+		input:       `[{"owner":"chainguard-dev","repo":"wolfi-os","path_patterns":["(.+)"]}]`,
+		wantErr:     true,
+		errContains: "must be positive",
+	}, {
 		name:       "single repo",
-		input:      `[{"owner":"chainguard-dev","repo":"wolfi-os","path_patterns":["(packages/.+\\.yaml)"]}]`,
+		input:      `[{"owner":"chainguard-dev","repo":"wolfi-os","path_patterns":["(packages/.+\\.yaml)"],"resync_period_hours":24}]`,
 		wantOwners: []string{"chainguard-dev"},
 		wantRepos:  []string{"wolfi-os"},
 	}, {
 		name:       "multiple repos",
-		input:      `[{"owner":"chainguard-dev","repo":"wolfi-os","path_patterns":["(packages/.+\\.yaml)"]},{"owner":"chainguard-images","repo":"images-private","path_patterns":["(images/[^/]+)/.*"]}]`,
+		input:      `[{"owner":"chainguard-dev","repo":"wolfi-os","path_patterns":["(packages/.+\\.yaml)"],"resync_period_hours":24},{"owner":"chainguard-images","repo":"images-private","path_patterns":["(images/[^/]+)/.*"],"resync_period_hours":168}]`,
 		wantOwners: []string{"chainguard-dev", "chainguard-images"},
 		wantRepos:  []string{"wolfi-os", "images-private"},
 	}}
@@ -307,7 +313,7 @@ func TestParseRepoConfigs(t *testing.T) {
 }
 
 func TestRepoConfigMatchPath(t *testing.T) {
-	configs, err := ParseRepoConfigs(`[{"owner":"chainguard-dev","repo":"wolfi-os","path_patterns":["(packages/.+\\.yaml)"]}]`)
+	configs, err := ParseRepoConfigs(`[{"owner":"chainguard-dev","repo":"wolfi-os","path_patterns":["(packages/.+\\.yaml)"],"resync_period_hours":24}]`)
 	if err != nil {
 		t.Fatalf("ParseRepoConfigs() unexpected error: %v", err)
 	}
@@ -341,7 +347,7 @@ func TestRepoConfigMatchPath(t *testing.T) {
 }
 
 func TestRepoConfigMatchPathWithExcludes(t *testing.T) {
-	configs, err := ParseRepoConfigs(`[{"owner":"chainguard-dev","repo":"mono","path_patterns":["(.*)/[^/]+"],"exclude_patterns":[".*/testdata/.*"]}]`)
+	configs, err := ParseRepoConfigs(`[{"owner":"chainguard-dev","repo":"mono","path_patterns":["(.*)/[^/]+"],"exclude_patterns":[".*/testdata/.*"],"resync_period_hours":24}]`)
 	if err != nil {
 		t.Fatalf("ParseRepoConfigs() unexpected error: %v", err)
 	}
@@ -375,12 +381,106 @@ func TestRepoConfigMatchPathWithExcludes(t *testing.T) {
 }
 
 func TestParseRepoConfigsInvalidExcludePattern(t *testing.T) {
-	_, err := ParseRepoConfigs(`[{"owner":"chainguard-dev","repo":"mono","path_patterns":["(.*)"],"exclude_patterns":["(invalid["]}]`)
+	_, err := ParseRepoConfigs(`[{"owner":"chainguard-dev","repo":"mono","path_patterns":["(.*)"],"exclude_patterns":["(invalid["],"resync_period_hours":24}]`)
 	if err == nil {
 		t.Fatal("ParseRepoConfigs() expected error for invalid exclude pattern, got nil")
 	}
 	if !strings.Contains(err.Error(), "exclude_patterns") {
 		t.Errorf("error should mention exclude_patterns, got: %v", err)
+	}
+}
+
+func TestParseRepoConfigsResyncPeriod(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		wantErr     bool
+		errContains string
+		wantPeriod  time.Duration
+	}{{
+		name:        "missing period rejected",
+		input:       `[{"owner":"o","repo":"r","path_patterns":["(.+)"]}]`,
+		wantErr:     true,
+		errContains: "must be positive",
+	}, {
+		name:       "explicit period in hours",
+		input:      `[{"owner":"o","repo":"r","path_patterns":["(.+)"],"resync_period_hours":24}]`,
+		wantPeriod: 24 * time.Hour,
+	}, {
+		name:       "small period",
+		input:      `[{"owner":"o","repo":"r","path_patterns":["(.+)"],"resync_period_hours":1}]`,
+		wantPeriod: time.Hour,
+	}, {
+		name:        "negative period rejected",
+		input:       `[{"owner":"o","repo":"r","path_patterns":["(.+)"],"resync_period_hours":-1}]`,
+		wantErr:     true,
+		errContains: "must be positive",
+	}}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfgs, err := ParseRepoConfigs(tc.input)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("ParseRepoConfigs: got = nil, want error")
+				}
+				if tc.errContains != "" && !strings.Contains(err.Error(), tc.errContains) {
+					t.Errorf("error: got = %q, want containing %q", err.Error(), tc.errContains)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ParseRepoConfigs: unexpected error %v", err)
+			}
+			if len(cfgs) != 1 {
+				t.Fatalf("len(cfgs): got = %d, want 1", len(cfgs))
+			}
+			if cfgs[0].Period != tc.wantPeriod {
+				t.Errorf("Period: got = %v, want %v", cfgs[0].Period, tc.wantPeriod)
+			}
+		})
+	}
+}
+
+func TestParseRepoConfigFileResyncPeriod(t *testing.T) {
+	tests := []struct {
+		name       string
+		content    string
+		wantPeriod time.Duration
+		wantErr    bool
+	}{{
+		name: "missing period rejected",
+		content: `path_patterns:
+  - "(.+)"`,
+		wantErr: true,
+	}, {
+		name: "explicit period",
+		content: `path_patterns:
+  - "(.+)"
+resync_period_hours: 168`,
+		wantPeriod: 168 * time.Hour,
+	}, {
+		name: "negative period",
+		content: `path_patterns:
+  - "(.+)"
+resync_period_hours: -5`,
+		wantErr: true,
+	}}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := ParseRepoConfigFile([]byte(tc.content), "o", "r")
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("ParseRepoConfigFile: got = nil, want error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ParseRepoConfigFile: unexpected error %v", err)
+			}
+			if cfg.Period != tc.wantPeriod {
+				t.Errorf("Period: got = %v, want %v", cfg.Period, tc.wantPeriod)
+			}
+		})
 	}
 }
 
@@ -390,6 +490,7 @@ path_patterns:
   - "(bots/[^/]+)/.*\\.go"
 exclude_patterns:
   - ".*/testdata/.*"
+resync_period_hours: 24
 `)
 	cfg, err := ParseRepoConfigFile(content, "chainguard-dev", "mono")
 	if err != nil {

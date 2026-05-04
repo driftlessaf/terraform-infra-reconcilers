@@ -35,8 +35,8 @@ func ExampleParse() {
 
 func ExampleParseRepoConfigs() {
 	const configJSON = `[
-		{"owner":"chainguard-dev","repo":"wolfi-os","path_patterns":["(packages/.+\\.yaml)"]},
-		{"owner":"chainguard-images","repo":"images","path_patterns":["(images/[^/]+/.+)"]}
+		{"owner":"chainguard-dev","repo":"wolfi-os","path_patterns":["(packages/.+\\.yaml)"],"resync_period_hours":24},
+		{"owner":"chainguard-images","repo":"images","path_patterns":["(images/[^/]+/.+)"],"resync_period_hours":168}
 	]`
 
 	configs, err := patterns.ParseRepoConfigs(configJSON)
@@ -58,6 +58,7 @@ func ExampleParseRepoConfigFile() {
 path_patterns:
   - "(modules/.+\\.tf)"
   - "(scripts/.+)"
+resync_period_hours: 24
 `)
 
 	cfg, err := patterns.ParseRepoConfigFile(content, "chainguard-dev", "mono")
@@ -75,6 +76,7 @@ func ExampleRepoConfig_MatchPath() {
 	cfg, err := patterns.ParseRepoConfigFile([]byte(`
 path_patterns:
   - "(packages/.+\\.yaml)"
+resync_period_hours: 24
 `), "chainguard-dev", "wolfi-os")
 	if err != nil {
 		fmt.Println("error:", err)
