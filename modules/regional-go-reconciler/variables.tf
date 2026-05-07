@@ -105,7 +105,8 @@ variable "containers" {
       importpath  = string
       env         = optional(list(string), [])
     })
-    args = optional(list(string), [])
+    command = optional(list(string), [])
+    args    = optional(list(string), [])
     ports = optional(list(object({
       name           = optional(string, "h2c")
       container_port = number
