@@ -89,6 +89,25 @@ EOD
   default     = []
 }
 
+variable "comment_skip_authors" {
+  description = <<EOD
+Linear user UUIDs whose comments should NOT trigger reconciliation.
+
+Useful for ignoring comments from automation bots that post to issues
+without expecting the reconciler to act (e.g. an issue-sizing bot whose
+comments are conversational, not directives). The trampoline emits the
+comment author as the `authorid` CloudEvent extension; each entry here
+becomes a `NOT attributes.ce-authorid="<uuid>"` clause AND-composed with
+`comment_filters`, so matching events are filtered out at the PubSub
+subscription layer — the reconciler service is never invoked.
+
+Look up Linear user UUIDs via the GraphQL API or the Linear admin UI;
+display names are not used because they can drift if a user renames.
+EOD
+  type        = list(string)
+  default     = []
+}
+
 variable "containers" {
   description = "The containers to run in the service."
   type = map(object({

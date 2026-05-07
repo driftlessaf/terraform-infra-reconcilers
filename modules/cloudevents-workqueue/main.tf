@@ -95,6 +95,7 @@ module "trigger" {
   // Pass the filter and ensure extension key exists
   filter                = each.value.filter
   filter_has_attributes = [var.extension_key]
+  filter_not            = var.filter_not
 
   notification_channels = var.notification_channels
 

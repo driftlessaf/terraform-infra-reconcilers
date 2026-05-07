@@ -52,6 +52,27 @@ EOD
   default     = []
 }
 
+variable "filter_not" {
+  description = <<EOD
+Negative-equality clauses AND-composed with each per-trigger positive
+filter from `filters` (i.e. layered on top of every trigger this module
+creates, not a separate trigger of their own). Each entry produces a
+`NOT attributes.ce-<key>="<value>"` clause. Use a list (not a map) so
+the same key can appear multiple times — e.g. to skip events from
+several authors:
+
+  filter_not = [
+    { key = "authorid", value = "user-uuid-1" },
+    { key = "authorid", value = "user-uuid-2" },
+  ]
+EOD
+  type = list(object({
+    key   = string
+    value = string
+  }))
+  default = []
+}
+
 variable "extension_key" {
   description = "The CloudEvent extension attribute to use as the workqueue key (e.g., pullrequesturl or issueurl)"
   type        = string

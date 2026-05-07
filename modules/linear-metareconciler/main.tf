@@ -68,6 +68,9 @@ module "cloudevents-comments" {
 
   broker  = var.broker
   filters = var.comment_filters
+  filter_not = [
+    for id in var.comment_skip_authors : { key = "authorid", value = id }
+  ]
 
   # Comments use the parent issue UUID as the workqueue key
   extension_key = "issueid"
