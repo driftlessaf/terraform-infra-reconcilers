@@ -148,6 +148,7 @@ No resources.
 | <a name="input_enable_profiler"></a> [enable\_profiler](#input\_enable\_profiler) | Enable continuous profiling for the service.  This has a small performance impact, which shouldn't matter for production services. | `bool` | `true` | no |
 | <a name="input_execution_environment"></a> [execution\_environment](#input\_execution\_environment) | The execution environment for the service (options: EXECUTION\_ENVIRONMENT\_GEN1, EXECUTION\_ENVIRONMENT\_GEN2). | `string` | `"EXECUTION_ENVIRONMENT_GEN2"` | no |
 | <a name="input_labels"></a> [labels](#input\_labels) | Additional labels to add to all resources. | `map(string)` | `{}` | no |
+| <a name="input_launch_stage"></a> [launch\_stage](#input\_launch\_stage) | The launch stage of the Cloud Run service (e.g. BETA to leverage features like disk volumes). | `string` | `"GA"` | no |
 | <a name="input_max-retry"></a> [max-retry](#input\_max-retry) | The maximum number of times a task will be retried before being moved to the dead-letter queue. Set to 0 for unlimited retries. | `number` | `100` | no |
 | <a name="input_multi_regional_location"></a> [multi\_regional\_location](#input\_multi\_regional\_location) | The multi-regional location for the global workqueue bucket. Options: US, EU, ASIA. | `string` | `"US"` | no |
 | <a name="input_name"></a> [name](#input\_name) | n/a | `string` | n/a | yes |

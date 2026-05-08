@@ -24,6 +24,7 @@ module "reconciler" {
   containers = var.containers
 
   request_timeout_seconds = var.request_timeout_seconds
+  launch_stage            = var.launch_stage
 
   notification_channels       = var.notification_channels
   deletion_protection         = var.deletion_protection

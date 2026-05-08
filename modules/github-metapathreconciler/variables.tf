@@ -248,3 +248,9 @@ variable "dashboard_alerts" {
   type        = any
   default     = {}
 }
+
+variable "launch_stage" {
+  description = "The launch stage of the Cloud Run service (e.g. BETA to leverage features like disk volumes)."
+  type        = string
+  default     = "GA"
+}
