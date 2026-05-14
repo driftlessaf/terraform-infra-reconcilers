@@ -6,7 +6,7 @@ variable "name" {
 variable "max_retry" {
   description = "The maximum number of retry attempts before a task is moved to the dead letter queue"
   type        = number
-  default     = 100
+  default     = 20
 }
 
 variable "concurrent_work" {

@@ -116,7 +116,7 @@ module "my-reconciler" {
 
   # Workqueue configuration
   concurrent-work = 20  # Process 20 keys concurrently
-  max-retry       = 100 # Move to DLQ after 100 failures
+  max-retry       = 20 # Move to DLQ after 20 failures
 
   notification_channels = var.notification_channels
 }
@@ -344,7 +344,7 @@ module "workqueue-dashboard" {
   version = "~> 1.0"
 
   name            = "my-reconciler"
-  max_retry       = 100
+  max_retry       = 20
   concurrent_work = 20
   scope           = "global"
 }

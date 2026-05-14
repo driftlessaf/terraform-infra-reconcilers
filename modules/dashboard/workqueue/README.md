@@ -51,18 +51,6 @@ No requirements.
 
 No providers.
 
-## Modules
-
-| Name | Source | Version |
-|------|--------|---------|
-| <a name="module_alerts"></a> [alerts](#module\_alerts) | ../sections/alerts | n/a |
-| <a name="module_dashboard"></a> [dashboard](#module\_dashboard) | ../ | n/a |
-| <a name="module_dispatcher-logs"></a> [dispatcher-logs](#module\_dispatcher-logs) | ../sections/logs | n/a |
-| <a name="module_layout"></a> [layout](#module\_layout) | ../sections/layout | n/a |
-| <a name="module_receiver-logs"></a> [receiver-logs](#module\_receiver-logs) | ../sections/logs | n/a |
-| <a name="module_width"></a> [width](#module\_width) | ../sections/width | n/a |
-| <a name="module_workqueue-state"></a> [workqueue-state](#module\_workqueue-state) | ../sections/workqueue | n/a |
-
 ## Resources
 
 No resources.
@@ -74,7 +62,7 @@ No resources.
 | <a name="input_alerts"></a> [alerts](#input\_alerts) | A mapping from alerting policy names to the alert ids to add to the dashboard | `map(string)` | `{}` | no |
 | <a name="input_concurrent_work"></a> [concurrent\_work](#input\_concurrent\_work) | The amount of concurrent work to dispatch at a given time | `number` | n/a | yes |
 | <a name="input_labels"></a> [labels](#input\_labels) | Additional labels to apply to the dashboard | `map(string)` | `{}` | no |
-| <a name="input_max_retry"></a> [max\_retry](#input\_max\_retry) | The maximum number of retry attempts before a task is moved to the dead letter queue | `number` | `100` | no |
+| <a name="input_max_retry"></a> [max\_retry](#input\_max\_retry) | The maximum number of retry attempts before a task is moved to the dead letter queue | `number` | `20` | no |
 | <a name="input_name"></a> [name](#input\_name) | Name of the workqueue | `string` | n/a | yes |
 | <a name="input_shards"></a> [shards](#input\_shards) | Number of workqueue shards. When > 1, dashboard shows per-shard metrics. | `number` | `1` | no |
 

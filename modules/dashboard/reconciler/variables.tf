@@ -29,7 +29,7 @@ variable "workqueue_name" {
 variable "max_retry" {
   description = "The maximum number of retry attempts for workqueue tasks"
   type        = number
-  default     = 100
+  default     = 20
 }
 
 variable "concurrent_work" {

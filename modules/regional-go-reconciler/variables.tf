@@ -39,9 +39,9 @@ variable "shards" {
 }
 
 variable "max-retry" {
-  description = "The maximum number of times a task will be retried before being moved to the dead-letter queue. Set to 0 for unlimited retries."
+  description = "The maximum number of times a task will be retried before being moved to the dead-letter queue. Set to 0 for unlimited retries. Defaults to null so the inner workqueue module's default applies."
   type        = number
-  default     = 100
+  default     = null
 }
 
 variable "enable_dead_letter_alerting" {
