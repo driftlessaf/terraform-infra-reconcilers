@@ -44,6 +44,7 @@ variable "batch-size" {
 variable "max-retry" {
   description = "The maximum number of retry attempts before a task is moved to the dead letter queue."
   type        = number
+  nullable    = false
   default     = 20
 }
 
