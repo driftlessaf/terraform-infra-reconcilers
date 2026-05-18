@@ -236,7 +236,7 @@ variable "regional-volumes" {
 variable "enable_profiler" {
   description = "Enable continuous profiling for the service.  This has a small performance impact, which shouldn't matter for production services."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "otel_resources" {
