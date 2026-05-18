@@ -1,14 +1,14 @@
 output "receiver" {
   depends_on = [module.receiver-service]
   value = {
-    name = "${var.name}-rcv"
+    name = local.receiver_service_name
   }
 }
 
 output "dispatcher" {
   depends_on = [module.dispatcher-service]
   value = {
-    name = "${var.name}-dsp"
+    name = local.dispatcher_service_name
   }
 }
 

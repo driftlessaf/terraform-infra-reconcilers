@@ -8,24 +8,24 @@ resource "random_string" "receiver" {
 
 // Create a dedicated GSA for the receiver service.
 resource "google_service_account" "receiver" {
-  project = var.project_id
+  project = local.project_id
 
   account_id   = "${local.sa_prefix}${random_string.receiver.result}"
   display_name = "Workqueue Receiver"
-  description  = "The identity as which the workqueue receiver service runs for the ${var.name} workqueue."
+  description  = "The identity as which the workqueue receiver service runs for the ${local.name} workqueue."
 }
 
 // Stand up the receiver service in each of our regions.
 module "receiver-service" {
-  source     = "chainguard-dev/common/infra//modules/regional-go-service"
-  project_id = var.project_id
-  name       = "${var.name}-rcv"
-  regions    = var.regions
-  labels     = merge({ "service" : "workqueue-receiver" }, local.default_labels)
-  team       = var.team
-  product    = var.product
+  source     = "../../../../public/terraform-infra-common/modules/regional-go-service"
+  project_id = local.project_id
+  name       = local.receiver_service_name
+  regions    = local.regions
+  labels     = merge({ "service" : "workqueue-receiver" }, local.merged_labels)
+  team       = local.team
+  product    = local.product
 
-  deletion_protection = var.deletion_protection
+  deletion_protection = local.deletion_protection
 
   service_account = google_service_account.receiver.email
   containers = {
@@ -49,22 +49,21 @@ module "receiver-service" {
         {
           # The receiver doesn't use this, but the workqueue constructor wants it.
           name  = "WORKQUEUE_CONCURRENCY"
-          value = "${var.concurrent-work}"
+          value = "${local.concurrent_work}"
         },
       ]
       regional-env = [
         {
           name = "WORKQUEUE_BUCKET"
           value = {
-            for k, v in var.regions : k => google_storage_bucket.global-workqueue.name
+            for k, v in local.regions : k => google_storage_bucket.global-workqueue.name
           }
         },
       ]
-      regional-cpu-idle = lookup(var.cpu_idle, "receiver", {})
+      regional-cpu-idle = lookup(local.cpu_idle, "receiver", {})
     }
   }
 
-  ingress               = var.receiver_ingress
-  notification_channels = var.notification_channels
-  version               = "1.0.8"
+  ingress               = local.receiver_ingress
+  notification_channels = local.notification_channels
 }

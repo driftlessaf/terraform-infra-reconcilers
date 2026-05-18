@@ -1,8 +1,8 @@
 resource "google_monitoring_alert_policy" "dead_letter_queue" {
-  count = var.max-retry > 0 && var.enable_dead_letter_alerting ? 1 : 0
+  count = local.max_retry > 0 && local.enable_dead_letter_alerting ? 1 : 0
 
-  project      = var.project_id
-  display_name = "Workqueue dead-lettered keys ${var.name}"
+  project      = local.project_id
+  display_name = "Workqueue dead-lettered keys ${local.name}"
   combiner     = "OR"
   severity     = "ERROR"
 
@@ -11,7 +11,7 @@ resource "google_monitoring_alert_policy" "dead_letter_queue" {
   }
 
   conditions {
-    display_name = "Workqueue dead-letter queue ${var.name}"
+    display_name = "Workqueue dead-letter queue ${local.name}"
 
     condition_threshold {
       comparison      = "COMPARISON_GT"
@@ -21,7 +21,7 @@ resource "google_monitoring_alert_policy" "dead_letter_queue" {
       filter = <<EOT
         resource.type = "prometheus_target"
         AND metric.type = "prometheus.googleapis.com/workqueue_dead_lettered_keys/gauge"
-        AND metric.label."service_name" = "${var.name}-dsp"
+        AND metric.label."service_name" = "${local.dispatcher_service_name}"
       EOT
 
       aggregations {
@@ -37,9 +37,9 @@ resource "google_monitoring_alert_policy" "dead_letter_queue" {
   }
 
   documentation {
-    subject = "Workqueue ${var.name} has dead-lettered keys"
-    content = "${var.name}-dsp has dead-lettered keys above threshold. Investigate and drain the dead-letter queue."
+    subject = "Workqueue ${local.name} has dead-lettered keys"
+    content = "${local.dispatcher_service_name} has dead-lettered keys above threshold. Investigate and drain the dead-letter queue."
   }
 
-  notification_channels = var.notification_channels
+  notification_channels = local.notification_channels
 }

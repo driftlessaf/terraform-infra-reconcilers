@@ -1,10 +1,6 @@
 # Dead-letter reenqueue Cloud Run Job
 # This job allows manual reenqueuing of dead-lettered workqueue items.
 
-locals {
-  reenqueue_region = coalesce(var.primary-region, keys(var.regions)[0])
-}
-
 // Compute a suffix that satisfies the regex:
 // ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$
 resource "random_string" "reenqueue" {
@@ -15,11 +11,11 @@ resource "random_string" "reenqueue" {
 
 // Create a dedicated GSA for the reenqueue job.
 resource "google_service_account" "reenqueue" {
-  project = var.project_id
+  project = local.project_id
 
   account_id   = "${local.sa_prefix}${random_string.reenqueue.result}"
   display_name = "Workqueue Reenqueue Job"
-  description  = "The identity as which the workqueue reenqueue job runs for the ${var.name} workqueue."
+  description  = "The identity as which the workqueue reenqueue job runs for the ${local.name} workqueue."
 }
 
 // Authorize the reenqueue service account to read/write the bucket (for Enumerate and Queue)
@@ -31,10 +27,10 @@ resource "google_storage_bucket_iam_member" "reenqueue-bucket-access" {
 
 // The reenqueue cron job (paused by default, for manual invocation)
 module "reenqueue" {
-  source = "chainguard-dev/common/infra//modules/cron"
+  source = "../../../../public/terraform-infra-common/modules/cron"
 
-  project_id      = var.project_id
-  name            = "${var.name}-req"
+  project_id      = local.project_id
+  name            = local.reenqueue_job_name
   region          = local.reenqueue_region
   service_account = google_service_account.reenqueue.email
 
@@ -48,21 +44,20 @@ module "reenqueue" {
   env = {
     "WORKQUEUE_MODE"        = "gcs"
     "WORKQUEUE_BUCKET"      = google_storage_bucket.global-workqueue.name
-    "WORKQUEUE_CONCURRENCY" = var.concurrent-work
+    "WORKQUEUE_CONCURRENCY" = local.concurrent_work
   }
 
   # VPC access using the reenqueue region's network configuration
   vpc_access = {
     network_interfaces = [{
-      network    = var.regions[local.reenqueue_region].network
-      subnetwork = var.regions[local.reenqueue_region].subnet
+      network    = local.regions[local.reenqueue_region].network
+      subnetwork = local.regions[local.reenqueue_region].subnet
     }]
     egress = "ALL_TRAFFIC" // This should not egress
   }
 
-  team                  = var.team
-  product               = var.product
-  notification_channels = var.notification_channels
-  deletion_protection   = var.deletion_protection
-  version               = "1.0.8"
+  team                  = local.team
+  product               = local.product
+  notification_channels = local.notification_channels
+  deletion_protection   = local.deletion_protection
 }

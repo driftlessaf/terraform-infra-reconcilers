@@ -5,7 +5,10 @@ SPDX-License-Identifier: Apache-2.0
 
 output "receiver" {
   description = "The workqueue receiver object for connecting triggers."
-  value       = var.shards == 1 ? module.workqueue[0].receiver : module.workqueue-sharded[0].receiver
+  depends_on  = [module.receiver-service]
+  value = {
+    name = local.receiver_service_name
+  }
 }
 
 output "reconciler-uris" {
@@ -15,5 +18,5 @@ output "reconciler-uris" {
 
 output "bucket" {
   description = "The name of the GCS bucket backing the workqueue."
-  value       = var.shards == 1 ? module.workqueue[0].bucket : null
+  value       = google_storage_bucket.global-workqueue.name
 }
