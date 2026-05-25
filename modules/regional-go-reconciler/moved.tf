@@ -135,3 +135,22 @@ moved {
   from = module.dispatcher-service
   to   = module.dispatcher-service[0]
 }
+
+// change-trigger resources now have count = (dispatcher_change_trigger_enabled ? 1 : 0).
+// Existing short-mode deployments have state at the bare address; move to [0].
+moved {
+  from = random_string.change-trigger
+  to   = random_string.change-trigger[0]
+}
+moved {
+  from = google_service_account.change-trigger
+  to   = google_service_account.change-trigger[0]
+}
+moved {
+  from = google_project_service_identity.pubsub
+  to   = google_project_service_identity.pubsub[0]
+}
+moved {
+  from = google_service_account_iam_binding.allow-pubsub-to-mint-tokens
+  to   = google_service_account_iam_binding.allow-pubsub-to-mint-tokens[0]
+}
