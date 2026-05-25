@@ -19,10 +19,10 @@ resource "google_storage_bucket" "global-workqueue" {
 resource "google_storage_bucket_iam_binding" "global-authorize-access" {
   bucket = google_storage_bucket.global-workqueue.name
   role   = "roles/storage.admin"
-  members = [
+  members = concat([
     "serviceAccount:${google_service_account.receiver.email}",
     "serviceAccount:${google_service_account.dispatcher.email}",
-  ]
+  ], local.additional_bucket_members)
 }
 
 resource "google_pubsub_topic" "global-object-change-notifications" {
@@ -53,12 +53,9 @@ resource "google_storage_notification" "global-object-change-notifications" {
 
   // We depend on the IAM binding granting the GCS service account pubsub.publisher
   // on the topic. GCP IAM is eventually consistent, and the GCS notification API
-  // validates this permission at creation time, so we also depend on the dispatcher
-  // service to provide natural delay for IAM propagation (and to ensure the
-  // processing pipeline is ready before we enable event delivery).
+  // validates this permission at creation time.
   depends_on = [
     google_pubsub_topic_iam_binding.global-gcs-publishes-to-topic,
-    module.dispatcher-service,
   ]
 
   bucket         = google_storage_bucket.global-workqueue.name

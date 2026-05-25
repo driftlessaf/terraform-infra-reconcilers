@@ -12,8 +12,8 @@ output "receiver" {
 }
 
 output "reconciler-uris" {
-  description = "The URIs of the reconciler service by region."
-  value       = module.reconciler.uris
+  description = "The URIs of the reconciler service by region (short mode only)."
+  value       = var.mode == "short" ? module.reconciler[0].uris : {}
 }
 
 output "bucket" {

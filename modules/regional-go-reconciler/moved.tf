@@ -38,7 +38,7 @@ moved {
   to   = module.receiver-service
 }
 
-// Dispatcher service and triggers
+// Dispatcher triggers and service accounts
 moved {
   from = module.workqueue[0].random_string.dispatcher
   to   = random_string.dispatcher
@@ -55,10 +55,8 @@ moved {
   from = module.workqueue[0].module.dispatcher-calls-error-broker
   to   = module.dispatcher-calls-error-broker
 }
-moved {
-  from = module.workqueue[0].module.dispatcher-service
-  to   = module.dispatcher-service
-}
+// module.workqueue[0].module.dispatcher-service is intentionally not moved —
+// the standalone dispatcher service is replaced by the combined reconciler service.
 moved {
   from = module.workqueue[0].random_string.cron-trigger
   to   = random_string.cron-trigger
@@ -122,4 +120,18 @@ moved {
 moved {
   from = module.workqueue[0].google_monitoring_alert_policy.dead_letter_queue
   to   = google_monitoring_alert_policy.dead_letter_queue
+}
+
+// module.reconciler now has count = (mode == "short" ? 1 : 0).
+// Existing short-mode deployments have state at the bare address; move to [0].
+moved {
+  from = module.reconciler
+  to   = module.reconciler[0]
+}
+
+// module.dispatcher-service now has count = (mode == "short" ? 1 : 0).
+// Existing short-mode deployments have state at the bare address; move to [0].
+moved {
+  from = module.dispatcher-service
+  to   = module.dispatcher-service[0]
 }

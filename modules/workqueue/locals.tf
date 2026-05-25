@@ -38,4 +38,32 @@ locals {
 
   dispatcher_batch_size = var.batch-size != null ? var.batch-size : ceil(var.concurrent-work / length(var.regions))
   reenqueue_region      = coalesce(var.primary-region, keys(var.regions)[0])
+
+  // dispatcher_sa_email is the identity that calls the reconciler and error broker.
+  // In standalone mode this is the dispatcher's dedicated SA; modules that inline
+  // the dispatcher as a sidecar override this with their own service account.
+  dispatcher_sa_email = google_service_account.dispatcher.email
+
+  // additional_bucket_members are extra IAM members granted storage.admin on
+  // the workqueue bucket.  Inline deployments set this to their service account.
+  additional_bucket_members = []
+
+  // dispatcher_change_trigger_enabled controls whether the PubSub object-change
+  // subscription and its supporting resources are created.  Set to false in
+  // "long" mode where a cron-driven job replaces the event-triggered service.
+  dispatcher_change_trigger_enabled = true
+
+  // dispatcher_cron_enabled controls whether the HTTP-based cron trigger that
+  // calls the dispatcher service is created.  Set to false in "long" mode.
+  dispatcher_cron_enabled = true
+
+  // dispatcher_calls_target_enabled controls whether the dispatcher is granted
+  // run.invoker on the reconciler Cloud Run Service.  Set to false in "long"
+  // mode where the reconciler is a Job, not a Service.
+  dispatcher_calls_target_enabled = true
+
+  // dispatcher_service_enabled controls whether the standalone dispatcher
+  // Cloud Run Service is created.  Set to false in "long" mode where the
+  // dispatcher runs as a container inside a Cloud Run Job instead.
+  dispatcher_service_enabled = true
 }

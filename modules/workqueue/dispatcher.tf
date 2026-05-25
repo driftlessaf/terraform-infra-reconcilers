@@ -17,103 +17,28 @@ resource "google_service_account" "dispatcher" {
 
 // Authorize the dispatcher service account to call the target.
 module "dispatcher-calls-target" {
-  for_each = local.regions
+  for_each = local.dispatcher_calls_target_enabled ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
   name       = local.reconciler_service_name
 
-  service-account = google_service_account.dispatcher.email
-  version         = "1.0.8"
+  service-account = local.dispatcher_sa_email
 }
 
 // Authorize the dispatcher service account to call the error event broker.
 module "dispatcher-calls-error-broker" {
   for_each = local.error_event_ingress != null ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
   name       = local.error_event_ingress.name
 
-  service-account = google_service_account.dispatcher.email
-  version         = "1.0.8"
-}
-
-// Stand up the dispatcher service in each of our regions.
-module "dispatcher-service" {
-  source     = "chainguard-dev/common/infra//modules/regional-go-service"
-  project_id = local.project_id
-  name       = local.dispatcher_service_name
-  regions    = local.regions
-  labels     = merge({ "service" : "workqueue-dispatcher" }, local.merged_labels)
-  team       = local.team
-  product    = local.product
-
-  # Give the things in the workqueue a lot of time to process the key.
-  request_timeout_seconds = 3600
-
-  deletion_protection = local.deletion_protection
-
-  service_account = google_service_account.dispatcher.email
-  containers = {
-    "dispatcher" = {
-      source = {
-        working_dir = "${path.module}/../.."
-        importpath  = "chainguard.dev/terraform-infra-reconcilers/modules/workqueue/cmd/dispatcher"
-      }
-      ports = [{
-        name           = "h2c"
-        container_port = 8080
-      }]
-      env = [
-        {
-          name  = "WORKQUEUE_MODE"
-          value = "gcs"
-        },
-        {
-          name  = "WORKQUEUE_CONCURRENCY"
-          value = "${local.concurrent_work}"
-        },
-        {
-          name  = "WORKQUEUE_MAX_RETRY"
-          value = "${local.max_retry}"
-        },
-        {
-          name  = "WORKQUEUE_BATCH_SIZE"
-          value = tostring(local.dispatcher_batch_size)
-        },
-        {
-          name  = "WORKQUEUE_NAME"
-          value = local.name
-        },
-      ]
-      regional-env = concat([
-        {
-          name = "WORKQUEUE_BUCKET"
-          value = {
-            for k, v in local.regions : k => google_storage_bucket.global-workqueue.name
-          }
-        },
-        {
-          name  = "WORKQUEUE_TARGET"
-          value = { for k, v in module.dispatcher-calls-target : k => v.uri }
-        },
-        ], local.error_event_ingress != null ? [
-        {
-          name  = "ERROR_EVENT_INGRESS_URI"
-          value = { for k, v in module.dispatcher-calls-error-broker : k => v.uri }
-        },
-      ] : [])
-      regional-cpu-idle = lookup(local.cpu_idle, "dispatcher", {})
-    }
-  }
-
-  notification_channels = local.notification_channels
-  version               = "1.0.8"
+  service-account = local.dispatcher_sa_email
 }
 
 // Compute a suffix that satisfies the regex:
@@ -133,24 +58,22 @@ resource "google_service_account" "cron-trigger" {
   description  = "The identity as which the cloud scheduler will invoke the ${local.name} dispatcher."
 }
 
-// Authorize the cron-trigger service account to call the dispatcher.
+// Authorize the cron-trigger service account to call the dispatcher service.
+// Only used in short mode; long mode IAM is managed by the job resources.
 module "cron-trigger-calls-dispatcher" {
-  for_each = local.regions
+  for_each = local.dispatcher_cron_enabled ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
-
-  depends_on = [module.dispatcher-service]
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
   name       = local.dispatcher_service_name
 
   service-account = google_service_account.cron-trigger.email
-  version         = "1.0.8"
 }
 
 resource "google_cloud_scheduler_job" "cron" {
-  for_each = local.regions
+  for_each = local.dispatcher_cron_enabled ? local.regions : {}
 
   name        = "${local.name}-${each.key}"
   description = "Periodically trigger the dispatcher to dispatch work."
@@ -174,9 +97,15 @@ resource "google_cloud_scheduler_job" "cron" {
   }
 }
 
+// The change-trigger resources below deliver GCS object-change notifications
+// directly to the dispatcher, enabling low-latency dispatch when new keys are
+// enqueued.  They are disabled in long mode because the job-based dispatcher
+// is driven exclusively by the per-minute cron.
+
 // Compute a suffix that satisfies the regex:
 // ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$
 resource "random_string" "change-trigger" {
+  count   = local.dispatcher_change_trigger_enabled ? 1 : 0
   length  = 30 - length(local.sa_prefix)
   special = false
   upper   = false
@@ -184,15 +113,17 @@ resource "random_string" "change-trigger" {
 
 // Create a dedicated GSA for the object change notification subscription.
 resource "google_service_account" "change-trigger" {
+  count   = local.dispatcher_change_trigger_enabled ? 1 : 0
   project = local.project_id
 
-  account_id   = "${local.sa_prefix}${random_string.change-trigger.result}"
+  account_id   = "${local.sa_prefix}${random_string.change-trigger[0].result}"
   display_name = "Workqueue Change Trigger"
   description  = "The identity as which the pubsub object change subscription will invoke the ${local.name} dispatcher."
 }
 
 // Lookup the identity of the pubsub service agent.
 resource "google_project_service_identity" "pubsub" {
+  count    = local.dispatcher_change_trigger_enabled ? 1 : 0
   provider = google-beta
   project  = local.project_id
   service  = "pubsub.googleapis.com"
@@ -203,30 +134,28 @@ resource "google_project_service_identity" "pubsub" {
 // NOTE: we use binding vs. member because we expect nothing but pubsub to be
 // able to assume this identity.
 resource "google_service_account_iam_binding" "allow-pubsub-to-mint-tokens" {
-  service_account_id = google_service_account.change-trigger.name
+  count              = local.dispatcher_change_trigger_enabled ? 1 : 0
+  service_account_id = google_service_account.change-trigger[0].name
 
   role    = "roles/iam.serviceAccountTokenCreator"
-  members = ["serviceAccount:${google_project_service_identity.pubsub.email}"]
+  members = ["serviceAccount:${google_project_service_identity.pubsub[0].email}"]
 }
 
 // Authorize the change-trigger service account to call the dispatcher.
 module "change-trigger-calls-dispatcher" {
-  for_each = local.regions
+  for_each = local.dispatcher_change_trigger_enabled ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
-
-  depends_on = [module.dispatcher-service]
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
   name       = local.dispatcher_service_name
 
-  service-account = google_service_account.change-trigger.email
-  version         = "1.0.8"
+  service-account = google_service_account.change-trigger[0].email
 }
 
 resource "google_pubsub_subscription" "global-this" {
-  for_each = local.regions
+  for_each = local.dispatcher_change_trigger_enabled ? local.regions : {}
 
   // Ensure Pub/Sub can mint OIDC tokens for the change-trigger SA before
   // creating the push subscription that depends on it.
@@ -244,7 +173,7 @@ resource "google_pubsub_subscription" "global-this" {
     // Authenticate requests to this service using tokens minted
     // from the given service account.
     oidc_token {
-      service_account_email = google_service_account.change-trigger.email
+      service_account_email = google_service_account.change-trigger[0].email
     }
   }
 

@@ -73,6 +73,16 @@ variable "notification_channels" {
   default     = []
 }
 
+variable "mode" {
+  description = "Reconciler mode: \"short\" (Cloud Run Service) or \"long\" (Cloud Run Job per cron tick)"
+  type        = string
+  default     = "short"
+  validation {
+    condition     = contains(["short", "long"], var.mode)
+    error_message = "mode must be \"short\" or \"long\""
+  }
+}
+
 variable "labels" {
   description = "Additional labels to add to the dashboard"
   type        = map(string)

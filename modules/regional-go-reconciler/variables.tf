@@ -27,6 +27,16 @@ variable "primary-region" {
 
 // Workqueue-specific variables
 
+variable "mode" {
+  description = "Reconciler mode. \"short\" (default) runs a long-lived Cloud Run service for the dispatcher. \"long\" runs a Cloud Run Job per cron tick, suitable for reconciliations that exceed Cloud Run's request timeout."
+  type        = string
+  default     = "short"
+  validation {
+    condition     = contains(["short", "long"], var.mode)
+    error_message = "mode must be \"short\" or \"long\""
+  }
+}
+
 variable "max-retry" {
   description = "The maximum number of times a task will be retried before being moved to the dead-letter queue. Set to 0 for unlimited retries. Defaults to null so the inner workqueue module's default applies."
   type        = number
@@ -249,6 +259,12 @@ variable "request_timeout_seconds" {
   description = "The request timeout for the service in seconds."
   type        = number
   default     = 300
+}
+
+variable "job_timeout" {
+  description = "Maximum time allowed for a single long-mode job execution (e.g. \"3600s\"). Only used when mode is \"long\"."
+  type        = string
+  default     = "3600s"
 }
 
 variable "execution_environment" {

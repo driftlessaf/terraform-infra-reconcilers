@@ -43,4 +43,16 @@ locals {
 
   dispatcher_batch_size = var.batch-size != null ? var.batch-size : ceil(var.concurrent-work / length(var.regions))
   reenqueue_region      = coalesce(var.primary-region, keys(var.regions)[0])
+
+  dispatcher_sa_email       = var.service_account
+  additional_bucket_members = ["serviceAccount:${var.service_account}"]
+
+  // In long mode the PubSub change trigger is replaced by the per-minute cron.
+  dispatcher_change_trigger_enabled = var.mode == "short"
+  // In long mode the HTTP-based cron trigger is replaced by a job invocation.
+  dispatcher_cron_enabled = var.mode == "short"
+  // In long mode the reconciler is a Job, not a Service, so no run.invoker grant.
+  dispatcher_calls_target_enabled = var.mode == "short"
+  // In long mode the dispatcher runs inside the Cloud Run Job, not a standalone service.
+  dispatcher_service_enabled = var.mode == "short"
 }
