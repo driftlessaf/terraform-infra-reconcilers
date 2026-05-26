@@ -26,6 +26,8 @@ module "reconciler" {
   regional-volumes            = var.regional-volumes
   enable_profiler             = var.enable_profiler
   otel_resources              = var.otel_resources
+  mode                        = var.mode
+  job_timeout                 = var.job_timeout
   request_timeout_seconds     = var.request_timeout_seconds
   execution_environment       = var.execution_environment
   launch_stage                = var.launch_stage
@@ -39,12 +41,11 @@ module "reconciler" {
 # This is used by both the cron job and push listener
 module "authorize-receiver-per-region" {
   for_each = var.regions
-  source   = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source   = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.key
   name       = module.reconciler.receiver.name
 
   service-account = var.service_account
-  version         = "1.0.10"
 }

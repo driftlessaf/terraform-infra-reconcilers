@@ -131,6 +131,22 @@ variable "concurrent-work" {
   default     = 1
 }
 
+variable "mode" {
+  description = "Reconciler mode. \"short\" (default) runs a long-lived Cloud Run service for the dispatcher. \"long\" runs a Cloud Run Job per cron tick, suitable for reconciliations that exceed Cloud Run's request timeout."
+  type        = string
+  default     = "short"
+  validation {
+    condition     = contains(["short", "long"], var.mode)
+    error_message = "mode must be \"short\" or \"long\""
+  }
+}
+
+variable "job_timeout" {
+  description = "Maximum time allowed for a single long-mode job execution (e.g. \"3600s\"). Only used when mode is \"long\"."
+  type        = string
+  default     = "3600s"
+}
+
 variable "max-retry" {
   description = "The maximum number of times a task will be retried."
   type        = number

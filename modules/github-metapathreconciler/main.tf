@@ -23,6 +23,8 @@ module "reconciler" {
   # Container configuration
   containers = var.containers
 
+  mode                    = var.mode
+  job_timeout             = var.job_timeout
   request_timeout_seconds = var.request_timeout_seconds
   launch_stage            = var.launch_stage
 
