@@ -4,7 +4,7 @@
 
 module "reconciler-job" {
   count  = var.mode == "long" ? 1 : 0
-  source = "../../../../public/terraform-infra-common/modules/regional-go-cron"
+  source = "chainguard-dev/common/infra//modules/regional-go-cron"
 
   project_id      = var.project_id
   name            = "${var.name}-rec"
@@ -69,4 +69,5 @@ module "reconciler-job" {
   deletion_protection   = var.deletion_protection
   notification_channels = var.notification_channels
   labels                = var.labels
+  version               = "1.0.11"
 }
