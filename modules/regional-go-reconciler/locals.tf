@@ -34,8 +34,12 @@ locals {
   enable_dead_letter_alerting = var.enable_dead_letter_alerting
   receiver_ingress            = "INGRESS_TRAFFIC_INTERNAL_ONLY"
   error_event_ingress         = var.error_event_ingress
-  reconciler_service_name     = "${var.name}-rec"
-  cpu_idle                    = var.workqueue_cpu_idle
+  // In short mode, derive the name from module.reconciler so dispatcher-calls-target
+  // implicitly waits for the reconciler Cloud Run service to exist. The value is
+  // identical to "${var.name}-rec" (regional-go-service uses var.name verbatim) —
+  // it's the dependency we want, not the string.
+  reconciler_service_name = var.mode == "short" ? values(module.reconciler[0].names)[0] : "${var.name}-rec"
+  cpu_idle                = var.workqueue_cpu_idle
 
   receiver_service_name   = "${var.name}-wq-rcv"
   dispatcher_service_name = "${var.name}-wq-dsp"
