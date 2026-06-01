@@ -146,6 +146,14 @@ variable "authorized_service_accounts" {
   default     = []
 }
 
+# ── Encryption ──────────────────────────────────────────────────────────
+
+variable "encryption_key_name" {
+  description = "Optional Cloud KMS key for CMEK encryption of the index, endpoint, and embeddings bucket; Google-managed encryption when null. The Vertex AI and GCS service agents must hold cryptoKeyEncrypterDecrypter on the key."
+  type        = string
+  default     = null
+}
+
 # ── Lifecycle ───────────────────────────────────────────────────────────
 
 variable "deletion_protection" {

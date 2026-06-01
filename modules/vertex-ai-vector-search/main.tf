@@ -7,6 +7,12 @@ terraform {
   required_providers {
     google = {
       source = "hashicorp/google"
+      # encryption_spec (CMEK) on google_vertex_ai_index /
+      # google_vertex_ai_index_endpoint is only present in the provider
+      # schema from 7.9.0 onward. Floor the requirement so consumers on
+      # an older pin fail at init with a clear constraint error rather
+      # than a confusing "Unsupported block type" schema error.
+      version = ">= 7.9.0"
     }
   }
 }
@@ -41,6 +47,15 @@ resource "google_storage_bucket" "embeddings" {
   uniform_bucket_level_access = true
   force_destroy               = !var.deletion_protection
   labels                      = local.merged_labels
+
+  # CMEK for the embeddings bucket when encryption_key_name is set; otherwise
+  # Google-managed encryption.
+  dynamic "encryption" {
+    for_each = var.encryption_key_name != null ? [1] : []
+    content {
+      default_kms_key_name = var.encryption_key_name
+    }
+  }
 
   dynamic "lifecycle_rule" {
     for_each = var.gcs_lifecycle_age_days > 0 ? [1] : []
@@ -81,6 +96,15 @@ resource "google_vertex_ai_index" "this" {
   }
 
   index_update_method = "STREAM_UPDATE"
+
+  # CMEK for the vector index when encryption_key_name is set; otherwise
+  # Google-managed encryption.
+  dynamic "encryption_spec" {
+    for_each = var.encryption_key_name != null ? [1] : []
+    content {
+      kms_key_name = var.encryption_key_name
+    }
+  }
 }
 
 # ── Index Endpoint ──────────────────────────────────────────────────────
@@ -91,6 +115,15 @@ resource "google_vertex_ai_index_endpoint" "this" {
   display_name = "${var.name}-endpoint"
   description  = "Vector search endpoint for ${var.name}"
   labels       = local.merged_labels
+
+  # CMEK for the index endpoint when encryption_key_name is set, keeping the
+  # whole vector store under one key; otherwise Google-managed encryption.
+  dynamic "encryption_spec" {
+    for_each = var.encryption_key_name != null ? [1] : []
+    content {
+      kms_key_name = var.encryption_key_name
+    }
+  }
 }
 
 # ── Deploy Index to Endpoint ────────────────────────────────────────────
