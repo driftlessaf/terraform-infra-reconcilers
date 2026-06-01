@@ -2,7 +2,7 @@
 
 > *"Reconciling the world not as it is, but as it should be."* — Matt Moore, CTO
 
-Terraform modules for deploying reconciliation systems on Google Cloud Platform using the [DriftlessAF](https://github.com/driftlessaf/go-driftlessaf) framework.
+Terraform modules for deploying reconciliation systems on Google Cloud Platform (GCP) using the [DriftlessAF](https://github.com/driftlessaf/go-driftlessaf) framework.
 
 ## What is a Reconciler?
 
