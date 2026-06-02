@@ -79,7 +79,7 @@ to partition data by corpus at the application level.
 
 | Name | Version |
 |------|---------|
-| <a name="provider_google"></a> [google](#provider\_google) | 7.34.0 |
+| <a name="provider_google"></a> [google](#provider\_google) | >= 7.9.0 |
 
 ## Modules
 
@@ -104,13 +104,16 @@ No modules.
 | <a name="input_authorized_service_accounts"></a> [authorized\_service\_accounts](#input\_authorized\_service\_accounts) | List of Google service account emails to grant roles/aiplatform.user and GCS access. | `list(string)` | `[]` | no |
 | <a name="input_create_gcs_bucket"></a> [create\_gcs\_bucket](#input\_create\_gcs\_bucket) | Create a GCS bucket for durable embedding storage. Set to false to bring your own bucket. | `bool` | `true` | no |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | When true, prevents the GCS bucket from being destroyed with objects in it. | `bool` | `true` | no |
+| <a name="input_deployed_index_timeouts"></a> [deployed\_index\_timeouts](#input\_deployed\_index\_timeouts) | Timeouts for deploying the index to the endpoint — the slowest operation, as it provisions dedicated serving machines. | <pre>object({<br/>    create = optional(string, "2h")<br/>    update = optional(string, "1h")<br/>    delete = optional(string, "1h")<br/>  })</pre> | `{}` | no |
 | <a name="input_description"></a> [description](#input\_description) | Human-readable description for the index. | `string` | `""` | no |
 | <a name="input_dimensions"></a> [dimensions](#input\_dimensions) | Number of dimensions for embedding vectors. Must match the embedding model (e.g. 3072 for gemini-embedding-001, 768 for text-embedding-005). | `number` | n/a | yes |
 | <a name="input_distance_measure_type"></a> [distance\_measure\_type](#input\_distance\_measure\_type) | Distance measure for vector similarity. One of: COSINE\_DISTANCE, SQUARED\_L2\_DISTANCE, L1\_DISTANCE, DOT\_PRODUCT\_DISTANCE. | `string` | `"COSINE_DISTANCE"` | no |
 | <a name="input_encryption_key_name"></a> [encryption\_key\_name](#input\_encryption\_key\_name) | Optional Cloud KMS key for CMEK encryption of the index, endpoint, and embeddings bucket; Google-managed encryption when null. The Vertex AI and GCS service agents must hold cryptoKeyEncrypterDecrypter on the key. | `string` | `null` | no |
+| <a name="input_endpoint_timeouts"></a> [endpoint\_timeouts](#input\_endpoint\_timeouts) | Timeouts for the Vertex AI index endpoint resource. | <pre>object({<br/>    create = optional(string, "1h")<br/>    update = optional(string, "1h")<br/>    delete = optional(string, "1h")<br/>  })</pre> | `{}` | no |
 | <a name="input_feature_norm_type"></a> [feature\_norm\_type](#input\_feature\_norm\_type) | Feature normalization type. Use UNIT\_L2\_NORM with COSINE\_DISTANCE for best results. | `string` | `"UNIT_L2_NORM"` | no |
 | <a name="input_gcs_bucket_name"></a> [gcs\_bucket\_name](#input\_gcs\_bucket\_name) | Name for the GCS bucket. Defaults to '{project}-{name}-embeddings' when create\_gcs\_bucket is true. When create\_gcs\_bucket is false, the caller is responsible for managing IAM on their own bucket. | `string` | `""` | no |
 | <a name="input_gcs_lifecycle_age_days"></a> [gcs\_lifecycle\_age\_days](#input\_gcs\_lifecycle\_age\_days) | Number of days before objects in the embeddings bucket are deleted. Set to 0 to disable lifecycle rules. | `number` | `0` | no |
+| <a name="input_index_timeouts"></a> [index\_timeouts](#input\_index\_timeouts) | Timeouts for the Vertex AI index resource. Index creation can run well past the provider's default, so the defaults are generous; override any field as needed. | <pre>object({<br/>    create = optional(string, "2h")<br/>    update = optional(string, "1h")<br/>    delete = optional(string, "30m")<br/>  })</pre> | `{}` | no |
 | <a name="input_labels"></a> [labels](#input\_labels) | Additional labels to apply to resources. | `map(string)` | `{}` | no |
 | <a name="input_leaf_node_embedding_count"></a> [leaf\_node\_embedding\_count](#input\_leaf\_node\_embedding\_count) | Number of embeddings per leaf node in the Tree-AH index. More embeddings per leaf = smaller index but slower search. | `number` | `1000` | no |
 | <a name="input_leaf_nodes_to_search_percent"></a> [leaf\_nodes\_to\_search\_percent](#input\_leaf\_nodes\_to\_search\_percent) | Percentage of leaf nodes to search (1-100). Higher = better recall, slower search. | `number` | `10` | no |

@@ -105,6 +105,12 @@ resource "google_vertex_ai_index" "this" {
       kms_key_name = var.encryption_key_name
     }
   }
+
+  timeouts {
+    create = var.index_timeouts.create
+    update = var.index_timeouts.update
+    delete = var.index_timeouts.delete
+  }
 }
 
 # ── Index Endpoint ──────────────────────────────────────────────────────
@@ -123,6 +129,12 @@ resource "google_vertex_ai_index_endpoint" "this" {
     content {
       kms_key_name = var.encryption_key_name
     }
+  }
+
+  timeouts {
+    create = var.endpoint_timeouts.create
+    update = var.endpoint_timeouts.update
+    delete = var.endpoint_timeouts.delete
   }
 }
 
@@ -145,6 +157,12 @@ resource "google_vertex_ai_index_endpoint_deployed_index" "this" {
 
   # Explicit region is required - project inherits from provider
   # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/vertex_ai_index_endpoint_deployed_index
+
+  timeouts {
+    create = var.deployed_index_timeouts.create
+    update = var.deployed_index_timeouts.update
+    delete = var.deployed_index_timeouts.delete
+  }
 
   depends_on = [
     google_vertex_ai_index_endpoint.this,

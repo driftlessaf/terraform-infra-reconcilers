@@ -173,3 +173,35 @@ variable "product" {
   type        = string
   default     = "unknown"
 }
+
+# ── Operation timeouts ──────────────────────────────────────────────────
+
+variable "index_timeouts" {
+  description = "Timeouts for the Vertex AI index resource. Index creation can run well past the provider's default, so the defaults are generous; override any field as needed."
+  type = object({
+    create = optional(string, "2h")
+    update = optional(string, "1h")
+    delete = optional(string, "30m")
+  })
+  default = {}
+}
+
+variable "endpoint_timeouts" {
+  description = "Timeouts for the Vertex AI index endpoint resource."
+  type = object({
+    create = optional(string, "1h")
+    update = optional(string, "1h")
+    delete = optional(string, "1h")
+  })
+  default = {}
+}
+
+variable "deployed_index_timeouts" {
+  description = "Timeouts for deploying the index to the endpoint — the slowest operation, as it provisions dedicated serving machines."
+  type = object({
+    create = optional(string, "2h")
+    update = optional(string, "1h")
+    delete = optional(string, "1h")
+  })
+  default = {}
+}
