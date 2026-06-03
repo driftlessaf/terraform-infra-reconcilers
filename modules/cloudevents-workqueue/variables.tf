@@ -52,6 +52,20 @@ EOD
   default     = []
 }
 
+variable "filter_prefix" {
+  description = <<EOD
+Knative Trigger-style prefix clauses AND-composed with each per-trigger
+positive filter from `filters`. Each entry produces a
+`hasPrefix(attributes.ce-<key>, "<value>")` clause. For example, to
+receive only PRs on branches a reconciler owns (its PR branches are named
+"<identity>/..."):
+
+  filter_prefix = { headbranch = "my-reconciler/" }
+EOD
+  type        = map(string)
+  default     = {}
+}
+
 variable "filter_not" {
   description = <<EOD
 Negative-equality clauses AND-composed with each per-trigger positive
