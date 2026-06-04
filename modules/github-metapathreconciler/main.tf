@@ -64,6 +64,8 @@ module "cloudevents-prs" {
   # Use pull request URL as the workqueue key
   extension_key = "pullrequesturl"
 
+  filter_prefix = var.pr_filter_prefix
+
   # Send to the reconciler's workqueue
   workqueue = module.reconciler.receiver
 

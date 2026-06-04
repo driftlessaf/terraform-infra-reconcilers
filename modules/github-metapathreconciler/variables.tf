@@ -245,6 +245,12 @@ variable "pr_priority" {
   default     = 200
 }
 
+variable "pr_filter_prefix" {
+  description = "Knative Trigger hasPrefix clauses applied to PR CloudEvents before they enter the workqueue. Use to restrict which PRs are enqueued, e.g. { headbranch = \"my-bot/\" } to only enqueue PRs on branches owned by this reconciler."
+  type        = map(string)
+  default     = {}
+}
+
 # Dashboard variables
 
 variable "dashboard_labels" {
