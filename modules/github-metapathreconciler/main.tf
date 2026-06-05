@@ -61,10 +61,12 @@ module "cloudevents-prs" {
   # actually reach the workqueue.
   filters = length(var.repos) > 0 ? [for r in var.repos : { "subject" = "${r.owner}/${r.repo}" }] : [{}]
 
+  # When own_prs_only is set, deliver only PR events for branches this reconciler
+  # authored (changemanager names them "<octo_sts_identity>/...").
+  filter_prefix = var.own_prs_only ? { headbranch = "${var.octo_sts_identity}/" } : {}
+
   # Use pull request URL as the workqueue key
   extension_key = "pullrequesturl"
-
-  filter_prefix = var.pr_filter_prefix
 
   # Send to the reconciler's workqueue
   workqueue = module.reconciler.receiver

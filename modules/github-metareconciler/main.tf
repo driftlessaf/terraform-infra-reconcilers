@@ -69,6 +69,12 @@ module "cloudevents-prs" {
   broker  = var.broker
   filters = var.filters
 
+  # When own_prs_only is set, deliver only PR events for branches this reconciler
+  # authored (changemanager names them "<octo_sts_identity>/..."). Applied to PR
+  # events only — the cloudevents-issues subscription above must not get a
+  # headbranch filter, since issue events carry no headbranch attribute.
+  filter_prefix = var.own_prs_only ? { headbranch = "${var.octo_sts_identity}/" } : {}
+
   # Use pull request URL as the workqueue key
   extension_key = "pullrequesturl"
 

@@ -161,6 +161,35 @@ variable "pr_priority" {
   default     = 200
 }
 
+variable "octo_sts_identity" {
+  description = <<EOD
+The reconciler's octo-sts identity (the same value passed to the binary as
+OCTO_IDENTITY). Used only to scope PR events when own_prs_only is set, since
+changemanager names this reconciler's branches "<octo_sts_identity>/...".
+Filter-only here: unlike github-metapathreconciler this module wires no auth to
+it (the binary handles GitHub auth itself).
+EOD
+  type        = string
+  default     = ""
+  validation {
+    condition     = !var.own_prs_only || var.octo_sts_identity != ""
+    error_message = "octo_sts_identity must be set when own_prs_only is true."
+  }
+}
+
+variable "own_prs_only" {
+  description = <<EOD
+When true, scope the PR-event subscription to PRs this reconciler authored —
+those on branches named "<octo_sts_identity>/...". Never affects the issues
+subscription (issue events carry no headbranch).
+
+Leave false (the default) for reconcilers that act on PRs they did NOT author,
+since scoping to own branches would hide those PRs.
+EOD
+  type        = bool
+  default     = false
+}
+
 variable "dashboard_labels" {
   description = "Additional labels for the dashboard"
   type        = map(string)

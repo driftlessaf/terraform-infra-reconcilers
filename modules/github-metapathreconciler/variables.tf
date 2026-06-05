@@ -245,10 +245,18 @@ variable "pr_priority" {
   default     = 200
 }
 
-variable "pr_filter_prefix" {
-  description = "Knative Trigger hasPrefix clauses applied to PR CloudEvents before they enter the workqueue. Use to restrict which PRs are enqueued, e.g. { headbranch = \"my-bot/\" } to only enqueue PRs on branches owned by this reconciler."
-  type        = map(string)
-  default     = {}
+variable "own_prs_only" {
+  description = <<EOD
+When true, scope the PR-event subscription to PRs this reconciler authored —
+those on branches named "<octo_sts_identity>/..." (changemanager's convention).
+The push listener has its own subscription, which this does not affect.
+
+Leave false (the default) for reconcilers that act on PRs they did NOT author —
+e.g. review-mode reconcilers (METAPATH_MODE=config/review) — since scoping to
+own branches would hide the very PRs they exist to review.
+EOD
+  type        = bool
+  default     = false
 }
 
 # Dashboard variables
