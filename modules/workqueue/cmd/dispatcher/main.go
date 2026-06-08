@@ -19,8 +19,6 @@ import (
 	"github.com/chainguard-dev/clog"
 	_ "github.com/chainguard-dev/clog/gcp/init"
 	"github.com/sethvargo/go-envconfig"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 
 	"chainguard.dev/driftlessaf/workqueue"
 	"chainguard.dev/driftlessaf/workqueue/dispatcher"
@@ -87,13 +85,18 @@ func main() {
 	}
 	defer client.Close()
 
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	protocols.SetUnencryptedHTTP2(true)
+
 	if err := (&http.Server{
 		Addr: fmt.Sprintf(":%d", env.Port),
-		Handler: h2c.NewHandler(gcp.WithCloudTraceContext(dispatcher.Handler(
+		Handler: gcp.WithCloudTraceContext(dispatcher.Handler(
 			wq, env.Concurrency, env.BatchSize, dispatcher.ServiceCallback(client), env.MaxRetry,
 			dispatcher.WithErrorIngressURI(ctx, env.ErrorEventIngressURI, env.WorkqueueName),
-		)), &http2.Server{}),
+		)),
 		ReadHeaderTimeout: 10 * time.Second,
+		Protocols:         protocols,
 	}).ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		clog.FatalContextf(ctx, "failed to start server: %v", err)
 	}
