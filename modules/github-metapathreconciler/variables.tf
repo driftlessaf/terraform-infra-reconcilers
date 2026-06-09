@@ -247,16 +247,17 @@ variable "pr_priority" {
 
 variable "own_prs_only" {
   description = <<EOD
-When true, scope the PR-event subscription to PRs this reconciler authored —
-those on branches named "<octo_sts_identity>/..." (changemanager's convention).
-The push listener has its own subscription, which this does not affect.
+Scope the PR-event subscription to PRs this reconciler authored — those on
+branches named "<octo_sts_identity>/..." (changemanager's convention). The push
+listener has its own subscription, which this does not affect.
 
-Leave false (the default) for reconcilers that act on PRs they did NOT author —
-e.g. review-mode reconcilers (METAPATH_MODE=config/review) — since scoping to
-own branches would hide the very PRs they exist to review.
+Defaults true, since most reconcilers only act on their own PRs. Set false for
+reconcilers that act on PRs they did NOT author — e.g. those running in a review
+or config mode — since scoping to own branches would hide the very PRs they
+exist to review.
 EOD
   type        = bool
-  default     = false
+  default     = true
 }
 
 # Dashboard variables

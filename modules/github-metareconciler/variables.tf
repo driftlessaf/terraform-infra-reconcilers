@@ -179,15 +179,16 @@ EOD
 
 variable "own_prs_only" {
   description = <<EOD
-When true, scope the PR-event subscription to PRs this reconciler authored —
-those on branches named "<octo_sts_identity>/...". Never affects the issues
-subscription (issue events carry no headbranch).
+Scope the PR-event subscription to PRs this reconciler authored — those on
+branches named "<octo_sts_identity>/...". Never affects the issues subscription
+(issue events carry no headbranch).
 
-Leave false (the default) for reconcilers that act on PRs they did NOT author,
-since scoping to own branches would hide those PRs.
+Defaults true, since most reconcilers only act on their own PRs. Set false for
+reconcilers that act on PRs they did NOT author, since scoping to own branches
+would hide those PRs.
 EOD
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "dashboard_labels" {
