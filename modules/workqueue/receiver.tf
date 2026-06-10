@@ -21,7 +21,7 @@ module "receiver-service" {
   project_id = local.project_id
   name       = local.receiver_service_name
   regions    = local.regions
-  labels     = merge({ "service" : "workqueue-receiver" }, local.merged_labels)
+  labels     = merge({ "service" : local.reconciler_service_name }, local.merged_labels)
   team       = local.team
   product    = local.product
 

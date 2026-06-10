@@ -171,7 +171,7 @@ resource "google_pubsub_subscription" "global-this" {
 
   name   = "${local.name}-global-${each.key}"
   topic  = google_pubsub_topic.global-object-change-notifications[each.key].id
-  labels = merge({ "service" : "workqueue-dispatcher" }, local.merged_labels)
+  labels = merge({ "service" : local.reconciler_service_name }, local.merged_labels)
 
   ack_deadline_seconds = 600 // Maximum value
 

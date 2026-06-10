@@ -68,5 +68,5 @@ module "reconciler-job" {
   max_retries           = 0
   deletion_protection   = var.deletion_protection
   notification_channels = var.notification_channels
-  labels                = var.labels
+  labels                = merge({ "service" : "${var.name}-rec" }, var.labels)
 }

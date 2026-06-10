@@ -27,7 +27,7 @@ module "reconciler" {
   service_account = var.service_account
   containers      = var.containers
 
-  labels           = var.labels
+  labels           = merge({ "service" : "${var.name}-rec" }, var.labels)
   team             = var.team
   product          = var.product
   scaling          = var.scaling
