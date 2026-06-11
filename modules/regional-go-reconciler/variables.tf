@@ -37,6 +37,16 @@ variable "mode" {
   }
 }
 
+variable "receiver_ingress" {
+  description = "Ingress traffic setting for the workqueue receiver Cloud Run service. Defaults to INGRESS_TRAFFIC_INTERNAL_ONLY. Set INGRESS_TRAFFIC_ALL to allow IAM-gated callers outside this project's VPC (e.g. a cross-project Cloud Run / GKE caller without VPC peering) to enqueue; the receiver still requires roles/run.invoker."
+  type        = string
+  default     = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  validation {
+    condition     = contains(["INGRESS_TRAFFIC_ALL", "INGRESS_TRAFFIC_INTERNAL_ONLY", "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"], var.receiver_ingress)
+    error_message = "receiver_ingress must be one of INGRESS_TRAFFIC_ALL, INGRESS_TRAFFIC_INTERNAL_ONLY, INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER."
+  }
+}
+
 variable "max-retry" {
   description = "The maximum number of times a task will be retried before being moved to the dead-letter queue. Set to 0 for unlimited retries. Defaults to null so the inner workqueue module's default applies."
   type        = number

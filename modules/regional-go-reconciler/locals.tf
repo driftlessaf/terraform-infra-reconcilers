@@ -32,7 +32,7 @@ locals {
   concurrent_work             = var.concurrent-work
   max_retry                   = var.max-retry
   enable_dead_letter_alerting = var.enable_dead_letter_alerting
-  receiver_ingress            = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  receiver_ingress            = var.receiver_ingress
   error_event_ingress         = var.error_event_ingress
   // In short mode, derive the name from module.reconciler so dispatcher-calls-target
   // implicitly waits for the reconciler Cloud Run service to exist. The value is
