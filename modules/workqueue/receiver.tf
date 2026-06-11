@@ -64,6 +64,15 @@ module "receiver-service" {
     }
   }
 
-  ingress               = local.receiver_ingress
+  ingress = local.receiver_ingress
+  # A workqueue receiver is only ever invoked by authenticated principals (the
+  # dispatcher, and enqueuers granted roles/run.invoker) — never by browsers
+  # behind an auth-handling load balancer. Without this, regional-service grants
+  # roles/run.invoker to allUsers whenever ingress != INTERNAL_ONLY, which would
+  # make a receiver opened to INGRESS_TRAFFIC_ALL publicly invocable. Force
+  # Cloud Run IAM auth so access stays limited to the explicit invoker grants.
+  # No-op for INTERNAL_ONLY receivers (the allUsers binding is already skipped).
+  require_authenticated_invocations = true
+
   notification_channels = local.notification_channels
 }
