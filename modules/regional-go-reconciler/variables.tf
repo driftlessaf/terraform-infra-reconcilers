@@ -327,3 +327,9 @@ variable "launch_stage" {
   type        = string
   default     = "GA"
 }
+
+variable "dlq_operators" {
+  description = "IAM members granted roles/storage.objectAdmin on the workqueue bucket for dead-letter queue operations (inspect, drain, purge). Format: \"user:email\" or \"serviceAccount:email\"."
+  type        = list(string)
+  default     = []
+}

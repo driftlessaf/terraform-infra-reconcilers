@@ -25,6 +25,14 @@ resource "google_storage_bucket_iam_binding" "global-authorize-access" {
   ], local.additional_bucket_members)
 }
 
+resource "google_storage_bucket_iam_member" "dlq-operators" {
+  for_each = toset(local.dlq_operator_members)
+
+  bucket = google_storage_bucket.global-workqueue.name
+  role   = "roles/storage.objectAdmin"
+  member = each.value
+}
+
 resource "google_pubsub_topic" "global-object-change-notifications" {
   for_each = local.regions
 

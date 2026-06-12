@@ -50,6 +50,7 @@ locals {
 
   dispatcher_sa_email       = var.service_account
   additional_bucket_members = ["serviceAccount:${var.service_account}"]
+  dlq_operator_members      = var.dlq_operators
 
   // In long mode the PubSub change trigger is replaced by the per-minute cron.
   dispatcher_change_trigger_enabled = var.mode == "short"
