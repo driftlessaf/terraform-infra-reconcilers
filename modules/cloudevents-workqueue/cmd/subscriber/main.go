@@ -26,6 +26,10 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	WorkqueueService string `env:"WORKQUEUE_SERVICE,required"`
 	ExtensionKey     string `env:"EXTENSION_KEY,required"`
 	Priority         int64  `env:"PRIORITY,default=0"`
+	// DelaySeconds floors the enqueue delay (NotBefore = now + DelaySeconds), so
+	// a burst of events for the same key coalesces into ~one reconcile per window
+	// instead of one per event. 0 disables it.
+	DelaySeconds int64 `env:"DELAY_SECONDS,default=0"`
 }{})
 
 func main() {
@@ -64,6 +68,7 @@ func main() {
 		queueClient:  queueClient,
 		extensionKey: env.ExtensionKey,
 		priority:     env.Priority,
+		delaySeconds: env.DelaySeconds,
 	}
 
 	// Start receiving events
@@ -77,6 +82,7 @@ type eventHandler struct {
 	queueClient  workqueue.Client
 	extensionKey string
 	priority     int64
+	delaySeconds int64
 }
 
 func (h *eventHandler) handleEvent(ctx context.Context, event cloudevents.Event) error {
@@ -121,8 +127,9 @@ func (h *eventHandler) handleEvent(ctx context.Context, event cloudevents.Event)
 
 	// Queue the work item
 	_, err := h.queueClient.Process(ctx, &workqueue.ProcessRequest{
-		Key:      key,
-		Priority: h.priority,
+		Key:          key,
+		Priority:     h.priority,
+		DelaySeconds: h.delaySeconds,
 	})
 	if err != nil {
 		clog.ErrorContextf(ctx, "Failed to queue work item: %v", err)

@@ -10,7 +10,7 @@ locals {
 
 // Workqueue metrics section
 module "workqueue-state" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/workqueue"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/workqueue"
 
   title           = "Workqueue State"
   service_name    = local.workqueue_name
@@ -20,85 +20,73 @@ module "workqueue-state" {
   shards          = var.shards
   filter          = []
   collapsed       = false
-  version         = "1.0.13"
 }
 
 // Reconciler service sections
 module "errgrp" {
-  source       = "chainguard-dev/common/infra//modules/dashboard/sections/errgrp"
+  source       = "../../../../../public/terraform-infra-common/modules/dashboard/sections/errgrp"
   title        = "Reconciler Error Reporting"
   project_id   = var.project_id
   service_name = local.service_name
   collapsed    = true
-  version      = "1.0.13"
 }
 
 module "reconciler-logs" {
-  source        = "chainguard-dev/common/infra//modules/dashboard/sections/logs"
+  source        = "../../../../../public/terraform-infra-common/modules/dashboard/sections/logs"
   title         = "Reconciler Logs"
   filter        = [var.mode == "long" ? "resource.labels.job_name=\"${local.service_name}\"" : "resource.labels.service_name=\"${local.service_name}\""]
   cloudrun_type = var.mode == "long" ? "job" : "service"
-  version       = "1.0.13"
 }
 
 module "http" {
-  source       = "chainguard-dev/common/infra//modules/dashboard/sections/http"
+  source       = "../../../../../public/terraform-infra-common/modules/dashboard/sections/http"
   title        = "HTTP"
   filter       = []
   service_name = local.service_name
-  version      = "1.0.13"
 }
 
 module "grpc" {
-  source       = "chainguard-dev/common/infra//modules/dashboard/sections/grpc"
+  source       = "../../../../../public/terraform-infra-common/modules/dashboard/sections/grpc"
   title        = "GRPC"
   filter       = []
   service_name = local.service_name
-  version      = "1.0.13"
 }
 
 module "github" {
-  source  = "chainguard-dev/common/infra//modules/dashboard/sections/github"
-  title   = "GitHub API"
-  filter  = []
-  version = "1.0.13"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/github"
+  title  = "GitHub API"
+  filter = []
 }
 
 module "agents" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/agents"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/agents"
   title  = "Agent Metrics"
   filter = [
     "metric.label.\"service_name\"=\"${local.service_name}\""
   ]
-  version = "1.0.13"
 }
 
 module "resources" {
-  source                = "chainguard-dev/common/infra//modules/dashboard/sections/resources"
+  source                = "../../../../../public/terraform-infra-common/modules/dashboard/sections/resources"
   title                 = "Reconciler Resources"
   filter                = []
   cloudrun_name         = local.service_name
   cloudrun_type         = var.mode == "long" ? "job" : "service"
   notification_channels = var.notification_channels
-  version               = "1.0.13"
 }
 
 module "alerts" {
   for_each = var.alerts
 
-  source  = "chainguard-dev/common/infra//modules/dashboard/sections/alerts"
-  alert   = each.value
-  title   = "Alert: ${each.key}"
-  version = "1.0.13"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/alerts"
+  alert  = each.value
+  title  = "Alert: ${each.key}"
 }
 
-module "width" {
-  source  = "chainguard-dev/common/infra//modules/dashboard/sections/width"
-  version = "1.0.13"
-}
+module "width" { source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/width" }
 
 module "layout" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/layout"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/layout"
   sections = concat(
     [for x in keys(var.alerts) : module.alerts[x].section],
     [
@@ -112,11 +100,10 @@ module "layout" {
     var.sections.agents ? [module.agents.section] : [],
     [module.resources.section],
   )
-  version = "1.0.13"
 }
 
 module "dashboard" {
-  source = "chainguard-dev/common/infra//modules/dashboard"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard"
 
   object = {
     displayName = "Reconciler: ${var.name}"
@@ -152,5 +139,4 @@ module "dashboard" {
       tiles   = module.layout.tiles,
     }
   }
-  version = "1.0.13"
 }

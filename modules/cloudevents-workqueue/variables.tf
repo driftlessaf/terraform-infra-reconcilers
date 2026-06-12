@@ -152,3 +152,9 @@ variable "priority" {
   type        = number
   default     = 0
 }
+
+variable "delay_seconds" {
+  description = "Minimum delay (in seconds) before an enqueued key becomes eligible for processing, so bursts of events for the same key coalesce into ~one reconcile per window. 0 disables it."
+  type        = number
+  default     = 0
+}
