@@ -285,3 +285,13 @@ variable "launch_stage" {
   type        = string
   default     = "GA"
 }
+
+variable "microvm" {
+  description = "Add the microvm dashboard sections (control-plane + agent-pod metrics). The agent-pod section is scoped to the reconciler's octo-sts identity, which by convention equals the GKE namespace its microvm agents run in. Requires octo_sts_identity to be set."
+  type        = bool
+  default     = false
+  validation {
+    condition     = !var.microvm || var.octo_sts_identity != ""
+    error_message = "octo_sts_identity must be set when microvm is true (the agent namespace matches it)."
+  }
+}

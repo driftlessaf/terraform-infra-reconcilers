@@ -105,10 +105,11 @@ No resources.
 | <a name="input_concurrent_work"></a> [concurrent\_work](#input\_concurrent\_work) | The amount of concurrent work the workqueue dispatches | `number` | `20` | no |
 | <a name="input_labels"></a> [labels](#input\_labels) | Additional labels to add to the dashboard | `map(string)` | `{}` | no |
 | <a name="input_max_retry"></a> [max\_retry](#input\_max\_retry) | The maximum number of retry attempts for workqueue tasks | `number` | `20` | no |
+| <a name="input_mode"></a> [mode](#input\_mode) | Reconciler mode: "short" (Cloud Run Service) or "long" (Cloud Run Job per cron tick) | `string` | `"short"` | no |
 | <a name="input_name"></a> [name](#input\_name) | The name of the reconciler (base name without suffixes) | `string` | n/a | yes |
 | <a name="input_notification_channels"></a> [notification\_channels](#input\_notification\_channels) | List of notification channels for alerts | `list(string)` | `[]` | no |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | The GCP project ID | `string` | n/a | yes |
-| <a name="input_sections"></a> [sections](#input\_sections) | Configure visibility of optional dashboard sections | <pre>object({<br/>    github = optional(bool, false)<br/>    agents = optional(bool, false)<br/>  })</pre> | `{}` | no |
+| <a name="input_sections"></a> [sections](#input\_sections) | Configure visibility of optional dashboard sections | <pre>object({<br/>    github = optional(bool, false)<br/>    agents = optional(bool, false)<br/>    // microvm, unlike the others, is a namespace string rather than a bool:<br/>    // set it to the GKE namespace this reconciler's microvm agent pods run in<br/>    // to add the control-plane (scoped by service_name) and agent-pod (scoped<br/>    // to that namespace) sections. Null omits them.<br/>    microvm = optional(string, null)<br/>  })</pre> | `{}` | no |
 | <a name="input_service_name"></a> [service\_name](#input\_service\_name) | The name of the reconciler service (defaults to name-rec) | `string` | `""` | no |
 | <a name="input_shards"></a> [shards](#input\_shards) | Number of workqueue shards. When > 1, dashboard shows per-shard metrics. | `number` | `1` | no |
 | <a name="input_workqueue_name"></a> [workqueue\_name](#input\_workqueue\_name) | The name of the workqueue (defaults to name-wq) | `string` | `""` | no |

@@ -50,6 +50,11 @@ variable "sections" {
   type = object({
     github = optional(bool, false)
     agents = optional(bool, false)
+    // microvm, unlike the others, is a namespace string rather than a bool:
+    // set it to the GKE namespace this reconciler's microvm agent pods run in
+    // to add the control-plane (scoped by service_name) and agent-pod (scoped
+    // to that namespace) sections. Null omits them.
+    microvm = optional(string, null)
   })
   default = {}
 }

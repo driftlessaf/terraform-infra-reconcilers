@@ -102,8 +102,9 @@ module "dashboard" {
   concurrent_work = var.concurrent-work
 
   sections = {
-    github = true
-    agents = true
+    github  = true
+    agents  = true
+    microvm = var.microvm ? var.octo_sts_identity : null
   }
 
   labels = merge({
