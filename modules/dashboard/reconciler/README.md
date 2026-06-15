@@ -45,6 +45,10 @@ The dashboard includes:
 - **GitHub API Metrics**: API usage and rate limiting (optional)
 - **Resources**: CPU, memory, and other resource utilization
 
+### microvm Metrics (separate dashboard)
+
+When the `microvm` section is enabled, the control-plane and agent-pod metrics are published to their own `Reconciler microvm: <name>` dashboard rather than this one. They add 14 widgets, which would push a reconciler that also enables `github` and `agents` past Cloud Monitoring's 50-widget-per-dashboard limit.
+
 ## Variables
 
 | Name | Description | Default |

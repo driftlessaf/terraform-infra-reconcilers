@@ -66,9 +66,12 @@ module "agents" {
   ]
 }
 
-// When var.sections.microvm is set to a namespace, surface two collapsible groups: the
+// When var.sections.microvm is set to a namespace, build two groups: the
 // control-plane metrics this reconciler's microvm.Manager records (scoped by
-// service_name) and the agent-pod metrics scoped to that namespace.
+// service_name) and the agent-pod metrics scoped to that namespace. These land
+// on a dedicated dashboard (module.microvm_dashboard below) rather than the main
+// reconciler dashboard: their 14 widgets would push reconcilers that also enable
+// github+agents past Cloud Monitoring's 50-widget-per-dashboard limit.
 module "microvm" {
   count  = var.sections.microvm != null ? 1 : 0
   source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/microvm"
@@ -76,6 +79,8 @@ module "microvm" {
     "metric.label.\"service_name\"=\"${local.service_name}\""
   ]
   namespace = var.sections.microvm
+  // Expanded by default: the whole dedicated dashboard is about microvm.
+  collapsed = false
 }
 
 module "resources" {
@@ -110,7 +115,6 @@ module "layout" {
     [module.grpc.section],
     var.sections.github ? [module.github.section] : [],
     var.sections.agents ? [module.agents.section] : [],
-    var.sections.microvm != null ? module.microvm[0].sections : [],
     [module.resources.section],
   )
 }
@@ -150,6 +154,37 @@ module "dashboard" {
     mosaicLayout = {
       columns = module.width.size
       tiles   = module.layout.tiles,
+    }
+  }
+}
+
+// microvm observability gets its own dashboard. Its control-plane and agent-pod
+// groups are self-scoped per widget (service_name metric-label / namespace
+// resource-label), so no dashboard-level filter is applied: a service_name
+// filter would zero out the agent-pod widgets, which carry no reconciler
+// service_name.
+module "microvm_layout" {
+  count    = var.sections.microvm != null ? 1 : 0
+  source   = "../../../../../public/terraform-infra-common/modules/dashboard/sections/layout"
+  sections = module.microvm[0].sections
+}
+
+module "microvm_dashboard" {
+  count  = var.sections.microvm != null ? 1 : 0
+  source = "../../../../../public/terraform-infra-common/modules/dashboard"
+
+  object = {
+    displayName = "Reconciler microvm: ${var.name}"
+    labels = merge({
+      "service" : ""
+      "reconciler" : ""
+      "microvm" : ""
+    }, var.labels)
+
+    // https://cloud.google.com/monitoring/api/ref_v3/rest/v1/projects.dashboards#mosaiclayout
+    mosaicLayout = {
+      columns = module.width.size
+      tiles   = module.microvm_layout[0].tiles,
     }
   }
 }
