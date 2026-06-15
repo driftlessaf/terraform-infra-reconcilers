@@ -3,6 +3,18 @@ Copyright 2026 Chainguard, Inc.
 SPDX-License-Identifier: Apache-2.0
 */
 
+locals {
+  # PR event types this reconciler consumes. check_run/check_suite scoped to
+  # "completed" — non-terminal check events only cause wasted reconciles.
+  pr_event_types = [
+    { type = "dev.chainguard.github.pull_request" },
+    { type = "dev.chainguard.github.pull_request_review" },
+    { type = "dev.chainguard.github.pull_request_review_comment" },
+    { type = "dev.chainguard.github.check_run", action = "completed" },
+    { type = "dev.chainguard.github.check_suite", action = "completed" },
+  ]
+}
+
 # Regional Go reconciler for processing GitHub issues and PRs
 module "reconciler" {
   source = "../regional-go-reconciler"
@@ -67,8 +79,14 @@ module "cloudevents-prs" {
   name       = "${var.name}-pr"
   regions    = var.regions
 
-  broker  = var.broker
-  filters = var.filters
+  broker = var.broker
+  # One trigger per (subject × type); the issues subscription keeps the unscoped
+  # var.filters. The pullrequesturl attribute requirement still excludes branch CI.
+  filters = flatten([
+    for f in var.filters : [
+      for t in local.pr_event_types : merge(f, t)
+    ]
+  ])
 
   # When own_prs_only is set, deliver only PR events for branches this reconciler
   # authored (changemanager names them "<octo_sts_identity>/..."). Applied to PR

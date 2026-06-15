@@ -3,6 +3,18 @@ Copyright 2026 Chainguard, Inc.
 SPDX-License-Identifier: Apache-2.0
 */
 
+locals {
+  # PR event types this reconciler consumes. check_run/check_suite scoped to
+  # "completed" — non-terminal check events only cause wasted reconciles.
+  pr_event_types = [
+    { type = "dev.chainguard.github.pull_request" },
+    { type = "dev.chainguard.github.pull_request_review" },
+    { type = "dev.chainguard.github.pull_request_review_comment" },
+    { type = "dev.chainguard.github.check_run", action = "completed" },
+    { type = "dev.chainguard.github.check_suite", action = "completed" },
+  ]
+}
+
 # Regional Go reconciler for processing GitHub paths
 module "reconciler" {
   source = "../github-path-reconciler"
@@ -54,12 +66,13 @@ module "cloudevents-prs" {
   regions    = var.regions
 
   broker = var.broker
-  # When repos is non-empty, filter triggers to matching repo subjects.
-  # When repos is empty (e.g. push/resync disabled), use an unfiltered trigger
-  # so PR events still flow. The cloudevents-workqueue module's
-  # filter_has_attributes check on "pullrequesturl" ensures only PR events
-  # actually reach the workqueue.
-  filters = length(var.repos) > 0 ? [for r in var.repos : { "subject" = "${r.owner}/${r.repo}" }] : [{}]
+  # One trigger per (subject × type); when repos is empty the allowlist flows for
+  # any repo. The pullrequesturl attribute requirement still excludes branch CI.
+  filters = length(var.repos) > 0 ? flatten([
+    for r in var.repos : [
+      for t in local.pr_event_types : merge({ subject = "${r.owner}/${r.repo}" }, t)
+    ]
+  ]) : local.pr_event_types
 
   # When own_prs_only is set, deliver only PR events for branches this reconciler
   # authored (changemanager names them "<octo_sts_identity>/...").
