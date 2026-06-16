@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"os/signal"
+	"sort"
 	"strings"
 	"syscall"
 
@@ -17,6 +18,8 @@ import (
 	_ "github.com/chainguard-dev/clog/gcp/init"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/go-github/v84/github"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sethvargo/go-envconfig"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
@@ -44,6 +47,17 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	AppID  int64  `env:"GITHUB_APP_ID"`
 	AppKey string `env:"GITHUB_APP_KEY"`
 }{})
+
+// changedFilesHist counts files changed per push, labelled by the source that
+// resolved them. Gauges how large pushes get.
+var changedFilesHist = promauto.NewHistogramVec(
+	prometheus.HistogramOpts{
+		Name:    "github_path_reconciler_push_changed_files",
+		Help:    "Number of files a push changed, by the source that resolved them.",
+		Buckets: []float64{1, 2, 5, 10, 20, 50, 100, 300, 1000},
+	},
+	[]string{"method"},
+)
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -265,6 +279,10 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 	}
 
 	clog.InfoContextf(ctx, "Processing %d changed files", len(changedFiles))
+	changedFilesHist.WithLabelValues("tree").Observe(float64(len(changedFiles)))
+
+	// Audit: does the free payload file list match the tree diff? Observational.
+	auditPayloadChangedFiles(ctx, &pushEvent, changedFiles)
 
 	// Match changed files against this repo's patterns
 	keySet := make(map[string]struct{})
@@ -298,4 +316,61 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 	}
 
 	return nil
+}
+
+// changedFilesFromPayload returns the union of the payload's per-commit
+// added/modified/removed paths — no API calls.
+func changedFilesFromPayload(pe *github.PushEvent) map[string]struct{} {
+	changed := make(map[string]struct{})
+	for _, c := range pe.Commits {
+		if c == nil {
+			continue
+		}
+		for _, f := range c.Added {
+			changed[f] = struct{}{}
+		}
+		for _, f := range c.Modified {
+			changed[f] = struct{}{}
+		}
+		for _, f := range c.Removed {
+			changed[f] = struct{}{}
+		}
+	}
+	return changed
+}
+
+// auditPayloadChangedFiles compares the payload-derived file set against the
+// authoritative tree set and warns on disagreement. Observational only.
+func auditPayloadChangedFiles(ctx context.Context, pe *github.PushEvent, tree map[string]struct{}) {
+	payload := changedFilesFromPayload(pe)
+
+	// missed: in tree, not payload (dangerous). extra: in payload, not tree (benign).
+	var missed, extra []string
+	for f := range tree {
+		if _, ok := payload[f]; !ok {
+			missed = append(missed, f)
+		}
+	}
+	for f := range payload {
+		if _, ok := tree[f]; !ok {
+			extra = append(extra, f)
+		}
+	}
+
+	if len(missed) == 0 && len(extra) == 0 {
+		return
+	}
+
+	sort.Strings(missed)
+	sort.Strings(extra)
+	clog.WarnContext(ctx, "payload changed-file set disagrees with tree diff",
+		"missed", missed,
+		"extra", extra,
+		"payload_files", len(payload),
+		"tree_files", len(tree),
+		"commits", len(pe.Commits),
+		"forced", pe.GetForced(),
+		"created", pe.GetCreated(),
+		"deleted", pe.GetDeleted(),
+	)
 }
