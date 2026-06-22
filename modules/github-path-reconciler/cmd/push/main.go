@@ -59,6 +59,13 @@ var changedFilesHist = promauto.NewHistogramVec(
 	[]string{"method"},
 )
 
+// pushCommitsHist gauges commits per push (how often the single-commit case occurs).
+var pushCommitsHist = promauto.NewHistogram(prometheus.HistogramOpts{
+	Name:    "github_path_reconciler_push_commits",
+	Help:    "Number of commits per push.",
+	Buckets: []float64{1, 2, 3, 5, 10, 25, 50, 100},
+})
+
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
@@ -280,6 +287,7 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 
 	clog.InfoContextf(ctx, "Processing %d changed files", len(changedFiles))
 	changedFilesHist.WithLabelValues("tree").Observe(float64(len(changedFiles)))
+	pushCommitsHist.Observe(float64(len(pushEvent.Commits)))
 
 	// Audit: does the free payload file list match the tree diff? Observational.
 	auditPayloadChangedFiles(ctx, &pushEvent, changedFiles)
@@ -342,6 +350,12 @@ func changedFilesFromPayload(pe *github.PushEvent) map[string]struct{} {
 // auditPayloadChangedFiles compares the payload-derived file set against the
 // authoritative tree set and warns on disagreement. Observational only.
 func auditPayloadChangedFiles(ctx context.Context, pe *github.PushEvent, tree map[string]struct{}) {
+	// Audit only what the optimization would trust (single commit, ancestor range),
+	// so any logged diff is unexpected. Others diverge by design.
+	if len(pe.Commits) != 1 || pe.GetForced() || pe.GetCreated() || pe.GetDeleted() {
+		return
+	}
+
 	payload := changedFilesFromPayload(pe)
 
 	// missed: in tree, not payload (dangerous). extra: in payload, not tree (benign).
@@ -363,14 +377,10 @@ func auditPayloadChangedFiles(ctx context.Context, pe *github.PushEvent, tree ma
 
 	sort.Strings(missed)
 	sort.Strings(extra)
-	clog.WarnContext(ctx, "payload changed-file set disagrees with tree diff",
+	clog.WarnContext(ctx, "single-commit payload disagrees with tree diff",
 		"missed", missed,
 		"extra", extra,
 		"payload_files", len(payload),
 		"tree_files", len(tree),
-		"commits", len(pe.Commits),
-		"forced", pe.GetForced(),
-		"created", pe.GetCreated(),
-		"deleted", pe.GetDeleted(),
 	)
 }
