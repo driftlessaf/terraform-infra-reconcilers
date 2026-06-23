@@ -200,6 +200,15 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 		"default_branch", defaultBranch,
 	)
 
+	// Only process pushes to the default branch. This precedes the repo config
+	// lookup so ignored pushes cost no API call (config-mode reconcilers fetch
+	// .{identity}.yaml per push, and most pushes are to non-default branches).
+	branch := strings.TrimPrefix(ref, "refs/heads/")
+	if branch != defaultBranch {
+		clog.InfoContextf(ctx, "Ignoring push to non-default branch %q (default is %q)", branch, defaultBranch)
+		return nil
+	}
+
 	// Look up the explicit repo config. If missing, try to fetch it from
 	// .{identity}.yaml at the pushed commit; skip if the file doesn't exist.
 	cfg, ok := h.repoMap[owner+"/"+repo]
@@ -213,15 +222,6 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 			clog.InfoContextf(ctx, "No config for %s/%s, skipping", owner, repo)
 			return nil
 		}
-	}
-
-	// Extract branch name from ref (refs/heads/main -> main)
-	branch := strings.TrimPrefix(ref, "refs/heads/")
-
-	// Only process pushes to the default branch
-	if branch != defaultBranch {
-		clog.InfoContextf(ctx, "Ignoring push to non-default branch %q (default is %q)", branch, defaultBranch)
-		return nil
 	}
 
 	clog.InfoContextf(ctx, "Processing push event on default branch %q", defaultBranch)
