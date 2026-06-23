@@ -15,7 +15,7 @@ import (
 
 	"github.com/chainguard-dev/clog"
 	_ "github.com/chainguard-dev/clog/gcp/init"
-	"github.com/google/go-github/v84/github"
+	"github.com/google/go-github/v88/github"
 	"github.com/sethvargo/go-envconfig"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
