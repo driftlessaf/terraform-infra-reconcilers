@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"os/signal"
-	"sort"
 	"strings"
 	"syscall"
 
@@ -48,8 +47,7 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	AppKey string `env:"GITHUB_APP_KEY"`
 }{})
 
-// changedFilesHist counts files changed per push, labelled by the source that
-// resolved them. Gauges how large pushes get.
+// changedFilesHist counts files changed per push, by resolving source.
 var changedFilesHist = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
 		Name:    "github_path_reconciler_push_changed_files",
@@ -228,69 +226,14 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 
 	clog.InfoContextf(ctx, "Processing push event on default branch %q", defaultBranch)
 
-	// Get GitHub client
-	ghClient, err := h.clientCache.Get(ctx, owner, repo)
+	changedFiles, method, err := h.resolveChangedFiles(ctx, &pushEvent, owner, repo, before, after)
 	if err != nil {
-		return fmt.Errorf("failed to get GitHub client: %w", err)
+		return err
 	}
-
-	// Use Git Tree comparison to get all changed files.
-	// CompareCommits is limited to 300 files, but GetTree has no such limit.
-	beforeCommit, _, err := ghClient.Git.GetCommit(ctx, owner, repo, before)
-	if err != nil {
-		return fmt.Errorf("failed to get before commit: %w", err)
-	}
-
-	afterCommit, _, err := ghClient.Git.GetCommit(ctx, owner, repo, after)
-	if err != nil {
-		return fmt.Errorf("failed to get after commit: %w", err)
-	}
-
-	// Get recursive trees for both commits
-	beforeTree, _, err := ghClient.Git.GetTree(ctx, owner, repo, beforeCommit.Tree.GetSHA(), true)
-	if err != nil {
-		return fmt.Errorf("failed to get before tree: %w", err)
-	}
-
-	afterTree, _, err := ghClient.Git.GetTree(ctx, owner, repo, afterCommit.Tree.GetSHA(), true)
-	if err != nil {
-		return fmt.Errorf("failed to get after tree: %w", err)
-	}
-
-	// Build maps of file paths to their blob SHAs
-	beforeFiles := make(map[string]string, len(beforeTree.Entries))
-	for _, entry := range beforeTree.Entries {
-		if entry.GetType() == "blob" {
-			beforeFiles[entry.GetPath()] = entry.GetSHA()
-		}
-	}
-
-	afterFiles := make(map[string]string, len(afterTree.Entries))
-	for _, entry := range afterTree.Entries {
-		if entry.GetType() == "blob" {
-			afterFiles[entry.GetPath()] = entry.GetSHA()
-		}
-	}
-
-	// Find all changed files (added, modified, or deleted)
-	changedFiles := make(map[string]struct{})
-	for path, afterSHA := range afterFiles {
-		if beforeSHA, exists := beforeFiles[path]; !exists || beforeSHA != afterSHA {
-			changedFiles[path] = struct{}{}
-		}
-	}
-	for path := range beforeFiles {
-		if _, exists := afterFiles[path]; !exists {
-			changedFiles[path] = struct{}{}
-		}
-	}
-
-	clog.InfoContextf(ctx, "Processing %d changed files", len(changedFiles))
-	changedFilesHist.WithLabelValues("tree").Observe(float64(len(changedFiles)))
+	changedFilesHist.WithLabelValues(method).Observe(float64(len(changedFiles)))
 	pushCommitsHist.Observe(float64(len(pushEvent.Commits)))
 
-	// Audit: does the free payload file list match the tree diff? Observational.
-	auditPayloadChangedFiles(ctx, &pushEvent, changedFiles)
+	clog.InfoContextf(ctx, "Processing %d changed files", len(changedFiles))
 
 	// Match changed files against this repo's patterns
 	keySet := make(map[string]struct{})
@@ -326,9 +269,53 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 	return nil
 }
 
-// changedFilesFromPayload returns the union of the payload's per-commit
-// added/modified/removed paths — no API calls.
-func changedFilesFromPayload(pe *github.PushEvent) map[string]struct{} {
+// compareFilesCap is the max files Compare returns. At the cap it's truncated and
+// we fall back to the tree. https://docs.github.com/en/rest/commits/commits#compare-two-commits
+const compareFilesCap = 300
+
+// resolveChangedFiles returns the set of file paths the push changed, a label
+// naming the source that resolved them (payload, compare, or tree), and an error.
+// It uses the cheapest trustworthy source: the payload for a single-commit
+// ancestor push (no API calls, exact), else Compare for any ancestor push (one
+// call), else a recursive tree diff. Forced/create/delete and a truncated Compare
+// fall to the tree.
+func (h *pushHandler) resolveChangedFiles(ctx context.Context, pe *github.PushEvent, owner, repo, before, after string) (map[string]struct{}, string, error) {
+	// Forced pushes and branch create/delete aren't an ancestor range, where the
+	// payload and Compare's merge-base diff could miss changes - use only the tree.
+	ancestorRange := !pe.GetForced() && !pe.GetCreated() && !pe.GetDeleted()
+
+	// A single commit on an ancestor range has no merge-from-main or
+	// revert-within-push churn, so its payload is exactly the net diff.
+	if ancestorRange && len(pe.Commits) == 1 {
+		return changedPathsFromPayload(pe), "payload", nil
+	}
+
+	gh, err := h.clientCache.Get(ctx, owner, repo)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get GitHub client: %w", err)
+	}
+
+	if ancestorRange {
+		cmpFiles, complete, err := changedPathsFromCompare(ctx, gh, owner, repo, before, after)
+		if err != nil {
+			return nil, "", err
+		}
+		if complete {
+			return cmpFiles, "compare", nil
+		}
+	}
+
+	treeFiles, err := changedPathsFromTree(ctx, gh, owner, repo, before, after)
+	if err != nil {
+		return nil, "", err
+	}
+	return treeFiles, "tree", nil
+}
+
+// changedPathsFromPayload returns the union of the files the push's commits
+// touched per the webhook payload (no API calls). The caller must confirm the
+// push is trustworthy (a single commit on an ancestor range) before using it.
+func changedPathsFromPayload(pe *github.PushEvent) map[string]struct{} {
 	changed := make(map[string]struct{})
 	for _, c := range pe.Commits {
 		if c == nil {
@@ -347,40 +334,79 @@ func changedFilesFromPayload(pe *github.PushEvent) map[string]struct{} {
 	return changed
 }
 
-// auditPayloadChangedFiles compares the payload-derived file set against the
-// authoritative tree set and warns on disagreement. Observational only.
-func auditPayloadChangedFiles(ctx context.Context, pe *github.PushEvent, tree map[string]struct{}) {
-	// Audit only what the optimization would trust (single commit, ancestor range),
-	// so any logged diff is unexpected. Others diverge by design.
-	if len(pe.Commits) != 1 || pe.GetForced() || pe.GetCreated() || pe.GetDeleted() {
-		return
+// changedPathsFromCompare lists before→after changed files in one Compare call.
+// At compareFilesCap the list is truncated, so it returns (nil, false) and the
+// caller uses the tree. Renames carry both Filename and PreviousFilename.
+func changedPathsFromCompare(ctx context.Context, gh *github.Client, owner, repo, before, after string) (map[string]struct{}, bool, error) {
+	cmp, _, err := gh.Repositories.CompareCommits(ctx, owner, repo, before, after, nil)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to compare %s...%s: %w", before, after, err)
 	}
 
-	payload := changedFilesFromPayload(pe)
+	// Truncated: the caller falls back to the tree, so don't build the set.
+	if len(cmp.Files) >= compareFilesCap {
+		return nil, false, nil
+	}
 
-	// missed: in tree, not payload (dangerous). extra: in payload, not tree (benign).
-	var missed, extra []string
-	for f := range tree {
-		if _, ok := payload[f]; !ok {
-			missed = append(missed, f)
+	changed := make(map[string]struct{}, len(cmp.Files))
+	for _, f := range cmp.Files {
+		changed[f.GetFilename()] = struct{}{}
+		if prev := f.GetPreviousFilename(); prev != "" {
+			changed[prev] = struct{}{}
 		}
 	}
-	for f := range payload {
-		if _, ok := tree[f]; !ok {
-			extra = append(extra, f)
+	return changed, true, nil
+}
+
+// changedPathsFromTree diffs the full recursive before/after trees - four API
+// calls, the fallback when payload and Compare don't apply. Warns on truncation.
+func changedPathsFromTree(ctx context.Context, gh *github.Client, owner, repo, before, after string) (map[string]struct{}, error) {
+	beforeCommit, _, err := gh.Git.GetCommit(ctx, owner, repo, before)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get before commit: %w", err)
+	}
+	afterCommit, _, err := gh.Git.GetCommit(ctx, owner, repo, after)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get after commit: %w", err)
+	}
+
+	beforeTree, _, err := gh.Git.GetTree(ctx, owner, repo, beforeCommit.Tree.GetSHA(), true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get before tree: %w", err)
+	}
+	afterTree, _, err := gh.Git.GetTree(ctx, owner, repo, afterCommit.Tree.GetSHA(), true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get after tree: %w", err)
+	}
+	if beforeTree.GetTruncated() || afterTree.GetTruncated() {
+		clog.WarnContextf(ctx, "recursive tree for %s/%s was truncated, changed-file detection may be incomplete", owner, repo)
+	}
+
+	// Build maps of file paths to their blob SHAs
+	beforeFiles := make(map[string]string, len(beforeTree.Entries))
+	for _, entry := range beforeTree.Entries {
+		if entry.GetType() == "blob" {
+			beforeFiles[entry.GetPath()] = entry.GetSHA()
+		}
+	}
+	afterFiles := make(map[string]string, len(afterTree.Entries))
+	for _, entry := range afterTree.Entries {
+		if entry.GetType() == "blob" {
+			afterFiles[entry.GetPath()] = entry.GetSHA()
 		}
 	}
 
-	if len(missed) == 0 && len(extra) == 0 {
-		return
+	// Find all changed files (added, modified, or deleted)
+	changed := make(map[string]struct{})
+	for path, afterSHA := range afterFiles {
+		if beforeSHA, exists := beforeFiles[path]; !exists || beforeSHA != afterSHA {
+			changed[path] = struct{}{}
+		}
 	}
-
-	sort.Strings(missed)
-	sort.Strings(extra)
-	clog.WarnContext(ctx, "single-commit payload disagrees with tree diff",
-		"missed", missed,
-		"extra", extra,
-		"payload_files", len(payload),
-		"tree_files", len(tree),
-	)
+	for path := range beforeFiles {
+		if _, exists := afterFiles[path]; !exists {
+			changed[path] = struct{}{}
+		}
+	}
+	return changed, nil
 }
