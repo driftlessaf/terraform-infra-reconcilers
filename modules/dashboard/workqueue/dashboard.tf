@@ -1,5 +1,5 @@
 module "workqueue-state" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/workqueue"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/workqueue"
 
   title           = "Workqueue State"
   service_name    = var.name
@@ -8,41 +8,34 @@ module "workqueue-state" {
   shards          = var.shards
   filter          = []
   collapsed       = false
-  version         = "1.7.1"
 }
 
 module "receiver-logs" {
-  source        = "chainguard-dev/common/infra//modules/dashboard/sections/logs"
+  source        = "../../../../../public/terraform-infra-common/modules/dashboard/sections/logs"
   title         = "Receiver Logs"
   filter        = ["resource.labels.service_name=\"${var.name}-rcv\""]
   cloudrun_type = "service"
-  version       = "1.7.1"
 }
 
 module "dispatcher-logs" {
-  source        = "chainguard-dev/common/infra//modules/dashboard/sections/logs"
+  source        = "../../../../../public/terraform-infra-common/modules/dashboard/sections/logs"
   title         = "Dispatcher Logs"
   filter        = ["resource.labels.service_name=\"${var.name}-dsp\""]
   cloudrun_type = "service"
-  version       = "1.7.1"
 }
 
 module "alerts" {
   for_each = var.alerts
 
-  source  = "chainguard-dev/common/infra//modules/dashboard/sections/alerts"
-  alert   = each.value
-  title   = "Alert: ${each.key}"
-  version = "1.7.1"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/alerts"
+  alert  = each.value
+  title  = "Alert: ${each.key}"
 }
 
-module "width" {
-  source  = "chainguard-dev/common/infra//modules/dashboard/sections/width"
-  version = "1.7.1"
-}
+module "width" { source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/width" }
 
 module "layout" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/layout"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/layout"
 
   sections = concat(
     [for x in keys(var.alerts) : module.alerts[x].section],
@@ -52,11 +45,10 @@ module "layout" {
       module.dispatcher-logs.section,
     ]
   )
-  version = "1.7.1"
 }
 
 module "dashboard" {
-  source = "chainguard-dev/common/infra//modules/dashboard"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard"
 
   object = {
     displayName = "Cloud Workqueue: ${var.name}"
@@ -98,5 +90,4 @@ module "dashboard" {
       tiles   = module.layout.tiles,
     }
   }
-  version = "1.7.1"
 }

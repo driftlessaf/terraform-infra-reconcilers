@@ -131,6 +131,16 @@ variable "concurrent-work" {
   default     = 1
 }
 
+variable "scaling" {
+  description = "Scaling configuration for the reconciler service. Set max_instance_request_concurrency to 1 to run one reconcile per instance (scale out), which is appropriate for heavy per-key work (clones, builds, agents) that cannot share an instance."
+  type = object({
+    min_instances                    = optional(number, 0)
+    max_instances                    = optional(number, 100)
+    max_instance_request_concurrency = optional(number, 1000)
+  })
+  default = {}
+}
+
 variable "mode" {
   description = "Reconciler mode. \"short\" (default) runs a long-lived Cloud Run service for the dispatcher. \"long\" runs a Cloud Run Job per cron tick, suitable for reconciliations that exceed Cloud Run's request timeout."
   type        = string

@@ -32,6 +32,9 @@ module "reconciler" {
   concurrent-work = var.concurrent-work
   max-retry       = var.max-retry
 
+  # Reconciler service scaling (e.g. max_instance_request_concurrency = 1 to scale out)
+  scaling = var.scaling
+
   # Container configuration
   containers = var.containers
 
