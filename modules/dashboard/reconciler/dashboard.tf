@@ -10,7 +10,7 @@ locals {
 
 // Workqueue metrics section
 module "workqueue-state" {
-  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/workqueue"
+  source = "chainguard-dev/common/infra//modules/dashboard/sections/workqueue"
 
   title           = "Workqueue State"
   service_name    = local.workqueue_name
@@ -20,50 +20,57 @@ module "workqueue-state" {
   shards          = var.shards
   filter          = []
   collapsed       = false
+  version         = "1.11.0"
 }
 
 // Reconciler service sections
 module "errgrp" {
-  source       = "../../../../../public/terraform-infra-common/modules/dashboard/sections/errgrp"
+  source       = "chainguard-dev/common/infra//modules/dashboard/sections/errgrp"
   title        = "Reconciler Error Reporting"
   project_id   = var.project_id
   service_name = local.service_name
   collapsed    = true
+  version      = "1.11.0"
 }
 
 module "reconciler-logs" {
-  source        = "../../../../../public/terraform-infra-common/modules/dashboard/sections/logs"
+  source        = "chainguard-dev/common/infra//modules/dashboard/sections/logs"
   title         = "Reconciler Logs"
   filter        = [var.mode == "long" ? "resource.labels.job_name=\"${local.service_name}\"" : "resource.labels.service_name=\"${local.service_name}\""]
   cloudrun_type = var.mode == "long" ? "job" : "service"
+  version       = "1.11.0"
 }
 
 module "http" {
-  source       = "../../../../../public/terraform-infra-common/modules/dashboard/sections/http"
+  source       = "chainguard-dev/common/infra//modules/dashboard/sections/http"
   title        = "HTTP"
   filter       = []
   service_name = local.service_name
+  version      = "1.11.0"
 }
 
 module "grpc" {
-  source       = "../../../../../public/terraform-infra-common/modules/dashboard/sections/grpc"
+  source       = "chainguard-dev/common/infra//modules/dashboard/sections/grpc"
   title        = "GRPC"
   filter       = []
   service_name = local.service_name
+  version      = "1.11.0"
 }
 
 module "github" {
-  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/github"
-  title  = "GitHub API"
-  filter = []
+  source  = "chainguard-dev/common/infra//modules/dashboard/sections/github"
+  title   = "GitHub API"
+  filter  = []
+  version = "1.11.0"
 }
 
 module "agents" {
-  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/agents"
+  source = "chainguard-dev/common/infra//modules/dashboard/sections/agents"
   title  = "Agent Metrics"
   filter = [
     "metric.label.\"service_name\"=\"${local.service_name}\""
   ]
+  version = "1.11.0"
 }
 
 // When var.sections.microvm is set to a namespace, build two groups: the
@@ -74,36 +81,42 @@ module "agents" {
 // github+agents past Cloud Monitoring's 50-widget-per-dashboard limit.
 module "microvm" {
   count  = var.sections.microvm != null ? 1 : 0
-  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/microvm"
+  source = "chainguard-dev/common/infra//modules/dashboard/sections/microvm"
   filter = [
     "metric.label.\"service_name\"=\"${local.service_name}\""
   ]
   namespace = var.sections.microvm
   // Expanded by default: the whole dedicated dashboard is about microvm.
   collapsed = false
+  version   = "1.11.0"
 }
 
 module "resources" {
-  source                = "../../../../../public/terraform-infra-common/modules/dashboard/sections/resources"
+  source                = "chainguard-dev/common/infra//modules/dashboard/sections/resources"
   title                 = "Reconciler Resources"
   filter                = []
   cloudrun_name         = local.service_name
   cloudrun_type         = var.mode == "long" ? "job" : "service"
   notification_channels = var.notification_channels
+  version               = "1.11.0"
 }
 
 module "alerts" {
   for_each = var.alerts
 
-  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/alerts"
-  alert  = each.value
-  title  = "Alert: ${each.key}"
+  source  = "chainguard-dev/common/infra//modules/dashboard/sections/alerts"
+  alert   = each.value
+  title   = "Alert: ${each.key}"
+  version = "1.11.0"
 }
 
-module "width" { source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/width" }
+module "width" {
+  source  = "chainguard-dev/common/infra//modules/dashboard/sections/width"
+  version = "1.11.0"
+}
 
 module "layout" {
-  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/layout"
+  source = "chainguard-dev/common/infra//modules/dashboard/sections/layout"
   sections = concat(
     [for x in keys(var.alerts) : module.alerts[x].section],
     [
@@ -117,10 +130,11 @@ module "layout" {
     var.sections.agents ? [module.agents.section] : [],
     [module.resources.section],
   )
+  version = "1.11.0"
 }
 
 module "dashboard" {
-  source = "../../../../../public/terraform-infra-common/modules/dashboard"
+  source = "chainguard-dev/common/infra//modules/dashboard"
 
   object = {
     displayName = "Reconciler: ${var.name}"
@@ -156,6 +170,7 @@ module "dashboard" {
       tiles   = module.layout.tiles,
     }
   }
+  version = "1.11.0"
 }
 
 // microvm observability gets its own dashboard. Its control-plane and agent-pod
@@ -165,13 +180,14 @@ module "dashboard" {
 // service_name.
 module "microvm_layout" {
   count    = var.sections.microvm != null ? 1 : 0
-  source   = "../../../../../public/terraform-infra-common/modules/dashboard/sections/layout"
+  source   = "chainguard-dev/common/infra//modules/dashboard/sections/layout"
   sections = module.microvm[0].sections
+  version  = "1.11.0"
 }
 
 module "microvm_dashboard" {
   count  = var.sections.microvm != null ? 1 : 0
-  source = "../../../../../public/terraform-infra-common/modules/dashboard"
+  source = "chainguard-dev/common/infra//modules/dashboard"
 
   object = {
     displayName = "Reconciler microvm: ${var.name}"
@@ -187,4 +203,5 @@ module "microvm_dashboard" {
       tiles   = module.microvm_layout[0].tiles,
     }
   }
+  version = "1.11.0"
 }
