@@ -15,8 +15,8 @@ resource "google_monitoring_alert_policy" "dead_letter_queue" {
 
     condition_threshold {
       comparison      = "COMPARISON_GT"
-      threshold_value = 1
-      duration        = "0s"
+      threshold_value = local.dead_letter_alert_threshold
+      duration        = local.dead_letter_alert_duration
 
       filter = <<EOT
         resource.type = "prometheus_target"

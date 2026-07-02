@@ -32,6 +32,8 @@ locals {
   concurrent_work             = var.concurrent-work
   max_retry                   = var.max-retry
   enable_dead_letter_alerting = var.enable_dead_letter_alerting
+  dead_letter_alert_threshold = var.dead_letter_alert_threshold
+  dead_letter_alert_duration  = var.dead_letter_alert_duration
   receiver_ingress            = var.receiver_ingress
   error_event_ingress         = var.error_event_ingress
   // In short mode, derive the name from module.reconciler so dispatcher-calls-target

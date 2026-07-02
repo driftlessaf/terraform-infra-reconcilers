@@ -44,6 +44,18 @@ variable "enable_dead_letter_alerting" {
   default     = true
 }
 
+variable "dead_letter_alert_threshold" {
+  description = "Number of dead-lettered keys above which the alert fires."
+  type        = number
+  default     = 1
+}
+
+variable "dead_letter_alert_duration" {
+  description = "How long the dead-lettered keys count must stay above the threshold before the alert fires (e.g. '0s', '600s')."
+  type        = string
+  default     = "0s"
+}
+
 variable "reconciler-service" {
   description = "The name of the reconciler service that the workqueue will dispatch work to."
   type = object({

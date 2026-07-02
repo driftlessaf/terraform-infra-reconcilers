@@ -59,6 +59,18 @@ variable "enable_dead_letter_alerting" {
   default     = true
 }
 
+variable "dead_letter_alert_threshold" {
+  description = "Number of dead-lettered keys above which the alert fires."
+  type        = number
+  default     = 1
+}
+
+variable "dead_letter_alert_duration" {
+  description = "How long the dead-lettered keys count must stay above the threshold before the alert fires (e.g. '0s', '600s')."
+  type        = string
+  default     = "0s"
+}
+
 variable "concurrent-work" {
   description = "The amount of concurrent work to dispatch at a given time."
   type        = number
