@@ -44,6 +44,14 @@ variable "error_event_ingress" {
   default = null
 }
 
+variable "trace_event_ingress" {
+  description = "Optional CloudEvents broker for agent-trace emission, forwarded to the underlying reconciler. When set, the reconciler is authorized to publish to the named broker and EVENT_INGRESS_URI is populated on the reconciler containers. Set to null to disable."
+  type = object({
+    name = string
+  })
+  default = null
+}
+
 variable "filters" {
   description = "CloudEvents filters for selecting events to process (applied to both issue and PR events)"
   type        = list(map(string))

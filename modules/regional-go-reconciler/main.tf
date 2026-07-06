@@ -14,7 +14,7 @@ terraform {
 // In long mode the reconciler runs as a sidecar in a Cloud Run Job instead.
 module "reconciler" {
   count  = var.mode == "short" ? 1 : 0
-  source = "chainguard-dev/common/infra//modules/regional-go-service"
+  source = "../../../../public/terraform-infra-common/modules/regional-go-service"
 
   project_id = var.project_id
   name       = "${var.name}-rec"
@@ -25,7 +25,7 @@ module "reconciler" {
   deletion_protection = var.deletion_protection
 
   service_account = var.service_account
-  containers      = var.containers
+  containers      = local.containers_plus_trace_env
 
   labels           = merge({ "service" : "${var.name}-rec" }, var.labels)
   team             = var.team
@@ -43,5 +43,4 @@ module "reconciler" {
   slo = var.slo
 
   notification_channels = var.notification_channels
-  version               = "1.11.0"
 }

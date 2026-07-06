@@ -57,6 +57,7 @@ module "reconciler" {
   broker              = var.broker
   paused              = var.paused
   error_event_ingress = var.error_event_ingress
+  trace_event_ingress = var.trace_event_ingress
 }
 
 # CloudEvents to Workqueue bridge for pull request events

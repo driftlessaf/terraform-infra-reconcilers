@@ -377,6 +377,14 @@ variable "error_event_ingress" {
   default = null
 }
 
+variable "trace_event_ingress" {
+  description = "Optional CloudEvents broker for agent-trace emission, forwarded to the underlying reconciler. When set, the reconciler is authorized to publish to the named broker and EVENT_INGRESS_URI is populated on the reconciler containers. Set to null to disable."
+  type = object({
+    name = string
+  })
+  default = null
+}
+
 variable "launch_stage" {
   description = "The launch stage of the Cloud Run service (e.g. BETA to leverage features like disk volumes)."
   type        = string

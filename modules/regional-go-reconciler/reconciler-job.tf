@@ -4,7 +4,7 @@
 
 module "reconciler-job" {
   count  = var.mode == "long" ? 1 : 0
-  source = "chainguard-dev/common/infra//modules/regional-go-cron"
+  source = "../../../../public/terraform-infra-common/modules/regional-go-cron"
 
   project_id      = var.project_id
   name            = "${var.name}-rec"
@@ -49,7 +49,7 @@ module "reconciler-job" {
     // with typed startup_probe/liveness_probe objects that are incompatible with
     // regional-go-cron's optional(any). Both are nulled out — Cloud Run Jobs don't
     // support probes. cpu_idle and startup_cpu_boost are silently ignored by jobs.
-    { for k, v in var.containers : k => {
+    { for k, v in local.containers_plus_trace_env : k => {
       source            = v.source
       command           = v.command
       args              = v.args
@@ -69,5 +69,4 @@ module "reconciler-job" {
   deletion_protection   = var.deletion_protection
   notification_channels = var.notification_channels
   labels                = merge({ "service" : "${var.name}-rec" }, var.labels)
-  version               = "1.11.0"
 }

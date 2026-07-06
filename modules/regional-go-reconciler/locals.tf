@@ -36,6 +36,7 @@ locals {
   dead_letter_alert_duration  = var.dead_letter_alert_duration
   receiver_ingress            = var.receiver_ingress
   error_event_ingress         = var.error_event_ingress
+  trace_event_ingress         = var.trace_event_ingress
   // In short mode, derive the name from module.reconciler so dispatcher-calls-target
   // implicitly waits for the reconciler Cloud Run service to exist. The value is
   // identical to "${var.name}-rec" (regional-go-service uses var.name verbatim) —

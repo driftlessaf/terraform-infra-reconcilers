@@ -318,6 +318,14 @@ variable "error_event_ingress" {
   default = null
 }
 
+variable "trace_event_ingress" {
+  description = "Optional CloudEvents broker for agent-trace emission. When set, the reconciler service account is authorized to publish to the named broker and EVENT_INGRESS_URI is appended to every reconciler container's regional env; agenttrace then emits dev.chainguard.driftlessaf.agent.trace.v1 events per agent invocation. Set to null to disable."
+  type = object({
+    name = string
+  })
+  default = null
+}
+
 variable "slo" {
   description = "Configuration for setting up SLO for the cloud run service"
   type = object({

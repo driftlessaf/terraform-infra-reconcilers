@@ -139,6 +139,7 @@ No requirements.
 | <a name="module_receiver-service"></a> [receiver-service](#module\_receiver-service) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
 | <a name="module_reconciler"></a> [reconciler](#module\_reconciler) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
 | <a name="module_reconciler-job"></a> [reconciler-job](#module\_reconciler-job) | ../../../../public/terraform-infra-common/modules/regional-go-cron | n/a |
+| <a name="module_reconciler-publishes-traces"></a> [reconciler-publishes-traces](#module\_reconciler-publishes-traces) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
 | <a name="module_reenqueue"></a> [reenqueue](#module\_reenqueue) | ../../../../public/terraform-infra-common/modules/cron | n/a |
 
 ## Resources
@@ -206,6 +207,7 @@ No requirements.
 | <a name="input_service_account"></a> [service\_account](#input\_service\_account) | The service account as which to run the reconciler service. | `string` | n/a | yes |
 | <a name="input_slo"></a> [slo](#input\_slo) | Configuration for setting up SLO for the cloud run service | <pre>object({<br/>    enable          = optional(bool, false)<br/>    enable_alerting = optional(bool, false)<br/>    success = optional(object(<br/>      {<br/>        multi_region_goal = optional(number, 0.999)<br/>        per_region_goal   = optional(number, 0.999)<br/>      }<br/>    ), null)<br/>    monitor_gclb = optional(bool, false)<br/>  })</pre> | `{}` | no |
 | <a name="input_team"></a> [team](#input\_team) | Team label to apply to resources (replaces deprecated 'squad'). | `string` | n/a | yes |
+| <a name="input_trace_event_ingress"></a> [trace\_event\_ingress](#input\_trace\_event\_ingress) | Optional CloudEvents broker for agent-trace emission. When set, the reconciler service account is authorized to publish to the named broker and EVENT\_INGRESS\_URI is appended to every reconciler container's regional env; agenttrace then emits dev.chainguard.driftlessaf.agent.trace.v1 events per agent invocation. Set to null to disable. | <pre>object({<br/>    name = string<br/>  })</pre> | `null` | no |
 | <a name="input_volumes"></a> [volumes](#input\_volumes) | The volumes to attach to the service. | <pre>list(object({<br/>    name = string<br/>    empty_dir = optional(object({<br/>      medium     = optional(string, "MEMORY")<br/>      size_limit = optional(string, "1Gi")<br/>    }), null)<br/>    csi = optional(object({<br/>      driver = string<br/>      volume_attributes = optional(object({<br/>        bucketName = string<br/>      }), null)<br/>    }), null)<br/>  }))</pre> | `[]` | no |
 | <a name="input_workqueue_cpu_idle"></a> [workqueue\_cpu\_idle](#input\_workqueue\_cpu\_idle) | Set to false for a region in order to use instance-based billing for workqueue services (dispatcher and receiver). Defaults to true. To control reconciler cpu\_idle, use the 'regional-cpu-idle' field in the 'containers' variable. | `map(map(bool))` | <pre>{<br/>  "dispatcher": {},<br/>  "receiver": {}<br/>}</pre> | no |
 
