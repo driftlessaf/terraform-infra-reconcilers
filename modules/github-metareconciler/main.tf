@@ -32,6 +32,10 @@ module "reconciler" {
   concurrent-work = var.concurrent-work
   max-retry       = var.max-retry
 
+  # Dead-letter alerting configuration
+  dead_letter_alert_threshold = var.dead_letter_alert_threshold
+  dead_letter_alert_duration  = var.dead_letter_alert_duration
+
   # Container configuration
   containers = var.containers
 

@@ -151,6 +151,18 @@ variable "max-retry" {
   default     = 3
 }
 
+variable "dead_letter_alert_threshold" {
+  description = "Number of dead-lettered keys above which the alert fires."
+  type        = number
+  default     = 1
+}
+
+variable "dead_letter_alert_duration" {
+  description = "How long the dead-lettered keys count must stay above the threshold before the alert fires (e.g. '0s', '600s')."
+  type        = string
+  default     = "0s"
+}
+
 variable "egress" {
   type        = string
   description = "Which type of egress traffic to send through the VPC."
