@@ -353,3 +353,9 @@ variable "dlq_operators" {
   type        = list(string)
   default     = []
 }
+
+variable "reenqueue_invokers" {
+  description = "IAM members granted roles/run.invoker on the (manually-triggered) reenqueue Cloud Run job, allowing them to execute it to requeue dead-lettered workqueue items. Format: \"user:email\", \"group:email\", or \"serviceAccount:email\"."
+  type        = list(string)
+  default     = []
+}

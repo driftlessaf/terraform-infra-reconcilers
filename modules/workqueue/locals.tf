@@ -54,6 +54,10 @@ locals {
   // dead-letter queue operations. Inline deployments override this via var.dlq_operators.
   dlq_operator_members = []
 
+  // reenqueue_invokers are IAM members granted roles/run.invoker on the reenqueue
+  // job. The regional-go-reconciler wrapper overrides this via var.reenqueue_invokers.
+  reenqueue_invokers = []
+
   // dispatcher_change_trigger_enabled controls whether the PubSub object-change
   // subscription and its supporting resources are created.  Set to false in
   // "long" mode where a cron-driven job replaces the event-triggered service.

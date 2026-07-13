@@ -27,7 +27,7 @@ resource "google_storage_bucket_iam_member" "reenqueue-bucket-access" {
 
 // The reenqueue cron job (paused by default, for manual invocation)
 module "reenqueue" {
-  source = "chainguard-dev/common/infra//modules/cron"
+  source = "../../../../public/terraform-infra-common/modules/cron"
 
   project_id      = local.project_id
   name            = local.reenqueue_job_name
@@ -40,6 +40,10 @@ module "reenqueue" {
   # Paused by default - this job is meant to be manually triggered
   paused   = true
   schedule = "0 0 * * *" # Placeholder, never runs when paused
+
+  # Additional IAM members allowed to execute the job (beyond the job's own
+  # invoker SA), so operators can manually requeue dead-lettered items.
+  invokers = local.reenqueue_invokers
 
   env = {
     "WORKQUEUE_MODE"        = "gcs"
@@ -60,5 +64,4 @@ module "reenqueue" {
   product               = local.product
   notification_channels = local.notification_channels
   deletion_protection   = local.deletion_protection
-  version               = "1.14.1"
 }
