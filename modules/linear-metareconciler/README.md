@@ -49,6 +49,7 @@ No resources.
 | <a name="input_request_timeout_seconds"></a> [request\_timeout\_seconds](#input\_request\_timeout\_seconds) | The request timeout for the service in seconds. | `number` | `300` | no |
 | <a name="input_service_account"></a> [service\_account](#input\_service\_account) | Service account email to run the reconciler | `string` | n/a | yes |
 | <a name="input_team"></a> [team](#input\_team) | Team label for the service | `string` | n/a | yes |
+| <a name="input_trace_event_ingress"></a> [trace\_event\_ingress](#input\_trace\_event\_ingress) | Optional CloudEvents broker for agent-trace and state-transition emission, forwarded to the underlying reconciler. When set, the reconciler is authorized to publish to the named broker and EVENT\_INGRESS\_URI is populated on the reconciler containers. Set to null to disable. | <pre>object({<br/>    name = string<br/>  })</pre> | `null` | no |
 
 ## Outputs
 
