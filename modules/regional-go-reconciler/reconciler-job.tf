@@ -3,8 +3,9 @@
 // user reconciler containers run as sidecars on localhost:8081.
 
 module "reconciler-job" {
-  count  = var.mode == "long" ? 1 : 0
-  source = "chainguard-dev/common/infra//modules/regional-go-cron"
+  count              = var.mode == "long" ? 1 : 0
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
+  observability_role = var.observability_role
 
   project_id      = var.project_id
   name            = "${var.name}-rec"
@@ -69,5 +70,4 @@ module "reconciler-job" {
   deletion_protection   = var.deletion_protection
   notification_channels = var.notification_channels
   labels                = merge({ "service" : "${var.name}-rec" }, var.labels)
-  version               = "1.17.0"
 }

@@ -217,37 +217,41 @@ No requirements.
 ## Providers
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="provider_google"></a> [google](#provider\_google) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
-|------|--------|---------|
-| <a name="module_subscriber"></a> [subscriber](#module\_subscriber) | ../regional-go-service | n/a |
-| <a name="module_subscriber-calls-workqueue"></a> [subscriber-calls-workqueue](#module\_subscriber-calls-workqueue) | ../authorize-private-service | n/a |
-| <a name="module_trigger"></a> [trigger](#module\_trigger) | ../cloudevent-trigger | n/a |
+| ---- | ------ | ------- |
+| <a name="module_subscriber"></a> [subscriber](#module\_subscriber) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
+| <a name="module_subscriber-calls-workqueue"></a> [subscriber-calls-workqueue](#module\_subscriber-calls-workqueue) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_trigger"></a> [trigger](#module\_trigger) | ../../../../public/terraform-infra-common/modules/cloudevent-trigger | n/a |
 
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [google_service_account.subscriber](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_ack_deadline_seconds"></a> [ack\_deadline\_seconds](#input\_ack\_deadline\_seconds) | The deadline for acking a message. | `number` | `300` | no |
 | <a name="input_broker"></a> [broker](#input\_broker) | A map from each of the input region names to the name of the Broker topic in that region. | `map(string)` | n/a | yes |
+| <a name="input_delay_seconds"></a> [delay\_seconds](#input\_delay\_seconds) | Minimum delay (in seconds) before an enqueued key becomes eligible for processing, so bursts of events for the same key coalesce into ~one reconcile per window. 0 disables it. | `number` | `0` | no |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Whether to enable deletion protection for resources | `bool` | `true` | no |
 | <a name="input_extension_key"></a> [extension\_key](#input\_extension\_key) | The CloudEvent extension attribute to use as the workqueue key (e.g., pullrequesturl or issueurl) | `string` | n/a | yes |
+| <a name="input_filter_not"></a> [filter\_not](#input\_filter\_not) | Negative-equality clauses AND-composed with each per-trigger positive<br/>filter from `filters` (i.e. layered on top of every trigger this module<br/>creates, not a separate trigger of their own). Each entry produces a<br/>`NOT attributes.ce-<key>="<value>"` clause. Use a list (not a map) so<br/>the same key can appear multiple times — e.g. to skip events from<br/>several authors:<br/><br/>  filter\_not = [<br/>    { key = "authorid", value = "user-uuid-1" },<br/>    { key = "authorid", value = "user-uuid-2" },<br/>  ] | <pre>list(object({<br/>    key   = string<br/>    value = string<br/>  }))</pre> | `[]` | no |
+| <a name="input_filter_prefix"></a> [filter\_prefix](#input\_filter\_prefix) | Knative Trigger-style prefix clauses AND-composed with each per-trigger<br/>positive filter from `filters`. Each entry produces a<br/>`hasPrefix(attributes.ce-<key>, "<value>")` clause. For example, to<br/>receive only PRs on branches a reconciler owns (its PR branches are named<br/>"<identity>/..."):<br/><br/>  filter\_prefix = { headbranch = "my-reconciler/" } | `map(string)` | `{}` | no |
 | <a name="input_filters"></a> [filters](#input\_filters) | A list of Knative Trigger-style filters over cloud event attributes.<br/><br/>Each filter is a map of attribute key-value pairs that must match exactly.<br/>Multiple filters are combined with OR logic (any filter can match).<br/><br/>Examples:<br/>  # Single event type<br/>  filters = [<br/>    { "type" = "dev.chainguard.github.pull\_request" }<br/>  ]<br/><br/>  # Multiple event types<br/>  filters = [<br/>    { "type" = "dev.chainguard.github.pull\_request" },<br/>    { "type" = "dev.chainguard.github.pull\_request\_review" }<br/>  ]<br/><br/>  # Filter by type and action<br/>  filters = [<br/>    {<br/>      "type"   = "dev.chainguard.github.pull\_request"<br/>      "action" = "opened"<br/>    }<br/>  ] | `list(map(string))` | `[]` | no |
 | <a name="input_max_delivery_attempts"></a> [max\_delivery\_attempts](#input\_max\_delivery\_attempts) | The maximum number of delivery attempts for any event. | `number` | `20` | no |
 | <a name="input_maximum_backoff"></a> [maximum\_backoff](#input\_maximum\_backoff) | The maximum delay between consecutive deliveries of a given message. | `number` | `600` | no |
 | <a name="input_minimum_backoff"></a> [minimum\_backoff](#input\_minimum\_backoff) | The minimum delay between consecutive deliveries of a given message. | `number` | `10` | no |
 | <a name="input_name"></a> [name](#input\_name) | The base name for resources | `string` | n/a | yes |
 | <a name="input_notification_channels"></a> [notification\_channels](#input\_notification\_channels) | List of notification channels for alerts | `list(string)` | n/a | yes |
+| <a name="input_observability_role"></a> [observability\_role](#input\_observability\_role) | Fully-qualified id of a single role (e.g. from the observability-role module) to grant the service account in place of the three built-in observability roles (monitoring.metricWriter, cloudtrace.agent, cloudprofiler.agent). Collapsing to one role keeps large projects under the 1,500-member IAM policy limit. | `string` | `null` | no |
 | <a name="input_priority"></a> [priority](#input\_priority) | Priority for workqueue items (higher values = higher priority) | `number` | `0` | no |
 | <a name="input_product"></a> [product](#input\_product) | Product label to apply to the service. | `string` | `"unknown"` | no |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | The GCP project ID | `string` | n/a | yes |
@@ -258,6 +262,6 @@ No requirements.
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_subscriber"></a> [subscriber](#output\_subscriber) | n/a |
 <!-- END_TF_DOCS -->

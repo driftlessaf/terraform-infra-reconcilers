@@ -17,7 +17,8 @@ locals {
 
 # Regional Go reconciler for processing GitHub issues and PRs
 module "reconciler" {
-  source = "../regional-go-reconciler"
+  source             = "../regional-go-reconciler"
+  observability_role = var.observability_role
 
   project_id      = var.project_id
   name            = var.name
@@ -51,7 +52,8 @@ module "reconciler" {
 
 # CloudEvents to Workqueue bridge for issue events
 module "cloudevents-issues" {
-  source = "../cloudevents-workqueue"
+  source             = "../cloudevents-workqueue"
+  observability_role = var.observability_role
 
   project_id = var.project_id
   name       = "${var.name}-ce"
@@ -78,7 +80,8 @@ module "cloudevents-issues" {
 
 # CloudEvents to Workqueue bridge for pull request events
 module "cloudevents-prs" {
-  source = "../cloudevents-workqueue"
+  source             = "../cloudevents-workqueue"
+  observability_role = var.observability_role
 
   project_id = var.project_id
   name       = "${var.name}-pr"

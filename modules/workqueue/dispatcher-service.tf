@@ -1,14 +1,15 @@
 // Stand up the dispatcher service in each of our regions.
 // Not used in long mode, where the dispatcher runs inside a Cloud Run Job.
 module "dispatcher-service" {
-  count      = local.dispatcher_service_enabled ? 1 : 0
-  source     = "chainguard-dev/common/infra//modules/regional-go-service"
-  project_id = local.project_id
-  name       = local.dispatcher_service_name
-  regions    = local.regions
-  labels     = merge({ "service" : local.reconciler_service_name }, local.merged_labels)
-  team       = local.team
-  product    = local.product
+  count              = local.dispatcher_service_enabled ? 1 : 0
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
+  observability_role = var.observability_role
+  project_id         = local.project_id
+  name               = local.dispatcher_service_name
+  regions            = local.regions
+  labels             = merge({ "service" : local.reconciler_service_name }, local.merged_labels)
+  team               = local.team
+  product            = local.product
 
   # Give the things in the workqueue a lot of time to process the key.
   request_timeout_seconds = 3600
@@ -53,5 +54,4 @@ module "dispatcher-service" {
   }
 
   notification_channels = local.notification_channels
-  version               = "1.17.0"
 }

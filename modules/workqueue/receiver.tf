@@ -17,13 +17,14 @@ resource "google_service_account" "receiver" {
 
 // Stand up the receiver service in each of our regions.
 module "receiver-service" {
-  source     = "chainguard-dev/common/infra//modules/regional-go-service"
-  project_id = local.project_id
-  name       = local.receiver_service_name
-  regions    = local.regions
-  labels     = merge({ "service" : local.reconciler_service_name }, local.merged_labels)
-  team       = local.team
-  product    = local.product
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
+  observability_role = var.observability_role
+  project_id         = local.project_id
+  name               = local.receiver_service_name
+  regions            = local.regions
+  labels             = merge({ "service" : local.reconciler_service_name }, local.merged_labels)
+  team               = local.team
+  product            = local.product
 
   deletion_protection = local.deletion_protection
 
@@ -75,5 +76,4 @@ module "receiver-service" {
   require_authenticated_invocations = true
 
   notification_channels = local.notification_channels
-  version               = "1.17.0"
 }

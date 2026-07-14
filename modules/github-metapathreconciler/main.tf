@@ -17,7 +17,8 @@ locals {
 
 # Regional Go reconciler for processing GitHub paths
 module "reconciler" {
-  source = "../github-path-reconciler"
+  source             = "../github-path-reconciler"
+  observability_role = var.observability_role
 
   project_id      = var.project_id
   name            = var.name
@@ -62,8 +63,9 @@ module "reconciler" {
 
 # CloudEvents to Workqueue bridge for pull request events
 module "cloudevents-prs" {
-  count  = !var.paused ? 1 : 0
-  source = "../cloudevents-workqueue"
+  count              = !var.paused ? 1 : 0
+  source             = "../cloudevents-workqueue"
+  observability_role = var.observability_role
 
   project_id = var.project_id
   name       = "${var.name}-pr"

@@ -4,7 +4,8 @@ SPDX-License-Identifier: Apache-2.0
 */
 
 module "reconciler" {
-  source = "../regional-go-reconciler"
+  source             = "../regional-go-reconciler"
+  observability_role = var.observability_role
 
   project_id                  = var.project_id
   name                        = var.name
@@ -42,12 +43,11 @@ module "reconciler" {
 # This is used by both the cron job and push listener
 module "authorize-receiver-per-region" {
   for_each = var.regions
-  source   = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source   = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.key
   name       = module.reconciler.receiver.name
 
   service-account = var.service_account
-  version         = "1.17.0"
 }
