@@ -175,18 +175,6 @@ No requirements.
 | <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | n/a |
 | <a name="provider_random"></a> [random](#provider\_random) | n/a |
 
-## Modules
-
-| Name | Source | Version |
-| ---- | ------ | ------- |
-| <a name="module_change-trigger-calls-dispatcher"></a> [change-trigger-calls-dispatcher](#module\_change-trigger-calls-dispatcher) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
-| <a name="module_cron-trigger-calls-dispatcher"></a> [cron-trigger-calls-dispatcher](#module\_cron-trigger-calls-dispatcher) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
-| <a name="module_dispatcher-calls-error-broker"></a> [dispatcher-calls-error-broker](#module\_dispatcher-calls-error-broker) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
-| <a name="module_dispatcher-calls-target"></a> [dispatcher-calls-target](#module\_dispatcher-calls-target) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
-| <a name="module_dispatcher-service"></a> [dispatcher-service](#module\_dispatcher-service) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
-| <a name="module_receiver-service"></a> [receiver-service](#module\_receiver-service) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
-| <a name="module_reenqueue"></a> [reenqueue](#module\_reenqueue) | ../../../../public/terraform-infra-common/modules/cron | n/a |
-
 ## Resources
 
 | Name | Type |
@@ -227,6 +215,7 @@ No requirements.
 | <a name="input_dead_letter_alert_threshold"></a> [dead\_letter\_alert\_threshold](#input\_dead\_letter\_alert\_threshold) | Number of dead-lettered keys above which the alert fires. | `number` | `1` | no |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Whether to enable delete protection for the service. | `bool` | `true` | no |
 | <a name="input_enable_dead_letter_alerting"></a> [enable\_dead\_letter\_alerting](#input\_enable\_dead\_letter\_alerting) | Whether to enable alerting for dead-lettered keys. | `bool` | `true` | no |
+| <a name="input_enable_observability_iam"></a> [enable\_observability\_iam](#input\_enable\_observability\_iam) | Whether the dispatcher service grants its service account the observability roles (monitoring.metricWriter, cloudtrace.agent, cloudprofiler.agent) on the project. Set false only when the caller manages those grants for the dispatcher's service account itself; the standalone workqueue dispatcher runs as a dedicated service account, so the default true is correct there. | `bool` | `true` | no |
 | <a name="input_error_event_ingress"></a> [error\_event\_ingress](#input\_error\_event\_ingress) | Optional CloudEvents ingress for emitting reconciler error events. Set to null to disable. | <pre>object({<br/>    name = string<br/>  })</pre> | `null` | no |
 | <a name="input_labels"></a> [labels](#input\_labels) | Labels to apply to the workqueue resources. | `map(string)` | `{}` | no |
 | <a name="input_max-retry"></a> [max-retry](#input\_max-retry) | The maximum number of retry attempts before a task is moved to the dead letter queue. Set this to 0 to have unlimited retries. | `number` | `20` | no |

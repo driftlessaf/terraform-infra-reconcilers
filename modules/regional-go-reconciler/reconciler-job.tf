@@ -4,7 +4,7 @@
 
 module "reconciler-job" {
   count              = var.mode == "long" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-cron"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
   observability_role = var.observability_role
 
   project_id      = var.project_id
@@ -13,6 +13,11 @@ module "reconciler-job" {
   team            = var.team
   product         = var.product
   egress          = var.egress
+
+  # Long-mode reconciler also runs as the shared var.service_account; defer its
+  # observability grants to the caller when it opts in, same as the short-mode
+  # reconciler and dispatcher services.
+  enable_observability_iam = var.enable_observability_iam
 
   regions = var.regions
 
@@ -70,5 +75,4 @@ module "reconciler-job" {
   deletion_protection   = var.deletion_protection
   notification_channels = var.notification_channels
   labels                = merge({ "service" : "${var.name}-rec" }, var.labels)
-  version               = "1.19.0"
 }

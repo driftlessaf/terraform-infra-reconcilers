@@ -127,21 +127,6 @@ No requirements.
 | <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | n/a |
 | <a name="provider_random"></a> [random](#provider\_random) | n/a |
 
-## Modules
-
-| Name | Source | Version |
-| ---- | ------ | ------- |
-| <a name="module_change-trigger-calls-dispatcher"></a> [change-trigger-calls-dispatcher](#module\_change-trigger-calls-dispatcher) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
-| <a name="module_cron-trigger-calls-dispatcher"></a> [cron-trigger-calls-dispatcher](#module\_cron-trigger-calls-dispatcher) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
-| <a name="module_dispatcher-calls-error-broker"></a> [dispatcher-calls-error-broker](#module\_dispatcher-calls-error-broker) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
-| <a name="module_dispatcher-calls-target"></a> [dispatcher-calls-target](#module\_dispatcher-calls-target) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
-| <a name="module_dispatcher-service"></a> [dispatcher-service](#module\_dispatcher-service) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
-| <a name="module_receiver-service"></a> [receiver-service](#module\_receiver-service) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
-| <a name="module_reconciler"></a> [reconciler](#module\_reconciler) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
-| <a name="module_reconciler-job"></a> [reconciler-job](#module\_reconciler-job) | ../../../../public/terraform-infra-common/modules/regional-go-cron | n/a |
-| <a name="module_reconciler-publishes-traces"></a> [reconciler-publishes-traces](#module\_reconciler-publishes-traces) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
-| <a name="module_reenqueue"></a> [reenqueue](#module\_reenqueue) | ../../../../public/terraform-infra-common/modules/cron | n/a |
-
 ## Resources
 
 | Name | Type |
@@ -184,6 +169,7 @@ No requirements.
 | <a name="input_dlq_operators"></a> [dlq\_operators](#input\_dlq\_operators) | IAM members granted roles/storage.objectAdmin on the workqueue bucket for dead-letter queue operations (inspect, drain, purge). Format: "user:email" or "serviceAccount:email". | `list(string)` | `[]` | no |
 | <a name="input_egress"></a> [egress](#input\_egress) | Which type of egress traffic to send through the VPC.<br/><br/>- ALL\_TRAFFIC sends all traffic through regional VPC network. This should be used if service is not expected to egress to the Internet.<br/>- PRIVATE\_RANGES\_ONLY sends only traffic to private IP addresses through regional VPC network | `string` | `"ALL_TRAFFIC"` | no |
 | <a name="input_enable_dead_letter_alerting"></a> [enable\_dead\_letter\_alerting](#input\_enable\_dead\_letter\_alerting) | Whether to enable alerting for dead-lettered keys. | `bool` | `true` | no |
+| <a name="input_enable_observability_iam"></a> [enable\_observability\_iam](#input\_enable\_observability\_iam) | Whether the components that run as the shared service account grant it the observability roles (monitoring.metricWriter, cloudtrace.agent, cloudprofiler.agent) on the project: the short-mode reconciler and dispatcher services and the long-mode reconciler job. Set false when the caller manages these grants itself for the shared service account, to avoid overlapping non-authoritative IAM members that revoke each other on destroy. The receiver and re-enqueue components use dedicated service accounts and are unaffected. | `bool` | `true` | no |
 | <a name="input_enable_profiler"></a> [enable\_profiler](#input\_enable\_profiler) | Enable continuous profiling for the service.  This has a small performance impact, which shouldn't matter for production services. | `bool` | `false` | no |
 | <a name="input_error_event_ingress"></a> [error\_event\_ingress](#input\_error\_event\_ingress) | Optional CloudEvents ingress for emitting reconciler error events. Set to null to disable. | <pre>object({<br/>    name = string<br/>  })</pre> | `null` | no |
 | <a name="input_execution_environment"></a> [execution\_environment](#input\_execution\_environment) | The execution environment for the service (options: EXECUTION\_ENVIRONMENT\_GEN1, EXECUTION\_ENVIRONMENT\_GEN2). | `string` | `"EXECUTION_ENVIRONMENT_GEN2"` | no |

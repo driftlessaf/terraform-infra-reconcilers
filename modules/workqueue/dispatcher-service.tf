@@ -2,7 +2,7 @@
 // Not used in long mode, where the dispatcher runs inside a Cloud Run Job.
 module "dispatcher-service" {
   count              = local.dispatcher_service_enabled ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = local.project_id
   name               = local.dispatcher_service_name
@@ -17,6 +17,11 @@ module "dispatcher-service" {
   deletion_protection = local.deletion_protection
 
   service_account = local.dispatcher_sa_email
+
+  # Defer the dispatcher SA's observability grants to the caller when it opts in
+  # (e.g. regional-go-reconciler sharing one SA across reconciler + dispatcher).
+  enable_observability_iam = var.enable_observability_iam
+
   containers = {
     "dispatcher" = {
       source = {
@@ -54,5 +59,4 @@ module "dispatcher-service" {
   }
 
   notification_channels = local.notification_channels
-  version               = "1.19.0"
 }

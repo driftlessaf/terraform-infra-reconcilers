@@ -74,6 +74,12 @@ variable "deletion_protection" {
   default     = true
 }
 
+variable "enable_observability_iam" {
+  type        = bool
+  default     = true
+  description = "Whether the dispatcher service grants its service account the observability roles (monitoring.metricWriter, cloudtrace.agent, cloudprofiler.agent) on the project. Set false only when the caller manages those grants for the dispatcher's service account itself; the standalone workqueue dispatcher runs as a dedicated service account, so the default true is correct there."
+}
+
 variable "notification_channels" {
   description = "List of notification channels to alert."
   type        = list(string)

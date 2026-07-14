@@ -271,6 +271,12 @@ variable "enable_profiler" {
   default     = false
 }
 
+variable "enable_observability_iam" {
+  description = "Whether the components that run as the shared service account grant it the observability roles (monitoring.metricWriter, cloudtrace.agent, cloudprofiler.agent) on the project: the short-mode reconciler and dispatcher services and the long-mode reconciler job. Set false when the caller manages these grants itself for the shared service account, to avoid overlapping non-authoritative IAM members that revoke each other on destroy. The receiver and re-enqueue components use dedicated service accounts and are unaffected."
+  type        = bool
+  default     = true
+}
+
 variable "otel_resources" {
   description = "Resources to add to the OpenTelemetry resource."
   type        = map(string)
