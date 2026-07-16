@@ -14,7 +14,7 @@ locals {
 }
 
 module "cron" {
-  source = "chainguard-dev/common/infra//modules/cron"
+  source = "../../../../public/terraform-infra-common/modules/cron"
 
   name       = "${var.name}-enq"
   project_id = var.project_id
@@ -24,8 +24,12 @@ module "cron" {
   working_dir = path.module
 
   service_account = var.service_account
-  schedule        = local.cron_schedule
-  paused          = var.paused
+  # The resync cron shares the reconciler's service account; the reconciler
+  # components own its observability grants. A second granting resource here
+  # would revoke them for the reconciler when this cron is destroyed.
+  enable_observability_iam = false
+  schedule                 = local.cron_schedule
+  paused                   = var.paused
 
   env = merge({
     OCTO_STS_IDENTITY = var.octo_sts_identity
@@ -53,5 +57,4 @@ module "cron" {
   labels                = var.labels
   team                  = var.team
   product               = var.product
-  version               = "1.19.2"
 }

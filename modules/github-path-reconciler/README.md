@@ -201,16 +201,6 @@ No requirements.
 
 No providers.
 
-## Modules
-
-| Name | Source | Version |
-| ---- | ------ | ------- |
-| <a name="module_authorize-receiver-per-region"></a> [authorize-receiver-per-region](#module\_authorize-receiver-per-region) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
-| <a name="module_cron"></a> [cron](#module\_cron) | ../../../../public/terraform-infra-common/modules/cron | n/a |
-| <a name="module_push-listener"></a> [push-listener](#module\_push-listener) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
-| <a name="module_push-subscription"></a> [push-subscription](#module\_push-subscription) | ../../../../public/terraform-infra-common/modules/cloudevent-trigger | n/a |
-| <a name="module_reconciler"></a> [reconciler](#module\_reconciler) | ../regional-go-reconciler | n/a |
-
 ## Resources
 
 No resources.

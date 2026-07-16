@@ -27,12 +27,13 @@ resource "google_storage_bucket_iam_member" "reenqueue-bucket-access" {
 
 // The reenqueue cron job (paused by default, for manual invocation)
 module "reenqueue" {
-  source = "chainguard-dev/common/infra//modules/cron"
+  source = "../../../../public/terraform-infra-common/modules/cron"
 
-  project_id      = local.project_id
-  name            = local.reenqueue_job_name
-  region          = local.reenqueue_region
-  service_account = google_service_account.reenqueue.email
+  project_id         = local.project_id
+  observability_role = var.observability_role
+  name               = local.reenqueue_job_name
+  region             = local.reenqueue_region
+  service_account    = google_service_account.reenqueue.email
 
   importpath  = "chainguard.dev/terraform-infra-reconcilers/modules/workqueue/cmd/reenqueue"
   working_dir = "${path.module}/../.."
@@ -64,5 +65,4 @@ module "reenqueue" {
   product               = local.product
   notification_channels = local.notification_channels
   deletion_protection   = local.deletion_protection
-  version               = "1.19.2"
 }
