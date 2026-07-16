@@ -17,7 +17,7 @@ resource "google_service_account" "receiver" {
 
 // Stand up the receiver service in each of our regions.
 module "receiver-service" {
-  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
+  source             = "chainguard-dev/common/infra//modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = local.project_id
   name               = local.receiver_service_name
@@ -76,4 +76,5 @@ module "receiver-service" {
   require_authenticated_invocations = true
 
   notification_channels = local.notification_channels
+  version               = "1.21.0"
 }
