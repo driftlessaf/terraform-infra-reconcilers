@@ -1,6 +1,8 @@
 // Compute a suffix that satisfies the regex:
 // ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$
 resource "random_string" "receiver" {
+  count = local.workqueue_enabled ? 1 : 0
+
   length  = 30 - length(local.sa_prefix)
   special = false
   upper   = false
@@ -8,16 +10,18 @@ resource "random_string" "receiver" {
 
 // Create a dedicated GSA for the receiver service.
 resource "google_service_account" "receiver" {
+  count   = local.workqueue_enabled ? 1 : 0
   project = local.project_id
 
-  account_id   = "${local.sa_prefix}${random_string.receiver.result}"
+  account_id   = "${local.sa_prefix}${random_string.receiver[0].result}"
   display_name = "Workqueue Receiver"
   description  = "The identity as which the workqueue receiver service runs for the ${local.name} workqueue."
 }
 
 // Stand up the receiver service in each of our regions.
 module "receiver-service" {
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  count              = local.workqueue_enabled ? 1 : 0
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = local.project_id
   name               = local.receiver_service_name
@@ -28,7 +32,7 @@ module "receiver-service" {
 
   deletion_protection = local.deletion_protection
 
-  service_account = google_service_account.receiver.email
+  service_account = google_service_account.receiver[0].email
   containers = {
     "receiver" = {
       source = {
@@ -57,7 +61,7 @@ module "receiver-service" {
         {
           name = "WORKQUEUE_BUCKET"
           value = {
-            for k, v in local.regions : k => google_storage_bucket.global-workqueue.name
+            for k, v in local.regions : k => google_storage_bucket.global-workqueue[0].name
           }
         },
       ]
@@ -76,5 +80,4 @@ module "receiver-service" {
   require_authenticated_invocations = true
 
   notification_channels = local.notification_channels
-  version               = "1.21.0"
 }

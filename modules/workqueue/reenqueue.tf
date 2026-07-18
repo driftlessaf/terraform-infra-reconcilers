@@ -4,6 +4,8 @@
 // Compute a suffix that satisfies the regex:
 // ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$
 resource "random_string" "reenqueue" {
+  count = local.workqueue_enabled ? 1 : 0
+
   length  = 30 - length(local.sa_prefix)
   special = false
   upper   = false
@@ -11,29 +13,33 @@ resource "random_string" "reenqueue" {
 
 // Create a dedicated GSA for the reenqueue job.
 resource "google_service_account" "reenqueue" {
+  count   = local.workqueue_enabled ? 1 : 0
   project = local.project_id
 
-  account_id   = "${local.sa_prefix}${random_string.reenqueue.result}"
+  account_id   = "${local.sa_prefix}${random_string.reenqueue[0].result}"
   display_name = "Workqueue Reenqueue Job"
   description  = "The identity as which the workqueue reenqueue job runs for the ${local.name} workqueue."
 }
 
 // Authorize the reenqueue service account to read/write the bucket (for Enumerate and Queue)
 resource "google_storage_bucket_iam_member" "reenqueue-bucket-access" {
-  bucket = google_storage_bucket.global-workqueue.name
+  count = local.workqueue_enabled ? 1 : 0
+
+  bucket = google_storage_bucket.global-workqueue[0].name
   role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${google_service_account.reenqueue.email}"
+  member = "serviceAccount:${google_service_account.reenqueue[0].email}"
 }
 
 // The reenqueue cron job (paused by default, for manual invocation)
 module "reenqueue" {
-  source = "chainguard-dev/common/infra//modules/cron"
+  count  = local.workqueue_enabled ? 1 : 0
+  source = "../../../../public/terraform-infra-common/modules/cron"
 
   project_id         = local.project_id
   observability_role = var.observability_role
   name               = local.reenqueue_job_name
   region             = local.reenqueue_region
-  service_account    = google_service_account.reenqueue.email
+  service_account    = google_service_account.reenqueue[0].email
 
   importpath  = "chainguard.dev/terraform-infra-reconcilers/modules/workqueue/cmd/reenqueue"
   working_dir = "${path.module}/../.."
@@ -48,7 +54,7 @@ module "reenqueue" {
 
   env = {
     "WORKQUEUE_MODE"        = "gcs"
-    "WORKQUEUE_BUCKET"      = google_storage_bucket.global-workqueue.name
+    "WORKQUEUE_BUCKET"      = google_storage_bucket.global-workqueue[0].name
     "WORKQUEUE_CONCURRENCY" = local.concurrent_work
   }
 
@@ -65,5 +71,4 @@ module "reenqueue" {
   product               = local.product
   notification_channels = local.notification_channels
   deletion_protection   = local.deletion_protection
-  version               = "1.21.0"
 }

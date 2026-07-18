@@ -1,4 +1,6 @@
 resource "random_string" "bucket_suffix" {
+  count = local.workqueue_enabled ? 1 : 0
+
   length  = 6 // Same length as "global"
   special = false
   upper   = false
@@ -6,7 +8,9 @@ resource "random_string" "bucket_suffix" {
 }
 
 resource "google_storage_bucket" "global-workqueue" {
-  name          = "${local.name}-${random_string.bucket_suffix.result}"
+  count = local.workqueue_enabled ? 1 : 0
+
+  name          = "${local.name}-${random_string.bucket_suffix[0].result}"
   project       = local.project_id
   location      = local.multi_regional_location
   force_destroy = true
@@ -17,24 +21,26 @@ resource "google_storage_bucket" "global-workqueue" {
 }
 
 resource "google_storage_bucket_iam_binding" "global-authorize-access" {
-  bucket = google_storage_bucket.global-workqueue.name
+  count = local.workqueue_enabled ? 1 : 0
+
+  bucket = google_storage_bucket.global-workqueue[0].name
   role   = "roles/storage.admin"
   members = concat([
-    "serviceAccount:${google_service_account.receiver.email}",
-    "serviceAccount:${google_service_account.dispatcher.email}",
+    "serviceAccount:${google_service_account.receiver[0].email}",
+    "serviceAccount:${google_service_account.dispatcher[0].email}",
   ], local.additional_bucket_members)
 }
 
 resource "google_storage_bucket_iam_member" "dlq-operators" {
-  for_each = toset(local.dlq_operator_members)
+  for_each = toset(local.workqueue_enabled ? local.dlq_operator_members : [])
 
-  bucket = google_storage_bucket.global-workqueue.name
+  bucket = google_storage_bucket.global-workqueue[0].name
   role   = "roles/storage.objectAdmin"
   member = each.value
 }
 
 resource "google_pubsub_topic" "global-object-change-notifications" {
-  for_each = local.regions
+  for_each = local.workqueue_enabled ? local.regions : {}
 
   name   = "${local.name}-global-${each.key}"
   labels = local.merged_labels
@@ -49,7 +55,7 @@ data "google_storage_project_service_account" "gcs_account" {
 }
 
 resource "google_pubsub_topic_iam_binding" "global-gcs-publishes-to-topic" {
-  for_each = local.regions
+  for_each = local.workqueue_enabled ? local.regions : {}
 
   topic   = google_pubsub_topic.global-object-change-notifications[each.key].id
   role    = "roles/pubsub.publisher"
@@ -57,7 +63,7 @@ resource "google_pubsub_topic_iam_binding" "global-gcs-publishes-to-topic" {
 }
 
 resource "google_storage_notification" "global-object-change-notifications" {
-  for_each = local.regions
+  for_each = local.workqueue_enabled ? local.regions : {}
 
   // We depend on the IAM binding granting the GCS service account pubsub.publisher
   // on the topic. GCP IAM is eventually consistent, and the GCS notification API
@@ -66,7 +72,7 @@ resource "google_storage_notification" "global-object-change-notifications" {
     google_pubsub_topic_iam_binding.global-gcs-publishes-to-topic,
   ]
 
-  bucket         = google_storage_bucket.global-workqueue.name
+  bucket         = google_storage_bucket.global-workqueue[0].name
   payload_format = "JSON_API_V1"
   topic          = google_pubsub_topic.global-object-change-notifications[each.key].id
 }

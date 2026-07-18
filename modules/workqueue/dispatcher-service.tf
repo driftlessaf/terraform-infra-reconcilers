@@ -2,7 +2,7 @@
 // Not used in long mode, where the dispatcher runs inside a Cloud Run Job.
 module "dispatcher-service" {
   count              = local.dispatcher_service_enabled ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = local.project_id
   name               = local.dispatcher_service_name
@@ -42,7 +42,7 @@ module "dispatcher-service" {
       regional-env = concat([
         {
           name  = "WORKQUEUE_BUCKET"
-          value = { for k, v in local.regions : k => google_storage_bucket.global-workqueue.name }
+          value = { for k, v in local.regions : k => google_storage_bucket.global-workqueue[0].name }
         },
         {
           name  = "WORKQUEUE_TARGET"
@@ -59,5 +59,4 @@ module "dispatcher-service" {
   }
 
   notification_channels = local.notification_channels
-  version               = "1.21.0"
 }

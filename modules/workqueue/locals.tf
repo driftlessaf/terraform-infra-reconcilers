@@ -44,7 +44,7 @@ locals {
   // dispatcher_sa_email is the identity that calls the reconciler and error broker.
   // In standalone mode this is the dispatcher's dedicated SA; modules that inline
   // the dispatcher as a sidecar override this with their own service account.
-  dispatcher_sa_email = google_service_account.dispatcher.email
+  dispatcher_sa_email = google_service_account.dispatcher[0].email
 
   // additional_bucket_members are extra IAM members granted storage.admin on
   // the workqueue bucket.  Inline deployments set this to their service account.
@@ -57,6 +57,12 @@ locals {
   // reenqueue_invokers are IAM members granted roles/run.invoker on the reenqueue
   // job. The regional-go-reconciler wrapper overrides this via var.reenqueue_invokers.
   reenqueue_invokers = []
+
+  // workqueue_enabled controls whether this module's workqueue resources
+  // (bucket, receiver, dispatcher, reenqueue, alerts) are created.  The
+  // regional-go-reconciler wrapper sets this false when shards > 1 delegates
+  // the workqueue to hyperqueue instances instead.
+  workqueue_enabled = true
 
   // dispatcher_change_trigger_enabled controls whether the PubSub object-change
   // subscription and its supporting resources are created.  Set to false in

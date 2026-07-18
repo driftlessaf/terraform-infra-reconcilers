@@ -193,6 +193,7 @@ No requirements.
 | <a name="input_request_timeout_seconds"></a> [request\_timeout\_seconds](#input\_request\_timeout\_seconds) | The request timeout for the service in seconds. | `number` | `300` | no |
 | <a name="input_scaling"></a> [scaling](#input\_scaling) | The scaling configuration for the service. | <pre>object({<br/>    min_instances                    = optional(number, 0)<br/>    max_instances                    = optional(number, 100)<br/>    max_instance_request_concurrency = optional(number, 1000)<br/>  })</pre> | `{}` | no |
 | <a name="input_service_account"></a> [service\_account](#input\_service\_account) | The service account as which to run the reconciler service. | `string` | n/a | yes |
+| <a name="input_shards"></a> [shards](#input\_shards) | Number of workqueue shards. When 1, uses the standard workqueue. When >1, uses hyperqueue. | `number` | `1` | no |
 | <a name="input_slo"></a> [slo](#input\_slo) | Configuration for setting up SLO for the cloud run service | <pre>object({<br/>    enable          = optional(bool, false)<br/>    enable_alerting = optional(bool, false)<br/>    success = optional(object(<br/>      {<br/>        multi_region_goal = optional(number, 0.999)<br/>        per_region_goal   = optional(number, 0.999)<br/>      }<br/>    ), null)<br/>    monitor_gclb = optional(bool, false)<br/>  })</pre> | `{}` | no |
 | <a name="input_team"></a> [team](#input\_team) | Team label to apply to resources (replaces deprecated 'squad'). | `string` | n/a | yes |
 | <a name="input_trace_event_ingress"></a> [trace\_event\_ingress](#input\_trace\_event\_ingress) | Optional CloudEvents broker for agent-trace emission. When set, the reconciler service account is authorized to publish to the named broker and EVENT\_INGRESS\_URI is appended to every reconciler container's regional env; agenttrace then emits dev.chainguard.driftlessaf.agent.trace.v1 events per agent invocation. Set to null to disable. | <pre>object({<br/>    name = string<br/>  })</pre> | `null` | no |
@@ -203,7 +204,7 @@ No requirements.
 
 | Name | Description |
 | ---- | ----------- |
-| <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue. |
-| <a name="output_receiver"></a> [receiver](#output\_receiver) | The workqueue receiver object for connecting triggers. |
+| <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue (null when sharded; each shard manages its own bucket). |
+| <a name="output_receiver"></a> [receiver](#output\_receiver) | The workqueue receiver object for connecting triggers. When sharded, this is the hyperqueue router. |
 | <a name="output_reconciler-uris"></a> [reconciler-uris](#output\_reconciler-uris) | The URIs of the reconciler service by region (short mode only). |
 <!-- END_TF_DOCS -->

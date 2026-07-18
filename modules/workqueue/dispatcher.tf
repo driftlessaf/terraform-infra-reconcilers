@@ -1,6 +1,8 @@
 // Compute a suffix that satisfies the regex:
 // ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$
 resource "random_string" "dispatcher" {
+  count = local.workqueue_enabled ? 1 : 0
+
   length  = 30 - length(local.sa_prefix)
   special = false
   upper   = false
@@ -8,9 +10,10 @@ resource "random_string" "dispatcher" {
 
 // Create a dedicated GSA for the dispatcher service.
 resource "google_service_account" "dispatcher" {
+  count   = local.workqueue_enabled ? 1 : 0
   project = local.project_id
 
-  account_id   = "${local.sa_prefix}${random_string.dispatcher.result}"
+  account_id   = "${local.sa_prefix}${random_string.dispatcher[0].result}"
   display_name = "Workqueue Dispatcher"
   description  = "The identity as which the workqueue dispatcher service runs for the ${local.name} workqueue."
 }
@@ -19,33 +22,33 @@ resource "google_service_account" "dispatcher" {
 module "dispatcher-calls-target" {
   for_each = local.dispatcher_calls_target_enabled ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
   name       = local.reconciler_service_name
 
   service-account = local.dispatcher_sa_email
-  version         = "1.21.0"
 }
 
 // Authorize the dispatcher service account to call the error event broker.
 module "dispatcher-calls-error-broker" {
-  for_each = local.error_event_ingress != null ? local.regions : {}
+  for_each = local.workqueue_enabled && local.error_event_ingress != null ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
   name       = local.error_event_ingress.name
 
   service-account = local.dispatcher_sa_email
-  version         = "1.21.0"
 }
 
 // Compute a suffix that satisfies the regex:
 // ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$
 resource "random_string" "cron-trigger" {
+  count = local.workqueue_enabled ? 1 : 0
+
   length  = 30 - length(local.sa_prefix)
   special = false
   upper   = false
@@ -53,9 +56,10 @@ resource "random_string" "cron-trigger" {
 
 // Create a dedicated GSA for the cron trigger.
 resource "google_service_account" "cron-trigger" {
+  count   = local.workqueue_enabled ? 1 : 0
   project = local.project_id
 
-  account_id   = "${local.sa_prefix}${random_string.cron-trigger.result}"
+  account_id   = "${local.sa_prefix}${random_string.cron-trigger[0].result}"
   display_name = "Workqueue Cron Trigger"
   description  = "The identity as which the cloud scheduler will invoke the ${local.name} dispatcher."
 }
@@ -65,19 +69,18 @@ resource "google_service_account" "cron-trigger" {
 module "cron-trigger-calls-dispatcher" {
   for_each = local.dispatcher_cron_enabled ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
   name       = local.dispatcher_service_name
 
-  service-account = google_service_account.cron-trigger.email
+  service-account = google_service_account.cron-trigger[0].email
 
   // The binding only references the service name as a string, so without this
   // Terraform schedules the IAM call in parallel with the Cloud Run service
   // create and races on first apply.
   depends_on = [module.dispatcher-service]
-  version    = "1.21.0"
 }
 
 resource "google_cloud_scheduler_job" "cron" {
@@ -98,7 +101,7 @@ resource "google_cloud_scheduler_job" "cron" {
     uri         = module.cron-trigger-calls-dispatcher[each.key].uri
 
     oidc_token {
-      service_account_email = google_service_account.cron-trigger.email
+      service_account_email = google_service_account.cron-trigger[0].email
       // There is a provider bug, so despite this being the default, we provide it explicitly.
       audience = module.cron-trigger-calls-dispatcher[each.key].uri
     }
@@ -153,7 +156,7 @@ resource "google_service_account_iam_binding" "allow-pubsub-to-mint-tokens" {
 module "change-trigger-calls-dispatcher" {
   for_each = local.dispatcher_change_trigger_enabled ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
@@ -163,7 +166,6 @@ module "change-trigger-calls-dispatcher" {
 
   // See cron-trigger-calls-dispatcher above — same race.
   depends_on = [module.dispatcher-service]
-  version    = "1.21.0"
 }
 
 resource "google_pubsub_subscription" "global-this" {

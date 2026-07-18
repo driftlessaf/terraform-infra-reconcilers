@@ -56,12 +56,16 @@ locals {
   dlq_operator_members      = var.dlq_operators
   reenqueue_invokers        = var.reenqueue_invokers
 
+  // When shards > 1 the inline workqueue (bucket, receiver, dispatcher,
+  // reenqueue, alerts) is replaced by hyperqueue instances.
+  workqueue_enabled = var.shards == 1
+
   // In long mode the PubSub change trigger is replaced by the per-minute cron.
-  dispatcher_change_trigger_enabled = var.mode == "short"
+  dispatcher_change_trigger_enabled = var.mode == "short" && local.workqueue_enabled
   // In long mode the HTTP-based cron trigger is replaced by a job invocation.
-  dispatcher_cron_enabled = var.mode == "short"
+  dispatcher_cron_enabled = var.mode == "short" && local.workqueue_enabled
   // In long mode the reconciler is a Job, not a Service, so no run.invoker grant.
-  dispatcher_calls_target_enabled = var.mode == "short"
+  dispatcher_calls_target_enabled = var.mode == "short" && local.workqueue_enabled
   // In long mode the dispatcher runs inside the Cloud Run Job, not a standalone service.
-  dispatcher_service_enabled = var.mode == "short"
+  dispatcher_service_enabled = var.mode == "short" && local.workqueue_enabled
 }

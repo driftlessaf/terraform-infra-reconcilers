@@ -47,6 +47,22 @@ variable "receiver_ingress" {
   }
 }
 
+variable "shards" {
+  description = "Number of workqueue shards. When 1, uses the standard workqueue. When >1, uses hyperqueue."
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.shards >= 1 && var.shards <= 5
+    error_message = "shards must be between 1 and 5"
+  }
+
+  validation {
+    condition     = var.shards == 1 || var.mode == "short"
+    error_message = "sharded workqueues (shards > 1) are incompatible with long mode"
+  }
+}
+
 variable "max-retry" {
   description = "The maximum number of times a task will be retried before being moved to the dead-letter queue. Set to 0 for unlimited retries. Defaults to null so the inner workqueue module's default applies."
   type        = number

@@ -4,7 +4,7 @@
 
 module "reconciler-job" {
   count              = var.mode == "long" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-cron"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
   observability_role = var.observability_role
 
   project_id      = var.project_id
@@ -41,7 +41,7 @@ module "reconciler-job" {
           { name = "WORKQUEUE_BATCH_SIZE", value = tostring(local.dispatcher_batch_size) },
           { name = "WORKQUEUE_NAME", value = local.name },
           { name = "WORKQUEUE_TARGET", value = "http://localhost:8081" },
-          { name = "WORKQUEUE_BUCKET", value = google_storage_bucket.global-workqueue.name },
+          { name = "WORKQUEUE_BUCKET", value = google_storage_bucket.global-workqueue[0].name },
           { name = "METRICS_PORT", value = "2113" },
         ]
         regional-env = local.error_event_ingress != null ? [{
@@ -75,5 +75,4 @@ module "reconciler-job" {
   deletion_protection   = var.deletion_protection
   notification_channels = var.notification_channels
   labels                = merge({ "service" : "${var.name}-rec" }, var.labels)
-  version               = "1.21.0"
 }

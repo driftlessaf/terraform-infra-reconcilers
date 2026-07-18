@@ -1,5 +1,5 @@
 resource "google_monitoring_alert_policy" "dead_letter_queue" {
-  count = coalesce(local.max_retry, 0) > 0 && local.enable_dead_letter_alerting ? 1 : 0
+  count = coalesce(local.max_retry, 0) > 0 && local.enable_dead_letter_alerting && local.workqueue_enabled ? 1 : 0
 
   project      = local.project_id
   display_name = "Workqueue dead-lettered keys ${local.name}"
