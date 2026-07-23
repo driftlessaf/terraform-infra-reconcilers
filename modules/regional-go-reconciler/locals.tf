@@ -56,6 +56,12 @@ locals {
   dlq_operator_members      = var.dlq_operators
   reenqueue_invokers        = var.reenqueue_invokers
 
+  // Setting var.reenqueue_schedule opts the workqueue into periodically
+  // auto-draining its dead-letter queue on that cron; leaving it null keeps the
+  // reenqueue job paused for manual invocation only (the historical default).
+  reenqueue_schedule = coalesce(var.reenqueue_schedule, "0 0 * * *")
+  reenqueue_paused   = var.reenqueue_schedule == null
+
   // When shards > 1 the inline workqueue (bucket, receiver, dispatcher,
   // reenqueue, alerts) is replaced by hyperqueue instances.
   workqueue_enabled = var.shards == 1

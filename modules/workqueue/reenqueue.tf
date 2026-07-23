@@ -33,7 +33,7 @@ resource "google_storage_bucket_iam_member" "reenqueue-bucket-access" {
 // The reenqueue cron job (paused by default, for manual invocation)
 module "reenqueue" {
   count  = local.workqueue_enabled ? 1 : 0
-  source = "chainguard-dev/common/infra//modules/cron"
+  source = "../../../../public/terraform-infra-common/modules/cron"
 
   project_id         = local.project_id
   observability_role = var.observability_role
@@ -44,9 +44,15 @@ module "reenqueue" {
   importpath  = "chainguard.dev/terraform-infra-reconcilers/modules/workqueue/cmd/reenqueue"
   working_dir = "${path.module}/../.."
 
-  # Paused by default - this job is meant to be manually triggered
-  paused   = true
-  schedule = "0 0 * * *" # Placeholder, never runs when paused
+  # Paused by default (manual invocation only). A workqueue opts into periodically
+  # auto-draining its dead-letter queue by setting local.reenqueue_schedule (via
+  # the wrapper's var.reenqueue_schedule); when unset the job stays paused with a
+  # placeholder schedule that never fires. Periodic reenqueue lets transient
+  # dead-letters (e.g. an upstream 5xx that outlasts the retry budget) self-heal
+  # without an operator; genuinely-permanent failures simply dead-letter again and
+  # keep the alert firing.
+  paused   = local.reenqueue_paused
+  schedule = local.reenqueue_schedule
 
   # Additional IAM members allowed to execute the job (beyond the job's own
   # invoker SA), so operators can manually requeue dead-lettered items.
@@ -71,5 +77,4 @@ module "reenqueue" {
   product               = local.product
   notification_channels = local.notification_channels
   deletion_protection   = local.deletion_protection
-  version               = "1.23.0"
 }

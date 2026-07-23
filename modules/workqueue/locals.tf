@@ -58,6 +58,13 @@ locals {
   // job. The regional-go-reconciler wrapper overrides this via var.reenqueue_invokers.
   reenqueue_invokers = []
 
+  // reenqueue_schedule/reenqueue_paused control the dead-letter reenqueue cron.
+  // The bare workqueue keeps the historical manual-only behavior: paused, with a
+  // placeholder schedule that never fires. The regional-go-reconciler wrapper
+  // overrides these via var.reenqueue_schedule to opt into periodic auto-drain.
+  reenqueue_schedule = "0 0 * * *"
+  reenqueue_paused   = true
+
   // workqueue_enabled controls whether this module's workqueue resources
   // (bucket, receiver, dispatcher, reenqueue, alerts) are created.  The
   // regional-go-reconciler wrapper sets this false when shards > 1 delegates

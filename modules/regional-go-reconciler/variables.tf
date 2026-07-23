@@ -382,6 +382,12 @@ variable "reenqueue_invokers" {
   type        = list(string)
   default     = []
 }
+
+variable "reenqueue_schedule" {
+  description = "Cron schedule on which the reenqueue job periodically drains the dead-letter queue, so transient dead-letters (e.g. an upstream 5xx that outlasts the retry budget) self-heal without an operator. When null (the default) the job stays paused for manual invocation only. Genuinely-permanent failures dead-letter again on the next run and keep the DLQ alert firing."
+  type        = string
+  default     = null
+}
 variable "observability_role" {
   type        = string
   default     = null
