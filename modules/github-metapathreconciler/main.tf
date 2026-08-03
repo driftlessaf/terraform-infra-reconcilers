@@ -6,13 +6,15 @@ SPDX-License-Identifier: Apache-2.0
 locals {
   # PR event types this reconciler consumes. check_run/check_suite scoped to
   # "completed" — non-terminal check events only cause wasted reconciles.
-  pr_event_types = [
+  # extra_pr_event_types lets a consumer opt into additional event types
+  # (e.g. issue_comment) without changing this default set for anyone else.
+  pr_event_types = concat([
     { type = "dev.chainguard.github.pull_request" },
     { type = "dev.chainguard.github.pull_request_review" },
     { type = "dev.chainguard.github.pull_request_review_comment" },
     { type = "dev.chainguard.github.check_run", action = "completed" },
     { type = "dev.chainguard.github.check_suite", action = "completed" },
-  ]
+  ], var.extra_pr_event_types)
 }
 
 # Regional Go reconciler for processing GitHub paths

@@ -278,6 +278,24 @@ EOD
   default     = true
 }
 
+variable "extra_pr_event_types" {
+  description = <<EOD
+Additional CloudEvents PR event types to subscribe to, beyond this module's
+default set (pull_request, pull_request_review, pull_request_review_comment,
+check_run/check_suite completed). Each entry has the same shape consumed by
+the cloudevents-workqueue filters, e.g. { type = "dev.chainguard.github.issue_comment" }
+to also react to plain PR conversation comments.
+
+Defaults to none, so existing consumers of this module see no change in
+subscribed event types.
+EOD
+  type = list(object({
+    type   = string
+    action = optional(string)
+  }))
+  default = []
+}
+
 # Dashboard variables
 
 variable "dashboard_labels" {
