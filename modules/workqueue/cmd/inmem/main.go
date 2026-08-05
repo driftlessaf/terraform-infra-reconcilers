@@ -20,13 +20,12 @@ import (
 	"github.com/sethvargo/go-envconfig"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 
 	"chainguard.dev/driftlessaf/workqueue"
 	"chainguard.dev/driftlessaf/workqueue/dispatcher"
 	"chainguard.dev/driftlessaf/workqueue/inmem"
+	"chainguard.dev/terraform-infra-reconcilers/modules/workqueue/enqueue"
 	"github.com/chainguard-dev/terraform-infra-common/pkg/httpmetrics"
 )
 
@@ -75,7 +74,7 @@ func main() {
 	})
 
 	eg.Go(func() error {
-		workqueue.RegisterWorkqueueServiceServer(d.Server, &enq{wq: wq})
+		workqueue.RegisterWorkqueueServiceServer(d.Server, enqueue.NewServer(wq))
 		if err := d.ListenAndServe(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
@@ -85,23 +84,4 @@ func main() {
 	if err := eg.Wait(); err != nil {
 		clog.ErrorContextf(ctx, "Error group failed: %v", err)
 	}
-}
-
-type enq struct {
-	workqueue.UnimplementedWorkqueueServiceServer
-
-	wq workqueue.Interface
-}
-
-func (y *enq) Process(ctx context.Context, req *workqueue.ProcessRequest) (*workqueue.ProcessResponse, error) {
-	if err := y.wq.Queue(ctx, req.Key, workqueue.Options{
-		Priority: req.Priority,
-	}); err != nil {
-		return nil, status.Errorf(codes.Internal, "Queue() = %v", err)
-	}
-	return &workqueue.ProcessResponse{}, nil
-}
-
-func (y *enq) GetKeyState(ctx context.Context, req *workqueue.GetKeyStateRequest) (*workqueue.KeyState, error) {
-	return y.wq.Get(ctx, req.Key)
 }
