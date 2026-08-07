@@ -3,11 +3,11 @@ module chainguard.dev/terraform-infra-reconcilers
 go 1.26.4
 
 require (
-	chainguard.dev/driftlessaf v0.9.55
+	chainguard.dev/driftlessaf v0.7.1
 	chainguard.dev/go-grpc-kit v0.18.0
 	cloud.google.com/go/storage v1.64.0
 	github.com/chainguard-dev/clog v1.8.1
-	github.com/chainguard-dev/terraform-infra-common v1.28.4
+	github.com/chainguard-dev/terraform-infra-common v1.25.0
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/google/go-github/v88 v88.0.0
 	github.com/prometheus/client_golang v1.24.1
@@ -20,7 +20,7 @@ require (
 
 require (
 	cel.dev/expr v0.25.2 // indirect
-	chainguard.dev/sdk v0.1.175 // indirect
+	chainguard.dev/sdk v0.1.164 // indirect
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/auth v0.22.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
@@ -51,7 +51,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.7.0 // indirect
 	github.com/docker/cli v29.6.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.8 // indirect
-	github.com/ebitengine/purego v0.10.1 // indirect
+	github.com/ebitengine/purego v0.10.2 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.37.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.3 // indirect
@@ -98,7 +98,7 @@ require (
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
-	github.com/shirou/gopsutil/v4 v4.26.6 // indirect
+	github.com/shirou/gopsutil/v4 v4.26.7 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
 	github.com/snabb/httpreaderat v1.0.4 // indirect
@@ -139,3 +139,9 @@ require (
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
+
+replace chainguard.dev/driftlessaf => ../go-driftlessaf
+
+replace chainguard.dev/sdk => ../../public/sdk
+
+replace github.com/chainguard-dev/terraform-infra-common => ../terraform-infra-common
