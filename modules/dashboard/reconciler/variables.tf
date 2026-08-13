@@ -93,3 +93,9 @@ variable "labels" {
   type        = map(string)
   default     = {}
 }
+
+variable "service_sections" {
+  description = "Service-specific dashboard sections (outputs of dashboard/sections/* modules) appended to the layout before the resources section"
+  type        = list(any)
+  default     = []
+}
