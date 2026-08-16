@@ -2,7 +2,7 @@
 // Not used in long mode, where the dispatcher runs inside a Cloud Run Job.
 module "dispatcher-service" {
   count              = local.dispatcher_service_enabled ? 1 : 0
-  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
+  source             = "chainguard-dev/common/infra//modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = local.project_id
   name               = local.dispatcher_service_name
@@ -59,4 +59,5 @@ module "dispatcher-service" {
   }
 
   notification_channels = local.notification_channels
+  version               = "1.30.2"
 }
