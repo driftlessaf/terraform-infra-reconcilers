@@ -4,11 +4,16 @@
 
 module "reconciler-job" {
   count              = var.mode == "long" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-cron"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
   observability_role = var.observability_role
 
-  project_id      = var.project_id
-  name            = "${var.name}-rec"
+  project_id = var.project_id
+  // Single source of truth for the job name: local.reconciler_service_name is
+  // "${var.name}-rec" in long mode, and the dead-letter alert filters the
+  // workqueue gauges on exactly this string (the CLOUD_RUN_JOB-derived
+  // service_name label). Referencing the local keeps the job name and the
+  // alert filter from drifting apart — a rename here must move the alert too.
+  name            = local.reconciler_service_name
   service_account = var.service_account
   team            = var.team
   product         = var.product
@@ -74,6 +79,5 @@ module "reconciler-job" {
   max_retries           = 0
   deletion_protection   = var.deletion_protection
   notification_channels = var.notification_channels
-  labels                = merge({ "service" : "${var.name}-rec" }, var.labels)
-  version               = "1.30.1"
+  labels                = merge({ "service" : local.reconciler_service_name }, var.labels)
 }

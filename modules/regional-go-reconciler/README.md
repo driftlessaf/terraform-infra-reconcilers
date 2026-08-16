@@ -101,6 +101,26 @@ module "my-reconciler-dashboard" {
 }
 ```
 
+### Dead-letter alerting
+
+`enable_dead_letter_alerting` (default `true`) provisions an ERROR alert that
+fires when `workqueue_dead_lettered_keys` exceeds
+`dead_letter_alert_threshold` (default `1`, `duration = "0s"`). The alert is
+mode-aware: it filters on the standalone dispatcher service in `short` mode
+and on the reconciler Job (`${name}-rec`) in `long` mode, where the
+dispatcher runs inside the Job.
+
+**First-apply expectation:** enabling the alert (including the long-mode fix
+that made it fire at all) is not silent — any reconciler whose dead-letter
+queue is **already non-empty** opens an incident on the first apply that
+provisions the alert. That is the alert working as intended: a non-empty DLQ
+is stuck work that had been going unsignalled. Because the module is applied
+per environment, this rolls out per-env on each consumer's next apply, not as
+a single fleet-wide event. To stage it deliberately for an environment that
+may be carrying dead-letter debt, set `enable_dead_letter_alerting = false`
+for that environment, drain or inspect its DLQ, then remove the override —
+the same variable is the permanent opt-out.
+
 ## Variables
 
 See [variables.tf](./variables.tf) for all available configuration options.

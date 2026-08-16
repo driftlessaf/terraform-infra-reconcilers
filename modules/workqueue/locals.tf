@@ -38,6 +38,14 @@ locals {
   dispatcher_service_name = "${var.name}-dsp"
   reenqueue_job_name      = "${var.name}-req"
 
+  // dead_letter_alert_service_name is the service_name label the dead-letter
+  // alert filters on. The workqueue gauges are labeled with the identity of
+  // whatever Cloud Run resource hosts the dispatcher: here that is always the
+  // standalone dispatcher service. The regional-go-reconciler wrapper redefines
+  // this for "long" mode, where the dispatcher runs inside the reconciler Job
+  // and the gauges carry the job's name instead.
+  dead_letter_alert_service_name = local.dispatcher_service_name
+
   dispatcher_batch_size = var.batch-size != null ? var.batch-size : ceil(var.concurrent-work / length(var.regions))
   reenqueue_region      = coalesce(var.primary-region, keys(var.regions)[0])
 

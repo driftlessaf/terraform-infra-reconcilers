@@ -48,6 +48,22 @@ locals {
   dispatcher_service_name = "${var.name}-wq-dsp"
   reenqueue_job_name      = "${var.name}-wq-req"
 
+  // dead_letter_alert_service_name is the service_name label the dead-letter
+  // alert filters on. In long mode the standalone dispatcher service is not
+  // created — the dispatcher runs inside the "${var.name}-rec" Cloud Run Job,
+  // so the workqueue gauges carry the job's name (the CLOUD_RUN_JOB fallback
+  // in go-driftlessaf's workqueue metrics), and filtering on the dispatcher
+  // service name would match nothing. Same long-mode special case as the
+  // reconciler dashboard's workqueue section.
+  //
+  // Long-mode caveat: the gauge is emitted only while a per-minute job
+  // execution is alive, so a fully-drained-but-still-dead-lettered queue may
+  // skip a scrape when an execution exits before the sidecar's 10s interval.
+  // duration = "0s" + auto_close = "3600s" tolerate the gaps (one sample above
+  // threshold in an hour opens the incident); a guaranteed on-exit metric flush
+  // in dispatcher-job would be a separate hardening.
+  dead_letter_alert_service_name = var.mode == "long" ? local.reconciler_service_name : local.dispatcher_service_name
+
   dispatcher_batch_size = var.batch-size != null ? var.batch-size : ceil(var.concurrent-work / length(var.regions))
   reenqueue_region      = coalesce(var.primary-region, keys(var.regions)[0])
 
