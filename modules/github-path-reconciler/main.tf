@@ -43,12 +43,11 @@ module "reconciler" {
 # This is used by both the cron job and push listener
 module "authorize-receiver-per-region" {
   for_each = var.regions
-  source   = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source   = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.key
   name       = module.reconciler.receiver.name
 
   service-account = var.service_account
-  version         = "1.30.4"
 }
