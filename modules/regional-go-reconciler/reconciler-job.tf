@@ -4,7 +4,7 @@
 
 module "reconciler-job" {
   count              = var.mode == "long" ? 1 : 0
-  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
+  source             = "chainguard-dev/common/infra//modules/regional-go-cron"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -80,4 +80,5 @@ module "reconciler-job" {
   deletion_protection   = var.deletion_protection
   notification_channels = var.notification_channels
   labels                = merge({ "service" : local.reconciler_service_name }, var.labels)
+  version               = "1.30.4"
 }

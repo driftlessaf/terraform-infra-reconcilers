@@ -66,18 +66,19 @@ resource "google_service_account" "hyperqueue" {
 module "hyperqueue-calls-receiver" {
   for_each = { for pair in local.auth_pairs : pair.key => pair }
 
-  source = "../../../../../public/terraform-infra-common/modules/authorize-private-service"
+  source = "chainguard-dev/common/infra//modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.value.region
   name       = module.workqueue[each.value.shard].receiver.name
 
   service-account = google_service_account.hyperqueue.email
+  version         = "1.30.4"
 }
 
 # Hyperqueue service using regional-go-service
 module "hyperqueue-service" {
-  source             = "../../../../../public/terraform-infra-common/modules/regional-go-service"
+  source             = "chainguard-dev/common/infra//modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = var.project_id
   name               = "${var.name}-hq"
@@ -110,4 +111,5 @@ module "hyperqueue-service" {
   }
 
   notification_channels = var.notification_channels
+  version               = "1.30.4"
 }
