@@ -17,7 +17,7 @@ resource "google_service_account" "subscriber" {
 
 // Deploy the subscriber service
 module "subscriber" {
-  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
+  source             = "chainguard-dev/common/infra//modules/regional-go-service"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -58,18 +58,20 @@ module "subscriber" {
       ]
     }
   }
+  version = "1.32.1"
 }
 
 // Authorize the subscriber to call the workqueue in each region
 module "subscriber-calls-workqueue" {
   for_each = var.regions
 
-  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
+  source = "chainguard-dev/common/infra//modules/authorize-private-service"
 
   project_id      = var.project_id
   region          = each.key
   name            = var.workqueue.name
   service-account = google_service_account.subscriber.email
+  version         = "1.32.1"
 }
 
 // Create a subscription to the broker with filters for the specified event types
@@ -85,7 +87,7 @@ module "trigger" {
     }
   }
 
-  source = "../../../../public/terraform-infra-common/modules/cloudevent-trigger"
+  source = "chainguard-dev/common/infra//modules/cloudevent-trigger"
 
   project_id = var.project_id
   name       = "${var.name}-${each.value.region}-${each.value.index}"
@@ -112,4 +114,5 @@ module "trigger" {
   team = var.team
 
   depends_on = [module.subscriber]
+  version    = "1.32.1"
 }
