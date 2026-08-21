@@ -72,26 +72,23 @@ to partition data by corpus at the application level.
 ## Requirements
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 7.9.0 |
 
 ## Providers
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="provider_google"></a> [google](#provider\_google) | >= 7.9.0 |
-
-## Modules
-
-No modules.
 
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [google_project_iam_member.aiplatform_user](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/project_iam_member) | resource |
 | [google_storage_bucket.embeddings](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket) | resource |
 | [google_storage_bucket_iam_member.gcs_writer](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
+| [google_tags_location_tag_binding.embeddings_bucket](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/tags_location_tag_binding) | resource |
 | [google_vertex_ai_index.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/vertex_ai_index) | resource |
 | [google_vertex_ai_index_endpoint.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/vertex_ai_index_endpoint) | resource |
 | [google_vertex_ai_index_endpoint_deployed_index.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/vertex_ai_index_endpoint_deployed_index) | resource |
@@ -99,7 +96,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_approximate_neighbors_count"></a> [approximate\_neighbors\_count](#input\_approximate\_neighbors\_count) | Default number of approximate neighbors to return during search. | `number` | `150` | no |
 | <a name="input_authorized_service_accounts"></a> [authorized\_service\_accounts](#input\_authorized\_service\_accounts) | List of Google service account emails to grant roles/aiplatform.user and GCS access. | `list(string)` | `[]` | no |
 | <a name="input_create_gcs_bucket"></a> [create\_gcs\_bucket](#input\_create\_gcs\_bucket) | Create a GCS bucket for durable embedding storage. Set to false to bring your own bucket. | `bool` | `true` | no |
@@ -124,12 +121,13 @@ No modules.
 | <a name="input_product"></a> [product](#input\_product) | Product label to apply to resources. | `string` | `"unknown"` | no |
 | <a name="input_project"></a> [project](#input\_project) | GCP project ID. | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | GCP region for the index and endpoint. | `string` | n/a | yes |
+| <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags to bind to this module's taggable resources, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
 | <a name="input_team"></a> [team](#input\_team) | Team label to apply to resources (replaces deprecated 'squad'). | `string` | n/a | yes |
 
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_deployed_index_id"></a> [deployed\_index\_id](#output\_deployed\_index\_id) | ID of the deployed index within the endpoint. |
 | <a name="output_gcs_bucket_name"></a> [gcs\_bucket\_name](#output\_gcs\_bucket\_name) | Name of the GCS bucket for embedding storage. Empty if create\_gcs\_bucket is false. |
 | <a name="output_index_endpoint_id"></a> [index\_endpoint\_id](#output\_index\_endpoint\_id) | Fully-qualified resource name of the index endpoint. |

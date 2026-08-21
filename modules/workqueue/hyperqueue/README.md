@@ -54,14 +54,6 @@ No requirements.
 | ---- | ------- |
 | <a name="provider_google"></a> [google](#provider\_google) | n/a |
 
-## Modules
-
-| Name | Source | Version |
-| ---- | ------ | ------- |
-| <a name="module_hyperqueue-calls-receiver"></a> [hyperqueue-calls-receiver](#module\_hyperqueue-calls-receiver) | ../../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
-| <a name="module_hyperqueue-service"></a> [hyperqueue-service](#module\_hyperqueue-service) | ../../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
-| <a name="module_workqueue"></a> [workqueue](#module\_workqueue) | ../ | n/a |
-
 ## Resources
 
 | Name | Type |
@@ -87,6 +79,7 @@ No requirements.
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | n/a | `string` | n/a | yes |
 | <a name="input_reconciler-service"></a> [reconciler-service](#input\_reconciler-service) | The name of the reconciler service that the workqueue will dispatch work to. | <pre>object({<br/>    name = string<br/>  })</pre> | n/a | yes |
 | <a name="input_regions"></a> [regions](#input\_regions) | A map from region names to a network and subnetwork. | <pre>map(object({<br/>    network = string<br/>    subnet  = string<br/>  }))</pre> | n/a | yes |
+| <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags forwarded to every shard workqueue and to the hyperqueue router service, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
 | <a name="input_shards"></a> [shards](#input\_shards) | Number of workqueue shards (2-5). Each shard is an independent workqueue. | `number` | `2` | no |
 | <a name="input_team"></a> [team](#input\_team) | Team label to apply to resources. | `string` | n/a | yes |
 

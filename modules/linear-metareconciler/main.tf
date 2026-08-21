@@ -31,6 +31,7 @@ module "reconciler" {
   deletion_protection   = var.deletion_protection
   error_event_ingress   = var.error_event_ingress
   trace_event_ingress   = var.trace_event_ingress
+  resource_manager_tags = var.resource_manager_tags
 }
 
 # CloudEvents to Workqueue bridge for issue events
@@ -59,6 +60,8 @@ module "cloudevents-issues" {
   depends_on = [module.reconciler]
 
   team = var.team
+
+  resource_manager_tags = var.resource_manager_tags
 }
 
 # CloudEvents to Workqueue bridge for comment events (optional)
@@ -91,6 +94,8 @@ module "cloudevents-comments" {
   depends_on = [module.reconciler]
 
   team = var.team
+
+  resource_manager_tags = var.resource_manager_tags
 }
 
 # Dashboard for monitoring the reconciler

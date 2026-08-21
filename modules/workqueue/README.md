@@ -196,12 +196,16 @@ No requirements.
 | [google_storage_bucket_iam_member.dlq-operators](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_storage_bucket_iam_member.reenqueue-bucket-access](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_storage_notification.global-object-change-notifications](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_notification) | resource |
+| [google_tags_location_tag_binding.global_workqueue_bucket](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/tags_location_tag_binding) | resource |
+| [google_tags_tag_binding.global_object_change_topic](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/tags_tag_binding) | resource |
+| [google_tags_tag_binding.global_subscription](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/tags_tag_binding) | resource |
 | [random_string.bucket_suffix](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string) | resource |
 | [random_string.change-trigger](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string) | resource |
 | [random_string.cron-trigger](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string) | resource |
 | [random_string.dispatcher](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string) | resource |
 | [random_string.receiver](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string) | resource |
 | [random_string.reenqueue](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string) | resource |
+| [google_project.resource_manager_tags](https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/project) | data source |
 | [google_storage_project_service_account.gcs_account](https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/storage_project_service_account) | data source |
 
 ## Inputs
@@ -229,6 +233,7 @@ No requirements.
 | <a name="input_receiver_ingress"></a> [receiver\_ingress](#input\_receiver\_ingress) | The ingress traffic setting for the workqueue receiver service. INGRESS\_TRAFFIC\_ALL allows callers outside the VPC (e.g. Cloud Run services without VPC egress) to enqueue work. | `string` | `"INGRESS_TRAFFIC_INTERNAL_ONLY"` | no |
 | <a name="input_reconciler-service"></a> [reconciler-service](#input\_reconciler-service) | The name of the reconciler service that the workqueue will dispatch work to. | <pre>object({<br/>    name = string<br/>  })</pre> | n/a | yes |
 | <a name="input_regions"></a> [regions](#input\_regions) | A map from region names to a network and subnetwork.  A service will be created in each region configured to egress the specified traffic via the specified subnetwork. | <pre>map(object({<br/>    network = string<br/>    subnet  = string<br/>  }))</pre> | n/a | yes |
+| <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags to bind to this module's taggable resources, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
 | <a name="input_scope"></a> [scope](#input\_scope) | The scope of the workqueue. Must be 'global' for a single multi-regional workqueue. | `string` | `"global"` | no |
 | <a name="input_team"></a> [team](#input\_team) | Team label to apply to resources (replaces deprecated 'squad'). | `string` | n/a | yes |
 

@@ -37,4 +37,6 @@ module "workqueue-sharded" {
   multi_regional_location = var.multi_regional_location
 
   error_event_ingress = var.error_event_ingress
+
+  resource_manager_tags = var.resource_manager_tags
 }

@@ -48,6 +48,7 @@ module "reconciler" {
   error_event_ingress   = var.error_event_ingress
   trace_event_ingress   = var.trace_event_ingress
   dlq_operators         = var.dlq_operators
+  resource_manager_tags = var.resource_manager_tags
 }
 
 # CloudEvents to Workqueue bridge for issue events
@@ -76,6 +77,8 @@ module "cloudevents-issues" {
   depends_on = [module.reconciler]
 
   team = var.team
+
+  resource_manager_tags = var.resource_manager_tags
 }
 
 # CloudEvents to Workqueue bridge for pull request events
@@ -116,6 +119,8 @@ module "cloudevents-prs" {
   depends_on = [module.reconciler]
 
   team = var.team
+
+  resource_manager_tags = var.resource_manager_tags
 }
 
 # Dashboard for monitoring the reconciler
