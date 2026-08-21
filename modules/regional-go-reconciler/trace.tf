@@ -10,12 +10,13 @@ SPDX-License-Identifier: Apache-2.0
 module "reconciler-publishes-traces" {
   for_each = local.trace_event_ingress != null ? local.regions : {}
 
-  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
+  source = "chainguard-dev/common/infra//modules/authorize-private-service"
 
   project_id      = local.project_id
   region          = each.key
   name            = local.trace_event_ingress.name
   service-account = var.service_account
+  version         = "1.33.0"
 }
 
 locals {
