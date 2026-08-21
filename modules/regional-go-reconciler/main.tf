@@ -14,7 +14,7 @@ terraform {
 // In long mode the reconciler runs as a sidecar in a Cloud Run Job instead.
 module "reconciler" {
   count              = var.mode == "short" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -51,5 +51,4 @@ module "reconciler" {
   notification_channels = var.notification_channels
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.33.0"
 }

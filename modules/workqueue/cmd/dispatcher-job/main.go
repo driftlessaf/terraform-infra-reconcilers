@@ -36,6 +36,9 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 
 	ErrorEventIngressURI string `env:"ERROR_EVENT_INGRESS_URI"`
 	WorkqueueName        string `env:"WORKQUEUE_NAME"`
+	// Owner is recorded on the keys this dispatcher claims (the module sets
+	// it to the job's region), so in-progress work can be attributed.
+	Owner string `env:"WORKQUEUE_OWNER"`
 }{})
 
 func main() {
@@ -51,7 +54,7 @@ func main() {
 		if err != nil {
 			clog.FatalContextf(ctx, "Failed to create storage client: %v", err)
 		}
-		wq = gcs.NewWorkQueue(cl.Bucket(env.Bucket), env.Concurrency)
+		wq = gcs.NewWorkQueue(cl.Bucket(env.Bucket), env.Concurrency, gcs.WithOwner(env.Owner))
 	default:
 		clog.FatalContextf(ctx, "Unsupported mode: %q", env.Mode)
 	}

@@ -4,7 +4,7 @@
 
 module "reconciler-job" {
   count              = var.mode == "long" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-cron"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -49,10 +49,17 @@ module "reconciler-job" {
           { name = "WORKQUEUE_BUCKET", value = google_storage_bucket.global-workqueue[0].name },
           { name = "METRICS_PORT", value = "2113" },
         ]
-        regional-env = local.error_event_ingress != null ? [{
-          name  = "ERROR_EVENT_INGRESS_URI"
-          value = { for k, v in module.dispatcher-calls-error-broker : k => v.uri }
-        }] : []
+        regional-env = concat([
+          {
+            # Recorded on each key this dispatcher claims, so in-progress
+            # work can be attributed to a region.
+            name  = "WORKQUEUE_OWNER"
+            value = { for k in keys(var.regions) : k => k }
+          },
+          ], local.error_event_ingress != null ? [{
+            name  = "ERROR_EVENT_INGRESS_URI"
+            value = { for k, v in module.dispatcher-calls-error-broker : k => v.uri }
+        }] : [])
       }
     },
     // Reconciler containers with PORT injected so they listen on the sidecar port.
@@ -82,5 +89,4 @@ module "reconciler-job" {
   labels                = merge({ "service" : local.reconciler_service_name }, var.labels)
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.33.0"
 }

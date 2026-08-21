@@ -35,6 +35,9 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	Bucket      string `env:"WORKQUEUE_BUCKET"`
 	Target      string `env:"WORKQUEUE_TARGET,required"`
 	MaxRetry    int    `env:"WORKQUEUE_MAX_RETRY,default=0"` // 0 means unlimited retries
+	// Owner is recorded on the keys this dispatcher claims (the module sets
+	// it to the dispatcher's region), so in-progress work can be attributed.
+	Owner string `env:"WORKQUEUE_OWNER"`
 
 	// Optional: emit dispatch errors as CloudEvents.
 	// When ErrorEventIngressURI is empty, error events are disabled.
@@ -55,7 +58,7 @@ func main() {
 		if err != nil {
 			clog.FatalContextf(ctx, "Failed to create client: %v", err)
 		}
-		wq = gcs.NewWorkQueue(cl.Bucket(env.Bucket), env.Concurrency)
+		wq = gcs.NewWorkQueue(cl.Bucket(env.Bucket), env.Concurrency, gcs.WithOwner(env.Owner))
 
 		// Launch a go routine in the background to periodically call Enumerate
 		// to ensure that each replica surfaces the latest and greatest metrics

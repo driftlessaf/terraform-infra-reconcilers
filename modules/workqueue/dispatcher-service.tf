@@ -2,7 +2,7 @@
 // Not used in long mode, where the dispatcher runs inside a Cloud Run Job.
 module "dispatcher-service" {
   count              = local.dispatcher_service_enabled ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = local.project_id
   name               = local.dispatcher_service_name
@@ -48,6 +48,12 @@ module "dispatcher-service" {
           name  = "WORKQUEUE_TARGET"
           value = { for k, v in module.dispatcher-calls-target : k => v.uri }
         },
+        {
+          # Recorded on each key this dispatcher claims, so in-progress work
+          # can be attributed to a region.
+          name  = "WORKQUEUE_OWNER"
+          value = { for k, v in local.regions : k => k }
+        },
         ], local.error_event_ingress != null ? [
         {
           name  = "ERROR_EVENT_INGRESS_URI"
@@ -61,5 +67,4 @@ module "dispatcher-service" {
   notification_channels = local.notification_channels
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.33.0"
 }
