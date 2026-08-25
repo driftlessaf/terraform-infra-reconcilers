@@ -21,6 +21,17 @@ locals {
 
   merged_labels = merge(local.default_labels, local.squad_label, local.product_label, var.labels)
 
+  // Mirrors the regional-go-service default. Passing the caller's null straight
+  // through would clear the sidecar resource clause instead of inheriting it.
+  otel_resources = var.otel_resources != null ? var.otel_resources : {
+    limits = {
+      cpu    = "250m"
+      memory = "512Mi"
+    }
+    cpu_idle          = null
+    startup_cpu_boost = null
+  }
+
   name                        = "${var.name}-wq"
   project_id                  = var.project_id
   regions                     = var.regions

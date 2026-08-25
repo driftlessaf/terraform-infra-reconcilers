@@ -295,9 +295,18 @@ variable "enable_observability_iam" {
 }
 
 variable "otel_resources" {
-  description = "Resources to add to the OpenTelemetry resource."
-  type        = map(string)
-  default     = {}
+  description = "The resource clause for the otel sidecar container. Null takes the module default."
+  type = object({
+    limits = optional(object(
+      {
+        cpu    = string
+        memory = string
+      }
+    ), null)
+    cpu_idle          = optional(bool)
+    startup_cpu_boost = optional(bool)
+  })
+  default = null
 }
 
 variable "request_timeout_seconds" {
