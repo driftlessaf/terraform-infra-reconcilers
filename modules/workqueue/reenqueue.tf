@@ -33,7 +33,7 @@ resource "google_storage_bucket_iam_member" "reenqueue-bucket-access" {
 // The reenqueue cron job (paused by default, for manual invocation)
 module "reenqueue" {
   count  = local.workqueue_enabled ? 1 : 0
-  source = "chainguard-dev/common/infra//modules/cron"
+  source = "../../../../public/terraform-infra-common/modules/cron"
 
   project_id         = local.project_id
   observability_role = var.observability_role
@@ -79,5 +79,4 @@ module "reenqueue" {
   deletion_protection   = local.deletion_protection
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.35.1"
 }

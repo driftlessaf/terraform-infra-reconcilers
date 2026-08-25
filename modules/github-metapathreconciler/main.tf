@@ -42,6 +42,7 @@ module "reconciler" {
   mode                    = var.mode
   job_timeout             = var.job_timeout
   request_timeout_seconds = var.request_timeout_seconds
+  otel_resources          = var.otel_resources
   launch_stage            = var.launch_stage
 
   notification_channels       = var.notification_channels

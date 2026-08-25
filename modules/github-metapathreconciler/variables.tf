@@ -177,6 +177,21 @@ variable "egress" {
   default     = "PRIVATE_RANGES_ONLY"
 }
 
+variable "otel_resources" {
+  description = "The resource clause for the otel sidecar container. Null inherits the reconciler default."
+  type = object({
+    limits = optional(object(
+      {
+        cpu    = string
+        memory = string
+      }
+    ), null)
+    cpu_idle          = optional(bool)
+    startup_cpu_boost = optional(bool)
+  })
+  default = null
+}
+
 variable "request_timeout_seconds" {
   description = "The request timeout for the service in seconds."
   type        = number
