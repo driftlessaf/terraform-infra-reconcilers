@@ -15,7 +15,7 @@ module "reconciler" {
   containers                  = var.containers
   max-retry                   = var.max-retry
   concurrent-work             = var.concurrent-work
-  owner-concurrent-work       = var.owner-concurrent-work
+  regional-concurrent-work    = var.regional-concurrent-work
   batch-size                  = var.batch-size
   multi_regional_location     = var.multi_regional_location
   egress                      = var.egress

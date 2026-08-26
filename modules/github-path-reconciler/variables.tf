@@ -55,14 +55,14 @@ variable "concurrent-work" {
   default     = 20
 }
 
-variable "owner-concurrent-work" {
-  description = "Optional cap on concurrent work owned by each dispatcher region. Must be a positive integer when set. The global concurrent-work cap also applies."
+variable "regional-concurrent-work" {
+  description = "Optional cap on concurrent work in each dispatcher region. Must be a positive integer when set. The global concurrent-work cap also applies."
   type        = number
   default     = null
 
   validation {
-    condition     = var.owner-concurrent-work == null ? true : var.owner-concurrent-work > 0 && floor(var.owner-concurrent-work) == var.owner-concurrent-work
-    error_message = "owner-concurrent-work must be a positive integer when set."
+    condition     = var.regional-concurrent-work == null ? true : var.regional-concurrent-work > 0 && floor(var.regional-concurrent-work) == var.regional-concurrent-work
+    error_message = "regional-concurrent-work must be a positive integer when set."
   }
 }
 

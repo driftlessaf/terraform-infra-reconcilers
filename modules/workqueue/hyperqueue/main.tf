@@ -17,8 +17,8 @@ locals {
   # Remainder distributed across first N shards (1 extra each)
   remainder = var.concurrent-work - (local.base_concurrency * var.shards)
 
-  base_owner_concurrency = var.owner-concurrent-work != null ? floor(var.owner-concurrent-work / var.shards) : null
-  owner_remainder        = var.owner-concurrent-work != null ? var.owner-concurrent-work - (local.base_owner_concurrency * var.shards) : null
+  base_regional_concurrency = var.regional-concurrent-work != null ? floor(var.regional-concurrent-work / var.shards) : null
+  regional_remainder        = var.regional-concurrent-work != null ? var.regional-concurrent-work - (local.base_regional_concurrency * var.shards) : null
 
   # Flatten (region, shard) pairs for authorize-private-service calls
   auth_pairs = flatten([
@@ -45,7 +45,7 @@ module "workqueue" {
   reconciler-service = var.reconciler-service
   # First `remainder` shards get base+1, rest get base
   concurrent-work             = tonumber(each.key) < local.remainder ? local.base_concurrency + 1 : local.base_concurrency
-  owner-concurrent-work       = var.owner-concurrent-work != null ? (tonumber(each.key) < local.owner_remainder ? local.base_owner_concurrency + 1 : local.base_owner_concurrency) : null
+  regional-concurrent-work    = var.regional-concurrent-work != null ? (tonumber(each.key) < local.regional_remainder ? local.base_regional_concurrency + 1 : local.base_regional_concurrency) : null
   batch-size                  = var.batch-size
   max-retry                   = var.max-retry
   enable_dead_letter_alerting = var.enable_dead_letter_alerting

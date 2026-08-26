@@ -42,7 +42,7 @@ module "reconciler-job" {
         env = [
           { name = "WORKQUEUE_MODE", value = "gcs" },
           { name = "WORKQUEUE_CONCURRENCY", value = tostring(local.concurrent_work) },
-          { name = "WORKQUEUE_OWNER_CONCURRENCY", value = tostring(coalesce(local.owner_concurrent_work, 0)) },
+          { name = "WORKQUEUE_OWNER_CONCURRENCY", value = tostring(coalesce(local.regional_concurrent_work, 0)) },
           { name = "WORKQUEUE_MAX_RETRY", value = tostring(local.max_retry) },
           { name = "WORKQUEUE_BATCH_SIZE", value = tostring(local.dispatcher_batch_size) },
           { name = "WORKQUEUE_NAME", value = local.name },

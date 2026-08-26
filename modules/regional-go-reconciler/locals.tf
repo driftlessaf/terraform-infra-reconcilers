@@ -41,7 +41,7 @@ locals {
   deletion_protection         = var.deletion_protection
   multi_regional_location     = var.multi_regional_location
   concurrent_work             = var.concurrent-work
-  owner_concurrent_work       = var.owner-concurrent-work
+  regional_concurrent_work    = var.regional-concurrent-work
   max_retry                   = var.max-retry
   enable_dead_letter_alerting = var.enable_dead_letter_alerting
   dead_letter_alert_threshold = var.dead_letter_alert_threshold
