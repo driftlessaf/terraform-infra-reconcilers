@@ -17,6 +17,9 @@ locals {
   # Remainder distributed across first N shards (1 extra each)
   remainder = var.concurrent-work - (local.base_concurrency * var.shards)
 
+  base_owner_concurrency = var.owner-concurrent-work != null ? floor(var.owner-concurrent-work / var.shards) : null
+  owner_remainder        = var.owner-concurrent-work != null ? var.owner-concurrent-work - (local.base_owner_concurrency * var.shards) : null
+
   # Flatten (region, shard) pairs for authorize-private-service calls
   auth_pairs = flatten([
     for region in keys(var.regions) : [
@@ -42,6 +45,7 @@ module "workqueue" {
   reconciler-service = var.reconciler-service
   # First `remainder` shards get base+1, rest get base
   concurrent-work             = tonumber(each.key) < local.remainder ? local.base_concurrency + 1 : local.base_concurrency
+  owner-concurrent-work       = var.owner-concurrent-work != null ? (tonumber(each.key) < local.owner_remainder ? local.base_owner_concurrency + 1 : local.base_owner_concurrency) : null
   batch-size                  = var.batch-size
   max-retry                   = var.max-retry
   enable_dead_letter_alerting = var.enable_dead_letter_alerting
@@ -68,19 +72,18 @@ resource "google_service_account" "hyperqueue" {
 module "hyperqueue-calls-receiver" {
   for_each = { for pair in local.auth_pairs : pair.key => pair }
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.value.region
   name       = module.workqueue[each.value.shard].receiver.name
 
   service-account = google_service_account.hyperqueue.email
-  version         = "1.35.3"
 }
 
 # Hyperqueue service using regional-go-service
 module "hyperqueue-service" {
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = var.project_id
   name               = "${var.name}-hq"
@@ -115,5 +118,4 @@ module "hyperqueue-service" {
   notification_channels = var.notification_channels
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.35.3"
 }

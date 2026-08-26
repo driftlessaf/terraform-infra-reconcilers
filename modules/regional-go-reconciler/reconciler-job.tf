@@ -4,7 +4,7 @@
 
 module "reconciler-job" {
   count              = var.mode == "long" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-cron"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -42,6 +42,7 @@ module "reconciler-job" {
         env = [
           { name = "WORKQUEUE_MODE", value = "gcs" },
           { name = "WORKQUEUE_CONCURRENCY", value = tostring(local.concurrent_work) },
+          { name = "WORKQUEUE_OWNER_CONCURRENCY", value = tostring(coalesce(local.owner_concurrent_work, 0)) },
           { name = "WORKQUEUE_MAX_RETRY", value = tostring(local.max_retry) },
           { name = "WORKQUEUE_BATCH_SIZE", value = tostring(local.dispatcher_batch_size) },
           { name = "WORKQUEUE_NAME", value = local.name },
@@ -89,5 +90,4 @@ module "reconciler-job" {
   labels                = merge({ "service" : local.reconciler_service_name }, var.labels)
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.35.3"
 }

@@ -15,6 +15,7 @@ module "reconciler" {
   containers                  = var.containers
   max-retry                   = var.max-retry
   concurrent-work             = var.concurrent-work
+  owner-concurrent-work       = var.owner-concurrent-work
   batch-size                  = var.batch-size
   multi_regional_location     = var.multi_regional_location
   egress                      = var.egress
@@ -44,12 +45,11 @@ module "reconciler" {
 # This is used by both the cron job and push listener
 module "authorize-receiver-per-region" {
   for_each = var.regions
-  source   = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source   = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.key
   name       = module.reconciler.receiver.name
 
   service-account = var.service_account
-  version         = "1.35.3"
 }

@@ -28,16 +28,17 @@ import (
 )
 
 var env = envconfig.MustProcess(context.Background(), &struct {
-	Port        int    `env:"PORT,required"`
-	Concurrency int    `env:"WORKQUEUE_CONCURRENCY,required"`
-	BatchSize   int    `env:"WORKQUEUE_BATCH_SIZE,required"`
-	Mode        string `env:"WORKQUEUE_MODE,required"`
-	Bucket      string `env:"WORKQUEUE_BUCKET"`
-	Target      string `env:"WORKQUEUE_TARGET,required"`
-	MaxRetry    int    `env:"WORKQUEUE_MAX_RETRY,default=0"` // 0 means unlimited retries
-	// Owner is recorded on the keys this dispatcher claims (the module sets
-	// it to the dispatcher's region), so in-progress work can be attributed.
-	Owner string `env:"WORKQUEUE_OWNER"`
+	Port             int    `env:"PORT,required"`
+	Concurrency      int    `env:"WORKQUEUE_CONCURRENCY,required"`
+	OwnerConcurrency int    `env:"WORKQUEUE_OWNER_CONCURRENCY,default=0"`
+	BatchSize        int    `env:"WORKQUEUE_BATCH_SIZE,required"`
+	Mode             string `env:"WORKQUEUE_MODE,required"`
+	Bucket           string `env:"WORKQUEUE_BUCKET"`
+	Target           string `env:"WORKQUEUE_TARGET,required"`
+	MaxRetry         int    `env:"WORKQUEUE_MAX_RETRY,default=0"` // 0 means unlimited retries
+	// Identity is recorded as the owner of keys this dispatcher claims. The
+	// module sets it to the dispatcher's region.
+	Identity string `env:"WORKQUEUE_OWNER"`
 
 	// Optional: emit dispatch errors as CloudEvents.
 	// When ErrorEventIngressURI is empty, error events are disabled.
@@ -58,7 +59,7 @@ func main() {
 		if err != nil {
 			clog.FatalContextf(ctx, "Failed to create client: %v", err)
 		}
-		wq = gcs.NewWorkQueue(cl.Bucket(env.Bucket), env.Concurrency, gcs.WithOwner(env.Owner))
+		wq = gcs.NewWorkQueue(cl.Bucket(env.Bucket), env.Concurrency, gcs.WithIdentity(env.Identity))
 
 		// Launch a go routine in the background to periodically call Enumerate
 		// to ensure that each replica surfaces the latest and greatest metrics
@@ -96,6 +97,7 @@ func main() {
 		Addr: fmt.Sprintf(":%d", env.Port),
 		Handler: gcp.WithCloudTraceContext(dispatcher.Handler(
 			wq, env.Concurrency, env.BatchSize, dispatcher.ServiceCallback(client), env.MaxRetry,
+			dispatcher.WithOwnerConcurrency(env.OwnerConcurrency),
 			dispatcher.WithErrorIngressURI(ctx, env.ErrorEventIngressURI, env.WorkqueueName),
 		)),
 		ReadHeaderTimeout: 10 * time.Second,

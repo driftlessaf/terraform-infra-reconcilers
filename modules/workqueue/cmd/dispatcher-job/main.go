@@ -27,18 +27,19 @@ import (
 )
 
 var env = envconfig.MustProcess(context.Background(), &struct {
-	Concurrency int    `env:"WORKQUEUE_CONCURRENCY,required"`
-	BatchSize   int    `env:"WORKQUEUE_BATCH_SIZE,required"`
-	Mode        string `env:"WORKQUEUE_MODE,required"`
-	Bucket      string `env:"WORKQUEUE_BUCKET"`
-	Target      string `env:"WORKQUEUE_TARGET,required"`
-	MaxRetry    int    `env:"WORKQUEUE_MAX_RETRY,default=0"`
+	Concurrency      int    `env:"WORKQUEUE_CONCURRENCY,required"`
+	OwnerConcurrency int    `env:"WORKQUEUE_OWNER_CONCURRENCY,default=0"`
+	BatchSize        int    `env:"WORKQUEUE_BATCH_SIZE,required"`
+	Mode             string `env:"WORKQUEUE_MODE,required"`
+	Bucket           string `env:"WORKQUEUE_BUCKET"`
+	Target           string `env:"WORKQUEUE_TARGET,required"`
+	MaxRetry         int    `env:"WORKQUEUE_MAX_RETRY,default=0"`
 
 	ErrorEventIngressURI string `env:"ERROR_EVENT_INGRESS_URI"`
 	WorkqueueName        string `env:"WORKQUEUE_NAME"`
-	// Owner is recorded on the keys this dispatcher claims (the module sets
-	// it to the job's region), so in-progress work can be attributed.
-	Owner string `env:"WORKQUEUE_OWNER"`
+	// Identity is recorded as the owner of keys this job claims. The module sets
+	// it to the job's region.
+	Identity string `env:"WORKQUEUE_OWNER"`
 }{})
 
 func main() {
@@ -54,7 +55,7 @@ func main() {
 		if err != nil {
 			clog.FatalContextf(ctx, "Failed to create storage client: %v", err)
 		}
-		wq = gcs.NewWorkQueue(cl.Bucket(env.Bucket), env.Concurrency, gcs.WithOwner(env.Owner))
+		wq = gcs.NewWorkQueue(cl.Bucket(env.Bucket), env.Concurrency, gcs.WithIdentity(env.Identity))
 	default:
 		clog.FatalContextf(ctx, "Unsupported mode: %q", env.Mode)
 	}
@@ -67,6 +68,7 @@ func main() {
 
 	if err := dispatcher.HandleAsync(ctx, wq, env.Concurrency, env.BatchSize,
 		dispatcher.ServiceCallback(client), env.MaxRetry,
+		dispatcher.WithOwnerConcurrency(env.OwnerConcurrency),
 		dispatcher.WithErrorIngressURI(ctx, env.ErrorEventIngressURI, env.WorkqueueName),
 	)(); err != nil {
 		clog.FatalContextf(ctx, "dispatch: %v", err)

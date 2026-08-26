@@ -35,6 +35,24 @@ variable "concurrent-work" {
   type        = number
 }
 
+variable "owner-concurrent-work" {
+  description = "Optional cap on concurrent work owned by each dispatcher region, distributed across shards. Must be a positive integer when set. The global concurrent-work cap also applies."
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.owner-concurrent-work == null ? true : var.owner-concurrent-work > 0 && floor(var.owner-concurrent-work) == var.owner-concurrent-work
+    error_message = "owner-concurrent-work must be a positive integer when set."
+  }
+}
+
+check "owner_concurrency_per_shard" {
+  assert {
+    condition     = var.owner-concurrent-work == null || var.owner-concurrent-work >= var.shards
+    error_message = "owner-concurrent-work must be at least the number of shards."
+  }
+}
+
 variable "batch-size" {
   description = "Optional cap on how much work to launch per dispatcher pass."
   type        = number
