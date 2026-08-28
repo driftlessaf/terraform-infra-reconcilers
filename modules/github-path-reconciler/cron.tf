@@ -14,7 +14,7 @@ locals {
 }
 
 module "cron" {
-  source = "../../../../public/terraform-infra-common/modules/cron"
+  source = "chainguard-dev/common/infra//modules/cron"
 
   name       = "${var.name}-enq"
   project_id = var.project_id
@@ -58,4 +58,5 @@ module "cron" {
   team                  = var.team
   product               = var.product
   resource_manager_tags = var.resource_manager_tags
+  version               = "1.35.3"
 }
