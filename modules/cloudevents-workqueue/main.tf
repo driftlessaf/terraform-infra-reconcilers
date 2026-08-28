@@ -7,12 +7,11 @@ terraform {
 }
 
 module "subscriber-name" {
-  source = "chainguard-dev/common/infra//modules/limited-concat"
+  source = "../../../../public/terraform-infra-common/modules/limited-concat"
   prefix = var.name
   suffix = "-sub"
   // https://cloud.google.com/iam/docs/service-accounts-create
-  limit   = 30
-  version = "1.35.3"
+  limit = 30
 }
 
 // Create a service account for the service
@@ -26,7 +25,7 @@ resource "google_service_account" "subscriber" {
 
 // Deploy the subscriber service
 module "subscriber" {
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -69,36 +68,53 @@ module "subscriber" {
       ]
     }
   }
-  version = "1.35.3"
 }
 
 // Authorize the subscriber to call the workqueue in each region
 module "subscriber-calls-workqueue" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id      = var.project_id
   region          = each.key
   name            = var.workqueue.name
   service-account = google_service_account.subscriber.email
-  version         = "1.35.3"
+}
+
+locals {
+  // A Pub/Sub filter AND-composes its prefix clauses, so a set of prefixes that
+  // should match as an OR needs one trigger per prefix. Normalize the singular
+  // and plural inputs into one list; `[{}]` keeps the no-prefix case at exactly
+  // one trigger per (region, filter).
+  filter_prefix_sets = length(var.filter_prefixes) > 0 ? var.filter_prefixes : [var.filter_prefix]
+
+  // Prefix is the outer dimension and filter the inner one, so the trigger index
+  // of every existing (region, filter) pair is unchanged when a caller adds a
+  // second prefix. Ordering it the other way would renumber the trailing filters
+  // and destroy/recreate their live subscriptions.
+  trigger_index = {
+    for triple in setproduct(
+      keys(var.regions),
+      range(length(local.filter_prefix_sets)),
+      range(length(var.filters))
+    ) :
+    "${triple[0]}-${triple[1] * length(var.filters) + triple[2]}" => {
+      region = triple[0]
+      filter = var.filters[triple[2]]
+      prefix = local.filter_prefix_sets[triple[1]]
+      index  = triple[1] * length(var.filters) + triple[2]
+      broker = var.broker[triple[0]]
+    }
+  }
 }
 
 // Create a subscription to the broker with filters for the specified event types
-// We need a trigger for each region and each filter
+// We need a trigger for each region, each filter, and each prefix set
 module "trigger" {
-  for_each = {
-    for pair in setproduct(keys(var.regions), range(length(var.filters))) :
-    "${pair[0]}-${pair[1]}" => {
-      region = pair[0]
-      filter = var.filters[pair[1]]
-      index  = pair[1]
-      broker = var.broker[pair[0]]
-    }
-  }
+  for_each = local.trigger_index
 
-  source = "chainguard-dev/common/infra//modules/cloudevent-trigger"
+  source = "../../../../public/terraform-infra-common/modules/cloudevent-trigger"
 
   project_id = var.project_id
   name       = "${var.name}-${each.value.region}-${each.value.index}"
@@ -111,7 +127,7 @@ module "trigger" {
 
   // Pass the filter and ensure extension key exists
   filter                = each.value.filter
-  filter_prefix         = var.filter_prefix
+  filter_prefix         = each.value.prefix
   filter_has_attributes = [var.extension_key]
   filter_not            = var.filter_not
 
@@ -127,5 +143,4 @@ module "trigger" {
   resource_manager_tags = var.resource_manager_tags
 
   depends_on = [module.subscriber]
-  version    = "1.35.3"
 }

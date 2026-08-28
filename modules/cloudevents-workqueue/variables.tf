@@ -66,6 +66,30 @@ EOD
   default     = {}
 }
 
+variable "filter_prefixes" {
+  description = <<EOD
+Alternative to `filter_prefix` for matching any one of several prefix sets.
+A Pub/Sub filter AND-composes its clauses, so prefixes that should match as
+an OR cannot share a trigger; each entry here gets its own trigger per
+positive filter from `filters`. Use this to serve more than one branch
+namespace from a single reconciler:
+
+  filter_prefixes = [
+    { headbranch = "my-reconciler/" },
+    { headbranch = "other-reconciler/" },
+  ]
+
+Mutually exclusive with `filter_prefix`.
+EOD
+  type        = list(map(string))
+  default     = []
+
+  validation {
+    condition     = length(var.filter_prefixes) == 0 || length(var.filter_prefix) == 0
+    error_message = "Set filter_prefix or filter_prefixes, not both."
+  }
+}
+
 variable "filter_not" {
   description = <<EOD
 Negative-equality clauses AND-composed with each per-trigger positive
