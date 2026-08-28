@@ -332,6 +332,20 @@ variable "job_timeout" {
   default     = "3600s"
 }
 
+variable "scheduled_wait_warning_threshold" {
+  description = "Long-mode duration after which claiming an eligible workqueue key emits a structured warning (for example, \"1h\"). Set to \"0s\" to disable."
+  type        = string
+  default     = "0s"
+
+  validation {
+    condition = (
+      can(regex("^(0s|[1-9][0-9]*(ns|us|µs|ms|s|m|h))$", var.scheduled_wait_warning_threshold)) &&
+      can(timeadd("2000-01-01T00:00:00Z", var.scheduled_wait_warning_threshold))
+    )
+    error_message = "scheduled_wait_warning_threshold must be 0s or a positive Go duration with one unit (for example, 30m or 1h)."
+  }
+}
+
 variable "execution_environment" {
   description = "The execution environment for the service (options: EXECUTION_ENVIRONMENT_GEN1, EXECUTION_ENVIRONMENT_GEN2)."
   type        = string

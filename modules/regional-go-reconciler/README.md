@@ -110,6 +110,14 @@ mode-aware: it filters on the standalone dispatcher service in `short` mode
 and on the reconciler Job (`${name}-rec`) in `long` mode, where the
 dispatcher runs inside the Job.
 
+For long-mode dispatchers, `scheduled_wait_warning_threshold` can emit a
+durable structured `workqueue_scheduled_wait_high` event when an eligible key
+is finally claimed after the configured duration. It defaults to `0s`
+(disabled), so enabling it is an explicit per-reconciler operational policy.
+The event carries only the observed and configured durations; it deliberately
+omits the workqueue key to avoid leaking identifiers or creating unbounded log
+labels.
+
 **First-apply expectation:** enabling the alert (including the long-mode fix
 that made it fire at all) is not silent — any reconciler whose dead-letter
 queue is **already non-empty** opens an incident on the first apply that
@@ -142,15 +150,31 @@ No requirements.
 ## Providers
 
 | Name | Version |
-|------|---------|
-| <a name="provider_google"></a> [google](#provider\_google) | 7.45.0 |
-| <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | 7.45.0 |
+| ---- | ------- |
+| <a name="provider_google"></a> [google](#provider\_google) | 8.0.0 |
+| <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | 8.0.0 |
 | <a name="provider_random"></a> [random](#provider\_random) | 3.9.0 |
+
+## Modules
+
+| Name | Source | Version |
+| ---- | ------ | ------- |
+| <a name="module_change-trigger-calls-dispatcher"></a> [change-trigger-calls-dispatcher](#module\_change-trigger-calls-dispatcher) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_cron-trigger-calls-dispatcher"></a> [cron-trigger-calls-dispatcher](#module\_cron-trigger-calls-dispatcher) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_dispatcher-calls-error-broker"></a> [dispatcher-calls-error-broker](#module\_dispatcher-calls-error-broker) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_dispatcher-calls-target"></a> [dispatcher-calls-target](#module\_dispatcher-calls-target) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_dispatcher-service"></a> [dispatcher-service](#module\_dispatcher-service) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
+| <a name="module_receiver-service"></a> [receiver-service](#module\_receiver-service) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
+| <a name="module_reconciler"></a> [reconciler](#module\_reconciler) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
+| <a name="module_reconciler-job"></a> [reconciler-job](#module\_reconciler-job) | ../../../../public/terraform-infra-common/modules/regional-go-cron | n/a |
+| <a name="module_reconciler-publishes-traces"></a> [reconciler-publishes-traces](#module\_reconciler-publishes-traces) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_reenqueue"></a> [reenqueue](#module\_reenqueue) | ../../../../public/terraform-infra-common/modules/cron | n/a |
+| <a name="module_workqueue-sharded"></a> [workqueue-sharded](#module\_workqueue-sharded) | ../workqueue/hyperqueue | n/a |
 
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [google-beta_google_project_service_identity.pubsub](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_project_service_identity) | resource |
 | [google_cloud_scheduler_job.cron](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_scheduler_job) | resource |
 | [google_monitoring_alert_policy.dead_letter_queue](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
@@ -183,7 +207,7 @@ No requirements.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_batch-size"></a> [batch-size](#input\_batch-size) | Optional cap on how much work to launch per dispatcher pass. | `number` | `null` | no |
 | <a name="input_concurrent-work"></a> [concurrent-work](#input\_concurrent-work) | The amount of concurrent work to dispatch at a given time. | `number` | `20` | no |
 | <a name="input_containers"></a> [containers](#input\_containers) | The containers to run in the service.  Each container will be run in each region. | <pre>map(object({<br/>    source = object({<br/>      base_image  = optional(string, "cgr.dev/chainguard/static:latest-glibc@sha256:24dd7ff8788fdfadda39eeeaefefb6d1cec6002a545935a5f7e017484053734f")<br/>      working_dir = string<br/>      importpath  = string<br/>      env         = optional(list(string), [])<br/>    })<br/>    command = optional(list(string), [])<br/>    args    = optional(list(string), [])<br/>    ports = optional(list(object({<br/>      name           = optional(string, "h2c")<br/>      container_port = number<br/>    })), [])<br/>    resources = optional(<br/>      object(<br/>        {<br/>          limits = optional(object(<br/>            {<br/>              cpu    = string<br/>              memory = string<br/>            }<br/>          ), null)<br/>          cpu_idle          = optional(bool)<br/>          startup_cpu_boost = optional(bool, true)<br/>        }<br/>      ),<br/>      {}<br/>    )<br/>    env = optional(list(object({<br/>      name  = string<br/>      value = optional(string)<br/>      value_source = optional(object({<br/>        secret_key_ref = object({<br/>          secret  = string<br/>          version = string<br/>        })<br/>      }), null)<br/>    })), [])<br/>    regional-env = optional(list(object({<br/>      name  = string<br/>      value = map(string)<br/>    })), [])<br/>    regional-cpu-idle = optional(map(bool), {})<br/>    volume_mounts = optional(list(object({<br/>      name       = string<br/>      mount_path = string<br/>    })), [])<br/>    startup_probe = optional(object({<br/>      initial_delay_seconds = optional(number)<br/>      timeout_seconds       = optional(number, 240)<br/>      period_seconds        = optional(number, 240)<br/>      failure_threshold     = optional(number, 1)<br/>      tcp_socket = optional(object({<br/>        port = optional(number)<br/>      }), null)<br/>      grpc = optional(object({<br/>        port    = optional(number)<br/>        service = optional(string)<br/>      }), null)<br/>    }), null)<br/>    liveness_probe = optional(object({<br/>      initial_delay_seconds = optional(number)<br/>      timeout_seconds       = optional(number)<br/>      period_seconds        = optional(number)<br/>      failure_threshold     = optional(number)<br/>      http_get = optional(object({<br/>        path = optional(string)<br/>        http_headers = optional(list(object({<br/>          name  = string<br/>          value = string<br/>        })), [])<br/>      }), null)<br/>      grpc = optional(object({<br/>        port    = optional(number)<br/>        service = optional(string)<br/>      }), null)<br/>    }), null)<br/>  }))</pre> | `{}` | no |
@@ -219,6 +243,7 @@ No requirements.
 | <a name="input_request_timeout_seconds"></a> [request\_timeout\_seconds](#input\_request\_timeout\_seconds) | The request timeout for the service in seconds. | `number` | `300` | no |
 | <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags to bind to this module's taggable resources, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
 | <a name="input_scaling"></a> [scaling](#input\_scaling) | The scaling configuration for the service. max\_instances bounds each revision individually; service\_max\_instances additionally bounds all revisions receiving traffic combined, which Cloud Run requires when per-instance ephemeral disk reservations must fit the regional quota across rollouts. | <pre>object({<br/>    min_instances                    = optional(number, 0)<br/>    max_instances                    = optional(number, 100)<br/>    service_max_instances            = optional(number)<br/>    max_instance_request_concurrency = optional(number, 1000)<br/>  })</pre> | `{}` | no |
+| <a name="input_scheduled_wait_warning_threshold"></a> [scheduled\_wait\_warning\_threshold](#input\_scheduled\_wait\_warning\_threshold) | Long-mode duration after which claiming an eligible workqueue key emits a structured warning (for example, "1h"). Set to "0s" to disable. | `string` | `"0s"` | no |
 | <a name="input_service_account"></a> [service\_account](#input\_service\_account) | The service account as which to run the reconciler service. | `string` | n/a | yes |
 | <a name="input_shards"></a> [shards](#input\_shards) | Number of workqueue shards. When 1, uses the standard workqueue. When >1, uses hyperqueue. | `number` | `1` | no |
 | <a name="input_slo"></a> [slo](#input\_slo) | Configuration for setting up SLO for the cloud run service | <pre>object({<br/>    enable          = optional(bool, false)<br/>    enable_alerting = optional(bool, false)<br/>    success = optional(object(<br/>      {<br/>        multi_region_goal = optional(number, 0.999)<br/>        per_region_goal   = optional(number, 0.999)<br/>      }<br/>    ), null)<br/>    monitor_gclb = optional(bool, false)<br/>  })</pre> | `{}` | no |
@@ -230,7 +255,7 @@ No requirements.
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue (null when sharded; each shard manages its own bucket). |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The workqueue receiver object for connecting triggers. When sharded, this is the hyperqueue router. |
 | <a name="output_reconciler-uris"></a> [reconciler-uris](#output\_reconciler-uris) | The URIs of the reconciler service by region (short mode only). |

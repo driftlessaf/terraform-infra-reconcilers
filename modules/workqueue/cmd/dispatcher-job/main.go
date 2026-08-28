@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/chainguard-dev/clog"
@@ -27,13 +28,14 @@ import (
 )
 
 var env = envconfig.MustProcess(context.Background(), &struct {
-	Concurrency      int    `env:"WORKQUEUE_CONCURRENCY,required"`
-	OwnerConcurrency int    `env:"WORKQUEUE_OWNER_CONCURRENCY,default=0"`
-	BatchSize        int    `env:"WORKQUEUE_BATCH_SIZE,required"`
-	Mode             string `env:"WORKQUEUE_MODE,required"`
-	Bucket           string `env:"WORKQUEUE_BUCKET"`
-	Target           string `env:"WORKQUEUE_TARGET,required"`
-	MaxRetry         int    `env:"WORKQUEUE_MAX_RETRY,default=0"`
+	Concurrency                   int           `env:"WORKQUEUE_CONCURRENCY,required"`
+	OwnerConcurrency              int           `env:"WORKQUEUE_OWNER_CONCURRENCY,default=0"`
+	BatchSize                     int           `env:"WORKQUEUE_BATCH_SIZE,required"`
+	Mode                          string        `env:"WORKQUEUE_MODE,required"`
+	Bucket                        string        `env:"WORKQUEUE_BUCKET"`
+	Target                        string        `env:"WORKQUEUE_TARGET,required"`
+	MaxRetry                      int           `env:"WORKQUEUE_MAX_RETRY,default=0"`
+	ScheduledWaitWarningThreshold time.Duration `env:"WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD,default=0s"`
 
 	ErrorEventIngressURI string `env:"ERROR_EVENT_INGRESS_URI"`
 	WorkqueueName        string `env:"WORKQUEUE_NAME"`
@@ -55,7 +57,10 @@ func main() {
 		if err != nil {
 			clog.FatalContextf(ctx, "Failed to create storage client: %v", err)
 		}
-		wq = gcs.NewWorkQueue(cl.Bucket(env.Bucket), env.Concurrency, gcs.WithIdentity(env.Identity))
+		wq = gcs.NewWorkQueue(cl.Bucket(env.Bucket), env.Concurrency,
+			gcs.WithIdentity(env.Identity),
+			gcs.WithScheduledWaitWarningThreshold(env.ScheduledWaitWarningThreshold),
+		)
 	default:
 		clog.FatalContextf(ctx, "Unsupported mode: %q", env.Mode)
 	}
