@@ -62,3 +62,17 @@ run "overflowing_warning_threshold_is_rejected" {
 
   expect_failures = [var.scheduled_wait_warning_threshold]
 }
+
+run "sharded_short_mode_skips_long_dispatcher_env" {
+  command = plan
+
+  variables {
+    mode   = "short"
+    shards = 2
+  }
+
+  assert {
+    condition     = length(local.long_mode_dispatcher_env) == 0
+    error_message = "short mode must not evaluate the long-mode dispatcher environment"
+  }
+}

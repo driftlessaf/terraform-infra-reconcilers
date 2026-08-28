@@ -1,5 +1,5 @@
 locals {
-  long_mode_dispatcher_env = [
+  long_mode_dispatcher_env = var.mode == "long" ? [
     { name = "WORKQUEUE_MODE", value = "gcs" },
     { name = "WORKQUEUE_CONCURRENCY", value = tostring(local.concurrent_work) },
     { name = "WORKQUEUE_OWNER_CONCURRENCY", value = tostring(coalesce(local.regional_concurrent_work, 0)) },
@@ -10,7 +10,7 @@ locals {
     { name = "WORKQUEUE_BUCKET", value = google_storage_bucket.global-workqueue[0].name },
     { name = "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD", value = var.scheduled_wait_warning_threshold },
     { name = "METRICS_PORT", value = "2113" },
-  ]
+  ] : []
 }
 
 // Long-mode reconciler: a Cloud Run Job that fires once per cron tick.
@@ -19,7 +19,7 @@ locals {
 
 module "reconciler-job" {
   count              = var.mode == "long" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-cron"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -95,5 +95,4 @@ module "reconciler-job" {
   labels                = merge({ "service" : local.reconciler_service_name }, var.labels)
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.35.3"
 }
