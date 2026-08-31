@@ -35,8 +35,11 @@ run "warning_disabled_by_default" {
   command = plan
 
   assert {
-    condition     = one([for e in local.long_mode_dispatcher_env : e.value if e.name == "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD"]) == "0s"
-    error_message = "the scheduled wait warning must be opt-in"
+    condition = alltrue([
+      one([for e in local.long_mode_dispatcher_env : e.value if e.name == "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD"]) == "0s",
+      one([for e in local.short_mode_dispatcher_env : e.value if e.name == "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD"]) == "0s",
+    ])
+    error_message = "the scheduled wait warning must be opt-in in both dispatcher modes"
   }
 }
 
@@ -48,8 +51,11 @@ run "warning_threshold_is_forwarded" {
   }
 
   assert {
-    condition     = one([for e in local.long_mode_dispatcher_env : e.value if e.name == "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD"]) == "1h"
-    error_message = "the configured scheduled wait warning threshold was not forwarded to the long-mode dispatcher"
+    condition = alltrue([
+      one([for e in local.long_mode_dispatcher_env : e.value if e.name == "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD"]) == "1h",
+      one([for e in local.short_mode_dispatcher_env : e.value if e.name == "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD"]) == "1h",
+    ])
+    error_message = "the configured scheduled wait warning threshold was not forwarded to both dispatcher modes"
   }
 }
 
@@ -58,6 +64,16 @@ run "overflowing_warning_threshold_is_rejected" {
 
   variables {
     scheduled_wait_warning_threshold = "9999999h"
+  }
+
+  expect_failures = [var.scheduled_wait_warning_threshold]
+}
+
+run "multi_unit_warning_threshold_is_rejected" {
+  command = plan
+
+  variables {
+    scheduled_wait_warning_threshold = "1h30m"
   }
 
   expect_failures = [var.scheduled_wait_warning_threshold]

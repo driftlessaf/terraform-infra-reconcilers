@@ -44,11 +44,12 @@ module "workqueue" {
 
   reconciler-service = var.reconciler-service
   # First `remainder` shards get base+1, rest get base
-  concurrent-work             = tonumber(each.key) < local.remainder ? local.base_concurrency + 1 : local.base_concurrency
-  regional-concurrent-work    = var.regional-concurrent-work != null ? (tonumber(each.key) < local.regional_remainder ? local.base_regional_concurrency + 1 : local.base_regional_concurrency) : null
-  batch-size                  = var.batch-size
-  max-retry                   = var.max-retry
-  enable_dead_letter_alerting = var.enable_dead_letter_alerting
+  concurrent-work                  = tonumber(each.key) < local.remainder ? local.base_concurrency + 1 : local.base_concurrency
+  regional-concurrent-work         = var.regional-concurrent-work != null ? (tonumber(each.key) < local.regional_remainder ? local.base_regional_concurrency + 1 : local.base_regional_concurrency) : null
+  batch-size                       = var.batch-size
+  max-retry                        = var.max-retry
+  scheduled_wait_warning_threshold = var.scheduled_wait_warning_threshold
+  enable_dead_letter_alerting      = var.enable_dead_letter_alerting
 
   team                    = var.team
   product                 = var.product
@@ -72,19 +73,18 @@ resource "google_service_account" "hyperqueue" {
 module "hyperqueue-calls-receiver" {
   for_each = { for pair in local.auth_pairs : pair.key => pair }
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.value.region
   name       = module.workqueue[each.value.shard].receiver.name
 
   service-account = google_service_account.hyperqueue.email
-  version         = "1.36.0"
 }
 
 # Hyperqueue service using regional-go-service
 module "hyperqueue-service" {
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = var.project_id
   name               = "${var.name}-hq"
@@ -119,5 +119,4 @@ module "hyperqueue-service" {
   notification_channels = var.notification_channels
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.36.0"
 }

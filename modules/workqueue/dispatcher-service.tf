@@ -1,8 +1,20 @@
+locals {
+  short_mode_dispatcher_env = [
+    { name = "WORKQUEUE_MODE", value = "gcs" },
+    { name = "WORKQUEUE_CONCURRENCY", value = tostring(local.concurrent_work) },
+    { name = "WORKQUEUE_OWNER_CONCURRENCY", value = tostring(coalesce(local.regional_concurrent_work, 0)) },
+    { name = "WORKQUEUE_MAX_RETRY", value = tostring(local.max_retry) },
+    { name = "WORKQUEUE_BATCH_SIZE", value = tostring(local.dispatcher_batch_size) },
+    { name = "WORKQUEUE_NAME", value = local.name },
+    { name = "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD", value = var.scheduled_wait_warning_threshold },
+  ]
+}
+
 // Stand up the dispatcher service in each of our regions.
 // Not used in long mode, where the dispatcher runs inside a Cloud Run Job.
 module "dispatcher-service" {
   count              = local.dispatcher_service_enabled ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = local.project_id
   name               = local.dispatcher_service_name
@@ -32,14 +44,7 @@ module "dispatcher-service" {
         name           = "h2c"
         container_port = 8080
       }]
-      env = [
-        { name = "WORKQUEUE_MODE", value = "gcs" },
-        { name = "WORKQUEUE_CONCURRENCY", value = "${local.concurrent_work}" },
-        { name = "WORKQUEUE_OWNER_CONCURRENCY", value = tostring(coalesce(local.regional_concurrent_work, 0)) },
-        { name = "WORKQUEUE_MAX_RETRY", value = "${local.max_retry}" },
-        { name = "WORKQUEUE_BATCH_SIZE", value = tostring(local.dispatcher_batch_size) },
-        { name = "WORKQUEUE_NAME", value = local.name },
-      ]
+      env = local.short_mode_dispatcher_env
       regional-env = concat([
         {
           name  = "WORKQUEUE_BUCKET"
@@ -68,5 +73,4 @@ module "dispatcher-service" {
   notification_channels = local.notification_channels
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.36.0"
 }

@@ -110,9 +110,10 @@ mode-aware: it filters on the standalone dispatcher service in `short` mode
 and on the reconciler Job (`${name}-rec`) in `long` mode, where the
 dispatcher runs inside the Job.
 
-For long-mode dispatchers, `scheduled_wait_warning_threshold` can emit a
-durable structured `workqueue_scheduled_wait_high` event when an eligible key
-is finally claimed after the configured duration. It defaults to `0s`
+For GCS-backed dispatchers in either mode,
+`scheduled_wait_warning_threshold` can emit a durable structured
+`workqueue_scheduled_wait_high` event when an eligible key is finally claimed
+after the configured duration. It defaults to `0s`
 (disabled), so enabling it is an explicit per-reconciler operational policy.
 The event carries only the observed and configured durations; it deliberately
 omits the workqueue key to avoid leaking identifiers or creating unbounded log
@@ -243,7 +244,7 @@ No requirements.
 | <a name="input_request_timeout_seconds"></a> [request\_timeout\_seconds](#input\_request\_timeout\_seconds) | The request timeout for the service in seconds. | `number` | `300` | no |
 | <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags to bind to this module's taggable resources, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
 | <a name="input_scaling"></a> [scaling](#input\_scaling) | The scaling configuration for the service. max\_instances bounds each revision individually; service\_max\_instances additionally bounds all revisions receiving traffic combined, which Cloud Run requires when per-instance ephemeral disk reservations must fit the regional quota across rollouts. | <pre>object({<br/>    min_instances                    = optional(number, 0)<br/>    max_instances                    = optional(number, 100)<br/>    service_max_instances            = optional(number)<br/>    max_instance_request_concurrency = optional(number, 1000)<br/>  })</pre> | `{}` | no |
-| <a name="input_scheduled_wait_warning_threshold"></a> [scheduled\_wait\_warning\_threshold](#input\_scheduled\_wait\_warning\_threshold) | Long-mode duration after which claiming an eligible workqueue key emits a structured warning (for example, "1h"). Set to "0s" to disable. | `string` | `"0s"` | no |
+| <a name="input_scheduled_wait_warning_threshold"></a> [scheduled\_wait\_warning\_threshold](#input\_scheduled\_wait\_warning\_threshold) | Duration after which claiming an eligible GCS workqueue key emits a structured warning (for example, "1h"). Set to "0s" to disable. | `string` | `"0s"` | no |
 | <a name="input_service_account"></a> [service\_account](#input\_service\_account) | The service account as which to run the reconciler service. | `string` | n/a | yes |
 | <a name="input_shards"></a> [shards](#input\_shards) | Number of workqueue shards. When 1, uses the standard workqueue. When >1, uses hyperqueue. | `number` | `1` | no |
 | <a name="input_slo"></a> [slo](#input\_slo) | Configuration for setting up SLO for the cloud run service | <pre>object({<br/>    enable          = optional(bool, false)<br/>    enable_alerting = optional(bool, false)<br/>    success = optional(object(<br/>      {<br/>        multi_region_goal = optional(number, 0.999)<br/>        per_region_goal   = optional(number, 0.999)<br/>      }<br/>    ), null)<br/>    monitor_gclb = optional(bool, false)<br/>  })</pre> | `{}` | no |

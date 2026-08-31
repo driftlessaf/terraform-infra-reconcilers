@@ -29,6 +29,10 @@ latter.  If there is a high `Amount of work queued` but we are not keeping the
 `Amount of work in progress` at the concurrency target, then the shard factors
 _likely_ need adjustment (check the latencies above!).
 
+`scheduled_wait_warning_threshold` is forwarded to every shard dispatcher. It
+defaults to `0s` (disabled), so each hyperqueue opts into durable high-wait
+warnings explicitly.
+
 # Warning: changing the sharding factor
 
 A notable danger of this approach is that changing the sharding factor will mean
@@ -81,6 +85,7 @@ No requirements.
 | <a name="input_regional-concurrent-work"></a> [regional-concurrent-work](#input\_regional-concurrent-work) | Optional cap on concurrent work in each dispatcher region, distributed across shards. Must be a positive integer when set. The global concurrent-work cap also applies. | `number` | `null` | no |
 | <a name="input_regions"></a> [regions](#input\_regions) | A map from region names to a network and subnetwork. | <pre>map(object({<br/>    network = string<br/>    subnet  = string<br/>  }))</pre> | n/a | yes |
 | <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags forwarded to every shard workqueue and to the hyperqueue router service, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
+| <a name="input_scheduled_wait_warning_threshold"></a> [scheduled\_wait\_warning\_threshold](#input\_scheduled\_wait\_warning\_threshold) | Duration after which a shard dispatcher claiming an eligible GCS workqueue key emits a structured warning (for example, "1h"). Set to "0s" to disable. | `string` | `"0s"` | no |
 | <a name="input_shards"></a> [shards](#input\_shards) | Number of workqueue shards (2-5). Each shard is an independent workqueue. | `number` | `2` | no |
 | <a name="input_team"></a> [team](#input\_team) | Team label to apply to resources. | `string` | n/a | yes |
 

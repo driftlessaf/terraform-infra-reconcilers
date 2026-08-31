@@ -25,6 +25,10 @@ module "workqueue" {
   // Default is 0 (unlimited retries)
   max-retry = 5
 
+  // Optional durable warning when eligible work waits too long to be claimed.
+  // Default is 0s (disabled).
+  scheduled_wait_warning_threshold = "30m"
+
   // Optionally disable DLQ alerting while phasing in a queue
   enable_dead_letter_alerting = true
 
@@ -235,6 +239,7 @@ No requirements.
 | <a name="input_regional-concurrent-work"></a> [regional-concurrent-work](#input\_regional-concurrent-work) | Optional cap on concurrent work in each dispatcher region. Must be a positive integer when set. The global concurrent-work cap also applies. | `number` | `null` | no |
 | <a name="input_regions"></a> [regions](#input\_regions) | A map from region names to a network and subnetwork.  A service will be created in each region configured to egress the specified traffic via the specified subnetwork. | <pre>map(object({<br/>    network = string<br/>    subnet  = string<br/>  }))</pre> | n/a | yes |
 | <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags to bind to this module's taggable resources, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
+| <a name="input_scheduled_wait_warning_threshold"></a> [scheduled\_wait\_warning\_threshold](#input\_scheduled\_wait\_warning\_threshold) | Duration after which claiming an eligible GCS workqueue key emits a structured warning (for example, "1h"). Set to "0s" to disable. | `string` | `"0s"` | no |
 | <a name="input_scope"></a> [scope](#input\_scope) | The scope of the workqueue. Must be 'global' for a single multi-regional workqueue. | `string` | `"global"` | no |
 | <a name="input_team"></a> [team](#input\_team) | Team label to apply to resources (replaces deprecated 'squad'). | `string` | n/a | yes |
 
@@ -245,4 +250,5 @@ No requirements.
 | <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue. |
 | <a name="output_dispatcher"></a> [dispatcher](#output\_dispatcher) | n/a |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | n/a |
+| <a name="output_scheduled_wait_warning_threshold"></a> [scheduled\_wait\_warning\_threshold](#output\_scheduled\_wait\_warning\_threshold) | The threshold after which scheduled work emits a waiting warning. |
 <!-- END_TF_DOCS -->

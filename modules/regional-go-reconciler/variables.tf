@@ -333,7 +333,7 @@ variable "job_timeout" {
 }
 
 variable "scheduled_wait_warning_threshold" {
-  description = "Long-mode duration after which claiming an eligible workqueue key emits a structured warning (for example, \"1h\"). Set to \"0s\" to disable."
+  description = "Duration after which claiming an eligible GCS workqueue key emits a structured warning (for example, \"1h\"). Set to \"0s\" to disable."
   type        = string
   default     = "0s"
 

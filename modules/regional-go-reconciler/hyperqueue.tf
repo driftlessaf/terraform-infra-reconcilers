@@ -17,11 +17,12 @@ module "workqueue-sharded" {
   regions            = var.regions
   shards             = var.shards
 
-  concurrent-work             = var.concurrent-work
-  regional-concurrent-work    = var.regional-concurrent-work
-  batch-size                  = var.batch-size
-  max-retry                   = var.max-retry
-  enable_dead_letter_alerting = var.enable_dead_letter_alerting
+  concurrent-work                  = var.concurrent-work
+  regional-concurrent-work         = var.regional-concurrent-work
+  batch-size                       = var.batch-size
+  max-retry                        = var.max-retry
+  scheduled_wait_warning_threshold = var.scheduled_wait_warning_threshold
+  enable_dead_letter_alerting      = var.enable_dead_letter_alerting
 
   // Threading the name through local.reconciler_service_name makes the
   // shard dispatchers wait for the reconciler Cloud Run service to exist.
