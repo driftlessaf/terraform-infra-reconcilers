@@ -59,6 +59,11 @@ locals {
   // the workqueue bucket.  Inline deployments set this to their service account.
   additional_bucket_members = []
 
+  // queue_reader_members are IAM members granted roles/storage.objectViewer on
+  // the workqueue bucket, so a producer can read the queue's depth without also
+  // being able to delete from it.
+  queue_reader_members = var.queue_readers
+
   // dlq_operator_members are IAM members granted roles/storage.objectAdmin for
   // dead-letter queue operations. Inline deployments override this via var.dlq_operators.
   dlq_operator_members = []

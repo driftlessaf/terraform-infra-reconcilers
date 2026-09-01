@@ -82,6 +82,7 @@ locals {
   dispatcher_sa_email       = var.service_account
   additional_bucket_members = ["serviceAccount:${var.service_account}"]
   dlq_operator_members      = var.dlq_operators
+  queue_reader_members      = var.queue_readers
   reenqueue_invokers        = var.reenqueue_invokers
 
   // Setting var.reenqueue_schedule opts the workqueue into periodically

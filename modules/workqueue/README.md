@@ -167,6 +167,32 @@ The job will:
 3. When the requeued key succeeds, the dead-letter entry is automatically cleaned up
 
 <!-- BEGIN_TF_DOCS -->
+## Read-only access for producers
+
+A producer that decides whether to enqueue more needs to read the queue's depth,
+which means `storage.objects.list` on the bucket. The two other bindings onto it
+— `roles/storage.admin` for the receiver and dispatcher, `roles/storage.objectAdmin`
+for DLQ operators — both grant delete, so without a third a caller would take the
+right to remove keys from `queued/`, `in-progress/` and `dead-letter/` in exchange
+for a count.
+
+`queue_readers` grants `roles/storage.objectViewer` and nothing else.
+
+```hcl
+module "workqueue" {
+  source = "driftlessaf/reconcilers/infra//modules/workqueue"
+  // ...
+
+  // The backfill producer reads the depth to pace itself; it never writes here.
+  queue_readers = ["serviceAccount:${google_service_account.backfill.email}"]
+}
+```
+
+The Go side is `gcs.QueuedDepth`, which counts under `queued/` up to a limit —
+see the Producer backpressure section of `gcs/README.md`. Note it counts ONE
+bucket: a sharded queue gives each shard its own, so a producer in front of
+`hyperqueue` needs a reader on each and has to sum them.
+
 ## Requirements
 
 No requirements.
@@ -198,6 +224,7 @@ No requirements.
 | [google_storage_bucket.global-workqueue](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket) | resource |
 | [google_storage_bucket_iam_binding.global-authorize-access](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_binding) | resource |
 | [google_storage_bucket_iam_member.dlq-operators](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
+| [google_storage_bucket_iam_member.queue-readers](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_storage_bucket_iam_member.reenqueue-bucket-access](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_storage_notification.global-object-change-notifications](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_notification) | resource |
 | [google_tags_location_tag_binding.global_workqueue_bucket](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/tags_location_tag_binding) | resource |
@@ -234,6 +261,7 @@ No requirements.
 | <a name="input_primary-region"></a> [primary-region](#input\_primary-region) | The primary region for single-homed resources like the reenqueue job. Defaults to the first region in the regions map. | `string` | `null` | no |
 | <a name="input_product"></a> [product](#input\_product) | Product label to apply to the service. | `string` | `"unknown"` | no |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | n/a | `string` | n/a | yes |
+| <a name="input_queue_readers"></a> [queue\_readers](#input\_queue\_readers) | IAM members granted read-only access (roles/storage.objectViewer) to the<br/>workqueue bucket. For producers that read the queue's depth to decide whether<br/>to enqueue more — see gcs.QueuedDepth. The two other bindings onto this bucket<br/>both grant delete, which is more than a count needs. | `list(string)` | `[]` | no |
 | <a name="input_receiver_ingress"></a> [receiver\_ingress](#input\_receiver\_ingress) | The ingress traffic setting for the workqueue receiver service. INGRESS\_TRAFFIC\_ALL allows callers outside the VPC (e.g. Cloud Run services without VPC egress) to enqueue work. | `string` | `"INGRESS_TRAFFIC_INTERNAL_ONLY"` | no |
 | <a name="input_reconciler-service"></a> [reconciler-service](#input\_reconciler-service) | The name of the reconciler service that the workqueue will dispatch work to. | <pre>object({<br/>    name = string<br/>  })</pre> | n/a | yes |
 | <a name="input_regional-concurrent-work"></a> [regional-concurrent-work](#input\_regional-concurrent-work) | Optional cap on concurrent work in each dispatcher region. Must be a positive integer when set. The global concurrent-work cap also applies. | `number` | `null` | no |

@@ -191,3 +191,14 @@ variable "resource_manager_tags" {
     error_message = "resource_manager_tags keys must be tagKeys/<numeric-id> and values must be tagValues/<numeric-id>."
   }
 }
+
+variable "queue_readers" {
+  description = <<-EOT
+    IAM members granted read-only access (roles/storage.objectViewer) to the
+    workqueue bucket. For producers that read the queue's depth to decide whether
+    to enqueue more — see gcs.QueuedDepth. The two other bindings onto this bucket
+    both grant delete, which is more than a count needs.
+  EOT
+  type        = list(string)
+  default     = []
+}

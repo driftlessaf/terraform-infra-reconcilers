@@ -31,6 +31,26 @@ resource "google_storage_bucket_iam_binding" "global-authorize-access" {
   ], local.additional_bucket_members)
 }
 
+// Read-only access to the bucket, for producers that need to see the queue's
+// shape rather than change it.
+//
+// It exists because the two bindings around it are the only other way in, and
+// both grant delete. A producer calling gcs.QueuedDepth needs storage.objects.list
+// and nothing else; without this it would take the right to remove keys from
+// queued/, in-progress/ and dead-letter/ in exchange for a count, which is a
+// poor trade for backpressure.
+//
+// objectViewer rather than legacyBucketReader: the count lists objects under a
+// prefix, which is an object permission, and bucket-level metadata is not part
+// of the question.
+resource "google_storage_bucket_iam_member" "queue-readers" {
+  for_each = toset(local.workqueue_enabled ? local.queue_reader_members : [])
+
+  bucket = google_storage_bucket.global-workqueue[0].name
+  role   = "roles/storage.objectViewer"
+  member = each.value
+}
+
 resource "google_storage_bucket_iam_member" "dlq-operators" {
   for_each = toset(local.workqueue_enabled ? local.dlq_operator_members : [])
 
