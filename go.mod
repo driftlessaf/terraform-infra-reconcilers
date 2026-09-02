@@ -3,11 +3,11 @@ module chainguard.dev/terraform-infra-reconcilers
 go 1.27.0
 
 require (
-	chainguard.dev/driftlessaf v0.10.40
+	chainguard.dev/driftlessaf v0.7.1
 	chainguard.dev/go-grpc-kit v0.18.0
 	cloud.google.com/go/storage v1.64.0
 	github.com/chainguard-dev/clog v1.8.1
-	github.com/chainguard-dev/terraform-infra-common v1.37.2
+	github.com/chainguard-dev/terraform-infra-common v1.25.0
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/google/go-github/v88 v88.0.0
 	github.com/prometheus/client_golang v1.24.1
@@ -20,13 +20,13 @@ require (
 
 require (
 	cel.dev/expr v0.25.2 // indirect
-	chainguard.dev/sdk v0.1.232 // indirect
+	chainguard.dev/sdk v0.1.213 // indirect
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/auth v0.23.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/bigquery v1.79.0 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
-	cloud.google.com/go/iam v1.11.0 // indirect
+	cloud.google.com/go/iam v1.13.0 // indirect
 	cloud.google.com/go/kms v1.33.0 // indirect
 	cloud.google.com/go/longrunning v1.2.0 // indirect
 	cloud.google.com/go/monitoring v1.29.0 // indirect
@@ -136,6 +136,12 @@ require (
 	google.golang.org/genproto v0.0.0-20260622175928-b703f567277d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260727163830-6c54dddc4772 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260807164820-c8921c73eeea // indirect
-	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
+
+replace chainguard.dev/driftlessaf => ../go-driftlessaf
+
+replace chainguard.dev/sdk => ../../public/sdk
+
+replace github.com/chainguard-dev/terraform-infra-common => ../terraform-infra-common

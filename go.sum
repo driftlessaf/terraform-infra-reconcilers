@@ -1,11 +1,7 @@
 cel.dev/expr v0.25.2 h1:K6j46C81hXtZQfuX60cVWQFBJahKSE2gfRbNuvr5bFs=
 cel.dev/expr v0.25.2/go.mod h1:hrXvqGP6G6gyx8UAHSHJ5RGk//1Oj5nXQ2NI02Nrsg4=
-chainguard.dev/driftlessaf v0.10.40 h1:bZVYrRFihVX/YoMgV3dtMKrIO72OpTsy1mTpbQS7kAw=
-chainguard.dev/driftlessaf v0.10.40/go.mod h1:5q4SrWa5fO2WmIvuckY8aC2sg52u2EldPAc8CD29Bo0=
 chainguard.dev/go-grpc-kit v0.18.0 h1:kr451ml4eBgNcc0ytqcSSPZ3KGtyfHRrrBcYxW/oZwI=
 chainguard.dev/go-grpc-kit v0.18.0/go.mod h1:N1ZZiV3KkNHFlIS6RPhLT9ppfObC7aa1hqWMPmNiTA0=
-chainguard.dev/sdk v0.1.232 h1:V0ZbXGvvJ6lgJgV+xW7RSinPcVI2O7Hp5vCPC89T0QA=
-chainguard.dev/sdk v0.1.232/go.mod h1:jLESIbsDNSt23InA9a6KbvlYGn7uGdf14cOv9O4mn5w=
 cloud.google.com/go v0.123.0 h1:2NAUJwPR47q+E35uaJeYoNhuNEM9kM8SjgRgdeOJUSE=
 cloud.google.com/go v0.123.0/go.mod h1:xBoMV08QcqUGuPW65Qfm1o9Y4zKZBpGS+7bImXLTAZU=
 cloud.google.com/go/auth v0.23.0 h1:6Gg1CMgpgubRG7DGz5Vf1pcoNo8RfiRiRAPS4crTp54=
@@ -18,8 +14,8 @@ cloud.google.com/go/compute/metadata v0.9.0 h1:pDUj4QMoPejqq20dK0Pg2N4yG9zIkYGdB
 cloud.google.com/go/compute/metadata v0.9.0/go.mod h1:E0bWwX5wTnLPedCKqk3pJmVgCBSM6qQI1yTBdEb3C10=
 cloud.google.com/go/datacatalog v1.32.0 h1:fyYn8ODkGil5y3zTIqgIhOfzTu1ACaU2o+C750CO6Ac=
 cloud.google.com/go/datacatalog v1.32.0/go.mod h1:DE272tynQUwheJeQAyVfV+nO8yrdkuDyOgH2LtOrkWM=
-cloud.google.com/go/iam v1.11.0 h1:KieQ9Pb+LLPak1O3Rv3GgCxhnmkYf7Xyh0P5HfF1jFM=
-cloud.google.com/go/iam v1.11.0/go.mod h1:KP+nKGugNJW4LcLx1uEZcq1ok5sQHFaQehQNl4QDgV4=
+cloud.google.com/go/iam v1.13.0 h1:ufT3FPT5rFFXu6UtLkNoxaOaV5EuA1dsSkmemCSTo6U=
+cloud.google.com/go/iam v1.13.0/go.mod h1:gHXdDEiPDvqd1q1KwBDGQlgZY/BwY760zU2LhOZS5w0=
 cloud.google.com/go/kms v1.33.0 h1:pG0X78m212b2pv9N4fdMoUO69LuZGQ9kSvn8sHBOFAo=
 cloud.google.com/go/kms v1.33.0/go.mod h1:CSGvW6GnMQbY+1nOHcIzhMtHSbExXlOmCKjWtYVjcpA=
 cloud.google.com/go/logging v1.18.0 h1:KhzZq+1cSkPH9YUaKLLhLtQxIHitVayBmk0sGfoM9+k=
@@ -69,8 +65,6 @@ github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UF
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/chainguard-dev/clog v1.8.1 h1:Lab3GEDsVm1J9XGlpWEBuzXX7eETRmd0vN5PYoNyT+Y=
 github.com/chainguard-dev/clog v1.8.1/go.mod h1:5MQOZi+Iu7fV7GcJG8ag8rCB5elEOpqRMKEASgnGVdo=
-github.com/chainguard-dev/terraform-infra-common v1.37.2 h1:Pzwv2nUhdWgDe/VFIgViXQCnKx8aAFYPU73486ScjiA=
-github.com/chainguard-dev/terraform-infra-common v1.37.2/go.mod h1:i3ISjdgiRtwT5k5OtTuja7bl19O6A9Diifqr0n+wrX8=
 github.com/cloudevents/sdk-go/v2 v2.16.2 h1:ZYDFrYke4FD+jM8TZTJJO6JhKHzOQl2oqpFK1D+NnQM=
 github.com/cloudevents/sdk-go/v2 v2.16.2/go.mod h1:laOcGImm4nVJEU+PHnUrKL56CKmRL65RlQF0kRmW/kg=
 github.com/cloudflare/circl v1.6.4 h1:pOXuDTCEYyzydgUpQ0CQz3LsinKjiSk6nNP5Lt5K64U=
@@ -348,8 +342,8 @@ google.golang.org/genproto/googleapis/rpc v0.0.0-20260807164820-c8921c73eeea h1:
 google.golang.org/genproto/googleapis/rpc v0.0.0-20260807164820-c8921c73eeea/go.mod h1:4Hqkh8ycfw05ld/3BWL7rJOSfebL2Q+DVDeRgYgxUU8=
 google.golang.org/grpc v1.83.0 h1:JeNZEKJFbQxArAMl+hiytHauacDNqJUllNfmIMmpqnQ=
 google.golang.org/grpc v1.83.0/go.mod h1:kDyl6SKsiHKt0uylY5gtn5cEjkrIOhQOGDgIc4JGwzQ=
-google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af h1:+5/Sw3GsDNlEmu7TfklWKPdQ0Ykja5VEmq2i817+jbI=
-google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
+google.golang.org/protobuf v1.36.12 h1:pJOKDDOyeXErUroCihFAd5LQuwXBSpVnKGrj5o/fwxc=
+google.golang.org/protobuf v1.36.12/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntNwaWcugrBjAiHlqqRiVk=
