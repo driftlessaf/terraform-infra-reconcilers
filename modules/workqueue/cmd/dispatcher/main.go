@@ -65,24 +65,6 @@ func main() {
 			gcs.WithScheduledWaitWarningThreshold(env.ScheduledWaitWarningThreshold),
 		)
 
-		// Launch a go routine in the background to periodically call Enumerate
-		// to ensure that each replica surfaces the latest and greatest metrics
-		// even if the worker isn't being invoked for fresh work.
-		go func() {
-			tick := time.NewTicker(30 * time.Second)
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-tick.C:
-					_, _, _, err := wq.Enumerate(ctx)
-					if err != nil {
-						clog.ErrorContextf(ctx, "Failed to enumerate: %v", err)
-					}
-				}
-			}
-		}()
-
 	default:
 		clog.FatalContextf(ctx, "Unsupported mode: %q", env.Mode)
 	}
