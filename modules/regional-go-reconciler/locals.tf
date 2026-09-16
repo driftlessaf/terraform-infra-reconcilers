@@ -4,6 +4,12 @@ SPDX-License-Identifier: Apache-2.0
 */
 
 locals {
+  // Entropy trap: the five workqueue service accounts are sa_prefix plus a
+  // random suffix of 30 - length(sa_prefix) characters, so a long var.name
+  // buys a short suffix and the five draws collide. At length 1 a duplicate
+  // is roughly a one-in-four chance per environment, and the apply fails
+  // with a 409 halfway through. Keep var.name at 20 characters or fewer.
+  // No validation here: several callers already sit above that.
   sa_prefix = "${var.name}-wq-"
 
   default_labels = {
