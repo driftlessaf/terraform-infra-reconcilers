@@ -11,6 +11,14 @@ locals {
     { name = "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD", value = var.scheduled_wait_warning_threshold },
     { name = "METRICS_PORT", value = "2113" },
   ] : []
+
+  // Cloud Run Jobs receive empty_dir volumes only, projected from var.volumes.
+  // csi entries and var.regional-volumes stay service-only: regional-go-cron
+  // has no csi shape, and the job runs the same containers in every region.
+  job_volumes = var.mode == "long" ? [for v in var.volumes : {
+    name      = v.name
+    empty_dir = v.empty_dir
+  } if v.empty_dir != null] : []
 }
 
 // Long-mode reconciler: a Cloud Run Job that fires once per cron tick.
@@ -19,7 +27,7 @@ locals {
 
 module "reconciler-job" {
   count              = var.mode == "long" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-cron"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -88,6 +96,9 @@ module "reconciler-job" {
     } },
   )
 
+  volumes      = local.job_volumes
+  launch_stage = var.launch_stage
+
   timeout               = var.job_timeout
   max_retries           = 0
   deletion_protection   = var.deletion_protection
@@ -95,5 +106,4 @@ module "reconciler-job" {
   labels                = merge({ "service" : local.reconciler_service_name }, var.labels)
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.46.0"
 }

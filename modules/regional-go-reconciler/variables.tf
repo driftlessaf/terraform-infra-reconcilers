@@ -350,7 +350,7 @@ variable "scaling" {
 }
 
 variable "volumes" {
-  description = "The volumes to attach to the service."
+  description = "The volumes to attach to the reconciler in both modes: the short-mode service receives every entry, and the long-mode job receives the empty_dir entries only (csi volumes are service-only)."
   type = list(object({
     name = string
     empty_dir = optional(object({
@@ -492,7 +492,7 @@ variable "slo" {
 }
 
 variable "launch_stage" {
-  description = "The launch stage of the Cloud Run service (e.g. BETA to leverage features like disk volumes)."
+  description = "The launch stage of the Cloud Run service and, in long mode, of the Cloud Run job (e.g. BETA to leverage features like disk volumes)."
   type        = string
   default     = "GA"
 }
