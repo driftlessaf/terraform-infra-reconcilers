@@ -192,6 +192,22 @@ Key variables:
 - `paused`: Pause both cron and push listeners
 - `deletion_protection`: Prevent accidental deletion (disable during initial rollout)
 
+## Prebuilt sidecars
+
+In `mode = "short"`, use `raw_containers` to attach prebuilt images to the
+reconciler service. The default `{}` adds nothing; nonempty values are rejected
+in `mode = "long"`. Only the reconciler service receives these containers.
+Keys must not overlap with `containers`, and images are neither built nor
+signed by the module. Pin trusted images by digest.
+
+This input forwards the `regional-go-service` schema. Leave `ports` empty for
+sidecars: the renderer treats a container with ports as the ingress container.
+Sidecars support `args`, `resources`, `env` (including secret references),
+`regional-env`, `regional-cpu-idle`, and `volume_mounts` for volumes supplied
+through the existing volume inputs. Sidecar `command`, `startup_probe`, and
+`liveness_probe` fields are not rendered, and startup dependencies are not
+configured. Use an image with a suitable entrypoint.
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -236,6 +252,7 @@ No resources.
 | <a name="input_primary-region"></a> [primary-region](#input\_primary-region) | The primary region to run the cron job in | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | The product that this service belongs to. | `string` | `""` | no |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | n/a | `string` | n/a | yes |
+| <a name="input_raw_containers"></a> [raw\_containers](#input\_raw\_containers) | Additional prebuilt containers for the reconciler service in short mode only; keys must not collide with containers. Uses regional-go-service's raw\_containers schema. Images are neither built nor signed by this module; pin trusted images by digest. Sidecars must leave ports empty. The service renderer supports args, resources, env, regional-env, regional-cpu-idle and volume\_mounts for sidecars, but does not apply command, startup\_probe or liveness\_probe, or configure startup dependencies. | <pre>map(object({<br/>    image   = string<br/>    command = optional(list(string), [])<br/>    args    = optional(list(string), [])<br/>    ports = optional(list(object({<br/>      name           = optional(string, "http1")<br/>      container_port = number<br/>    })), [])<br/>    resources = optional(<br/>      object(<br/>        {<br/>          limits = optional(object(<br/>            {<br/>              cpu    = string<br/>              memory = string<br/>            }<br/>          ), null)<br/>          cpu_idle          = optional(bool)<br/>          startup_cpu_boost = optional(bool, true)<br/>        }<br/>      ),<br/>      {}<br/>    )<br/>    env = optional(list(object({<br/>      name  = string<br/>      value = optional(string)<br/>      value_source = optional(object({<br/>        secret_key_ref = object({<br/>          secret  = string<br/>          version = string<br/>        })<br/>      }), null)<br/>    })), [])<br/>    regional-env = optional(list(object({<br/>      name  = string<br/>      value = map(string)<br/>    })), [])<br/>    regional-cpu-idle = optional(map(bool), {})<br/>    volume_mounts = optional(list(object({<br/>      name       = string<br/>      mount_path = string<br/>    })), [])<br/>    startup_probe = optional(object({<br/>      initial_delay_seconds = optional(number)<br/>      // GCP Terraform provider defaults differ from Cloud Run defaults.<br/>      // See https://cloud.google.com/run/docs/configuring/healthchecks#tcp-startup-probe<br/>      period_seconds    = optional(number, 240)<br/>      timeout_seconds   = optional(number, 240)<br/>      failure_threshold = optional(number, 1)<br/>      http_get = optional(object({<br/>        path = string<br/>        port = optional(number)<br/>      }), null)<br/>      tcp_socket = optional(object({<br/>        port = optional(number)<br/>      }), null)<br/>      grpc = optional(object({<br/>        service = optional(string)<br/>        port    = optional(number)<br/>      }), null)<br/>    }))<br/>    liveness_probe = optional(object({<br/>      initial_delay_seconds = optional(number)<br/>      // GCP Terraform provider defaults differ from Cloud Run defaults.<br/>      // See https://cloud.google.com/run/docs/configuring/healthchecks#tcp-startup-probe<br/>      period_seconds    = optional(number, 240)<br/>      timeout_seconds   = optional(number, 240)<br/>      failure_threshold = optional(number, 1)<br/>      http_get = optional(object({<br/>        path = string<br/>        port = optional(number)<br/>      }), null)<br/>      tcp_socket = optional(object({<br/>        port = optional(number)<br/>      }), null)<br/>      grpc = optional(object({<br/>        service = optional(string)<br/>        port    = optional(number)<br/>      }), null)<br/>    }))<br/>  }))</pre> | `{}` | no |
 | <a name="input_regional-concurrent-work"></a> [regional-concurrent-work](#input\_regional-concurrent-work) | Optional cap on concurrent work in each dispatcher region. Must be a positive integer when set. The global concurrent-work cap also applies. | `number` | `null` | no |
 | <a name="input_regional-volumes"></a> [regional-volumes](#input\_regional-volumes) | The volumes to make available to the containers in the service for mounting. | <pre>list(object({<br/>    name = string<br/>    gcs = optional(map(object({<br/>      bucket        = string<br/>      read_only     = optional(bool, true)<br/>      mount_options = optional(list(string), [])<br/>    })), {})<br/>    nfs = optional(map(object({<br/>      server    = string<br/>      path      = string<br/>      read_only = optional(bool, true)<br/>    })), {})<br/>  }))</pre> | `[]` | no |
 | <a name="input_regions"></a> [regions](#input\_regions) | A map from region names to a network and subnetwork.  A service will be created in each region configured to egress the specified traffic via the specified subnetwork. | <pre>map(object({<br/>    network = string<br/>    subnet  = string<br/>  }))</pre> | n/a | yes |

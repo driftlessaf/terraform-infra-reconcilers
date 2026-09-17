@@ -27,6 +27,7 @@ module "reconciler" {
 
   service_account = var.service_account
   containers      = local.containers_plus_trace_env
+  raw_containers  = var.raw_containers
 
   labels           = merge({ "service" : "${var.name}-rec" }, var.labels)
   team             = var.team

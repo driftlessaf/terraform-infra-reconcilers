@@ -3,6 +3,16 @@ Copyright 2026 Chainguard, Inc.
 SPDX-License-Identifier: Apache-2.0
 */
 
+terraform {
+  required_providers {
+    ko     = { source = "ko-build/ko" }
+    cosign = { source = "chainguard-dev/cosign" }
+    # Declare transitive providers so test mocks attach at this module's root.
+    google      = { source = "hashicorp/google" }
+    google-beta = { source = "hashicorp/google-beta" }
+  }
+}
+
 module "reconciler" {
   source             = "../regional-go-reconciler"
   observability_role = var.observability_role
@@ -13,6 +23,7 @@ module "reconciler" {
   service_account             = var.service_account
   deletion_protection         = var.deletion_protection
   containers                  = var.containers
+  raw_containers              = var.raw_containers
   max-retry                   = var.max-retry
   concurrent-work             = var.concurrent-work
   regional-concurrent-work    = var.regional-concurrent-work
