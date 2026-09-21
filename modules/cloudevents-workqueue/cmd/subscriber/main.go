@@ -23,8 +23,8 @@ import (
 
 var env = envconfig.MustProcess(context.Background(), &struct {
 	Port             int    `env:"PORT,default=8080"`
-	WorkqueueService string `env:"WORKQUEUE_SERVICE,required"`
-	ExtensionKey     string `env:"EXTENSION_KEY,required"`
+	WorkqueueService string `env:"WORKQUEUE_SERVICE"` // required; enforced in main()
+	ExtensionKey     string `env:"EXTENSION_KEY"`     // required; enforced in main()
 	Priority         int64  `env:"PRIORITY,default=0"`
 	// DelaySeconds floors the enqueue delay (NotBefore = now + DelaySeconds), so
 	// a burst of events for the same key coalesces into ~one reconcile per window
@@ -35,6 +35,13 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+
+	if env.WorkqueueService == "" {
+		clog.FatalContextf(ctx, "WORKQUEUE_SERVICE is required")
+	}
+	if env.ExtensionKey == "" {
+		clog.FatalContextf(ctx, "EXTENSION_KEY is required")
+	}
 
 	clog.InfoContext(ctx, "Starting CloudEvents to Workqueue subscriber",
 		"port", env.Port,

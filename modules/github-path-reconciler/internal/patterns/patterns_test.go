@@ -154,7 +154,7 @@ func TestParse(t *testing.T) {
 					}
 				}
 				if !matched {
-					t.Errorf("expected path %q to match one of the patterns, but it didn't", path)
+					t.Errorf("MatchString(%q): got = false, want = true", path)
 				}
 			}
 
@@ -162,7 +162,7 @@ func TestParse(t *testing.T) {
 			for _, path := range tt.noMatchPaths {
 				for i, pattern := range patterns {
 					if pattern.MatchString(path) {
-						t.Errorf("expected path %q not to match pattern[%d] %q, but it did", path, i, pattern.String())
+						t.Errorf("MatchString(%q) against pattern[%d] %q: got = true, want = false", path, i, pattern.String())
 					}
 				}
 			}
@@ -516,10 +516,10 @@ func TestParseAnchoring(t *testing.T) {
 
 	// Check that the compiled pattern has anchors
 	if pattern[0] != '^' {
-		t.Errorf("pattern should start with ^, got: %s", pattern)
+		t.Errorf("pattern[0]: got = %q, want = %q", pattern[0], '^')
 	}
 	if pattern[len(pattern)-1] != '$' {
-		t.Errorf("pattern should end with $, got: %s", pattern)
+		t.Errorf("pattern[len-1]: got = %q, want = %q", pattern[len(pattern)-1], '$')
 	}
 
 	// Verify it matches complete paths with .yaml extension

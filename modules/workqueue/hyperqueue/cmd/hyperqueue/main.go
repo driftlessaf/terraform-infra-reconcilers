@@ -9,6 +9,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"slices"
 
 	"chainguard.dev/go-grpc-kit/pkg/duplex"
 	"github.com/chainguard-dev/clog"
@@ -23,25 +24,41 @@ import (
 )
 
 var env = envconfig.MustProcess(context.Background(), &struct {
-	Port      int      `env:"PORT, required"`
-	ShardURLs []string `env:"SHARD_URLS, required"`
+	Port      int      `env:"PORT"`       // required; enforced in main()
+	ShardURLs []string `env:"SHARD_URLS"` // required; enforced in main()
 }{})
+
+func closeAll(fns []func() error) {
+	for _, fn := range fns {
+		_ = fn()
+	}
+}
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
+	if env.Port == 0 {
+		clog.FatalContextf(ctx, "PORT is required")
+	}
+	env.ShardURLs = slices.DeleteFunc(env.ShardURLs, func(s string) bool { return s == "" })
+	if len(env.ShardURLs) == 0 {
+		clog.FatalContextf(ctx, "SHARD_URLS is required")
+	}
+
 	go httpmetrics.ServeMetrics()
 
 	backends := make([]workqueue.WorkqueueServiceClient, len(env.ShardURLs))
+	closers := make([]func() error, 0, len(env.ShardURLs))
 	for i, url := range env.ShardURLs {
 		client, err := workqueue.NewWorkqueueClient(ctx, url)
 		if err != nil {
 			clog.FatalContextf(ctx, "Failed to create client for shard %d (%s): %v", i, url, err)
 		}
-		defer client.Close()
+		closers = append(closers, client.Close)
 		backends[i] = client
 	}
+	defer closeAll(closers)
 
 	srv, err := hyperqueue.New(backends)
 	if err != nil {

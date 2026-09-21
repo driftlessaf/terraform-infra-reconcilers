@@ -40,20 +40,30 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	AppKey string `env:"GITHUB_APP_KEY"`
 
 	// Workqueue configuration
-	WorkqueueAddr string `env:"WORKQUEUE_ADDR,required"`
+	WorkqueueAddr string `env:"WORKQUEUE_ADDR"` // required; enforced in main()
 
 	// Repos config (JSON array of {owner, repo, path_patterns}). When empty and
 	// AppID is non-zero, repos are discovered from the app's installations.
-	ReposConfig string `env:"REPOS_CONFIG,required"`
+	ReposConfig string `env:"REPOS_CONFIG"` // required; enforced in main()
 
 	// TickMinutes is the cron firing cadence (= shard size = floor for any
 	// per-repo resync period).
-	TickMinutes int `env:"TICK_MINUTES,required"`
+	TickMinutes int `env:"TICK_MINUTES"` // required; enforced in main()
 }{})
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
+
+	if env.WorkqueueAddr == "" {
+		clog.FatalContextf(ctx, "WORKQUEUE_ADDR is required")
+	}
+	if env.ReposConfig == "" {
+		clog.FatalContextf(ctx, "REPOS_CONFIG is required")
+	}
+	if env.TickMinutes == 0 {
+		clog.FatalContextf(ctx, "TICK_MINUTES is required")
+	}
 
 	go httpmetrics.ServeMetrics()
 	defer httpmetrics.SetupTracer(ctx)()

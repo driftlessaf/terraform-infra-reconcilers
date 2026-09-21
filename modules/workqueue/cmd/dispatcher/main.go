@@ -28,14 +28,20 @@ import (
 )
 
 var env = envconfig.MustProcess(context.Background(), &struct {
-	Port                          int           `env:"PORT,required"`
-	Concurrency                   int           `env:"WORKQUEUE_CONCURRENCY,required"`
-	OwnerConcurrency              int           `env:"WORKQUEUE_OWNER_CONCURRENCY,default=0"`
-	BatchSize                     int           `env:"WORKQUEUE_BATCH_SIZE,required"`
-	Mode                          string        `env:"WORKQUEUE_MODE,required"`
-	Bucket                        string        `env:"WORKQUEUE_BUCKET"`
-	Target                        string        `env:"WORKQUEUE_TARGET,required"`
-	MaxRetry                      int           `env:"WORKQUEUE_MAX_RETRY,default=0"` // 0 means unlimited retries
+	// Port is required; enforced in main().
+	Port int `env:"PORT"`
+	// Concurrency is required; enforced in main().
+	Concurrency      int `env:"WORKQUEUE_CONCURRENCY"`
+	OwnerConcurrency int `env:"WORKQUEUE_OWNER_CONCURRENCY,default=0"`
+	// BatchSize is required; enforced in main().
+	BatchSize int `env:"WORKQUEUE_BATCH_SIZE"`
+	// Mode is required; enforced in main().
+	Mode   string `env:"WORKQUEUE_MODE"`
+	Bucket string `env:"WORKQUEUE_BUCKET"`
+	// Target is required; enforced in main().
+	Target string `env:"WORKQUEUE_TARGET"`
+	// MaxRetry: 0 means unlimited retries.
+	MaxRetry                      int           `env:"WORKQUEUE_MAX_RETRY,default=0"`
 	ScheduledWaitWarningThreshold time.Duration `env:"WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD,default=0s"`
 	// Identity is recorded as the owner of keys this dispatcher claims. The
 	// module sets it to the dispatcher's region.
@@ -50,6 +56,22 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+
+	if env.Port == 0 {
+		clog.FatalContextf(ctx, "PORT is required")
+	}
+	if env.Concurrency == 0 {
+		clog.FatalContextf(ctx, "WORKQUEUE_CONCURRENCY is required")
+	}
+	if env.BatchSize == 0 {
+		clog.FatalContextf(ctx, "WORKQUEUE_BATCH_SIZE is required")
+	}
+	if env.Mode == "" {
+		clog.FatalContextf(ctx, "WORKQUEUE_MODE is required")
+	}
+	if env.Target == "" {
+		clog.FatalContextf(ctx, "WORKQUEUE_TARGET is required")
+	}
 
 	go httpmetrics.ServeMetrics()
 

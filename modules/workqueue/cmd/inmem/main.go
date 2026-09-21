@@ -30,15 +30,28 @@ import (
 )
 
 var env = envconfig.MustProcess(context.Background(), &struct {
-	Port        int    `env:"PORT,required"`
-	Concurrency int    `env:"WORKQUEUE_CONCURRENCY,required"`
-	BatchSize   int    `env:"WORKQUEUE_BATCH_SIZE,required"`
-	Target      string `env:"WORKQUEUE_TARGET,required"`
+	Port        int    `env:"PORT"`                  // required; enforced in main()
+	Concurrency int    `env:"WORKQUEUE_CONCURRENCY"` // required; enforced in main()
+	BatchSize   int    `env:"WORKQUEUE_BATCH_SIZE"`  // required; enforced in main()
+	Target      string `env:"WORKQUEUE_TARGET"`      // required; enforced in main()
 }{})
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+
+	if env.Port == 0 {
+		clog.FatalContextf(ctx, "PORT is required")
+	}
+	if env.Concurrency == 0 {
+		clog.FatalContextf(ctx, "WORKQUEUE_CONCURRENCY is required")
+	}
+	if env.BatchSize == 0 {
+		clog.FatalContextf(ctx, "WORKQUEUE_BATCH_SIZE is required")
+	}
+	if env.Target == "" {
+		clog.FatalContextf(ctx, "WORKQUEUE_TARGET is required")
+	}
 
 	go httpmetrics.ServeMetrics()
 

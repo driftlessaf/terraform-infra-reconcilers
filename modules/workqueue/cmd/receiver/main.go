@@ -26,15 +26,25 @@ import (
 )
 
 var env = envconfig.MustProcess(context.Background(), &struct {
-	Port        int    `env:"PORT, required"`
-	Concurrency int    `env:"WORKQUEUE_CONCURRENCY, required"`
-	Mode        string `env:"WORKQUEUE_MODE, required"`
+	Port        int    `env:"PORT"`                  // required; enforced in main()
+	Concurrency int    `env:"WORKQUEUE_CONCURRENCY"` // required; enforced in main()
+	Mode        string `env:"WORKQUEUE_MODE"`        // required; enforced in main()
 	Bucket      string `env:"WORKQUEUE_BUCKET"`
 }{})
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+
+	if env.Port == 0 {
+		clog.FatalContextf(ctx, "PORT is required")
+	}
+	if env.Concurrency == 0 {
+		clog.FatalContextf(ctx, "WORKQUEUE_CONCURRENCY is required")
+	}
+	if env.Mode == "" {
+		clog.FatalContextf(ctx, "WORKQUEUE_MODE is required")
+	}
 
 	go httpmetrics.ServeMetrics()
 

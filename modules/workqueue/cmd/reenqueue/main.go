@@ -22,14 +22,21 @@ import (
 )
 
 var env = envconfig.MustProcess(context.Background(), &struct {
-	Mode        string `env:"WORKQUEUE_MODE,required"`
-	Bucket      string `env:"WORKQUEUE_BUCKET,required"`
+	Mode        string `env:"WORKQUEUE_MODE"`   // required; enforced in main()
+	Bucket      string `env:"WORKQUEUE_BUCKET"` // required; enforced in main()
 	Concurrency int    `env:"WORKQUEUE_CONCURRENCY,default=100"`
 }{})
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+
+	if env.Mode == "" {
+		clog.FatalContextf(ctx, "WORKQUEUE_MODE is required")
+	}
+	if env.Bucket == "" {
+		clog.FatalContextf(ctx, "WORKQUEUE_BUCKET is required")
+	}
 
 	go httpmetrics.ServeMetrics()
 

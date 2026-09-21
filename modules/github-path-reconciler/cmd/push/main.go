@@ -33,10 +33,10 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	Port int `env:"PORT,default=8080"`
 
 	// Workqueue configuration
-	WorkqueueAddr string `env:"WORKQUEUE_ADDR,required"`
+	WorkqueueAddr string `env:"WORKQUEUE_ADDR"` // required; enforced in main()
 
 	// Repos config (JSON array of {owner, repo, path_patterns})
-	ReposConfig string `env:"REPOS_CONFIG,required"`
+	ReposConfig string `env:"REPOS_CONFIG"` // required; enforced in main()
 
 	// Identity string used as the reconciler display name and the config file
 	// name (.{identity}.yaml) for repos without explicit REPOS_CONFIG entries.
@@ -67,6 +67,13 @@ var pushCommitsHist = promauto.NewHistogram(prometheus.HistogramOpts{
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
+
+	if env.WorkqueueAddr == "" {
+		clog.FatalContextf(ctx, "WORKQUEUE_ADDR is required")
+	}
+	if env.ReposConfig == "" {
+		clog.FatalContextf(ctx, "REPOS_CONFIG is required")
+	}
 
 	go httpmetrics.ServeMetrics()
 	defer httpmetrics.SetupTracer(ctx)()
