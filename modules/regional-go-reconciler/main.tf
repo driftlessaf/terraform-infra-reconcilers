@@ -14,14 +14,15 @@ terraform {
 // In long mode the reconciler runs as a sidecar in a Cloud Run Job instead.
 module "reconciler" {
   count              = var.mode == "short" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
 
-  project_id = var.project_id
-  name       = "${var.name}-rec"
-  regions    = var.regions
-  ingress    = "INGRESS_TRAFFIC_INTERNAL_ONLY"
-  egress     = var.egress
+  project_id         = var.project_id
+  name               = "${var.name}-rec"
+  regions            = var.regions
+  ingress            = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  egress             = var.egress
+  regional-connector = var.regional-connector
 
   deletion_protection = var.deletion_protection
 
@@ -52,5 +53,4 @@ module "reconciler" {
   notification_channels = var.notification_channels
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.47.9"
 }

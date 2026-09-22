@@ -33,7 +33,7 @@ resource "google_storage_bucket_iam_member" "reenqueue-bucket-access" {
 // The reenqueue cron job (paused by default, for manual invocation)
 module "reenqueue" {
   count  = local.workqueue_enabled ? 1 : 0
-  source = "chainguard-dev/common/infra//modules/cron"
+  source = "../../../../public/terraform-infra-common/modules/cron"
 
   project_id         = local.project_id
   observability_role = var.observability_role
@@ -64,13 +64,27 @@ module "reenqueue" {
     "WORKQUEUE_CONCURRENCY" = local.concurrent_work
   }
 
-  # VPC access using the reenqueue region's network configuration
-  vpc_access = {
+  # VPC access using the reenqueue region's network configuration, or its
+  # regional-connector entry when one is set (mutually exclusive with
+  # network_interfaces — see the cron module's vpc_access validation).
+  #
+  # This connector-or-network_interfaces ternary is duplicated in
+  # ai-cicd/sandbox/iac/sessions/warmer.tf's warm_sweep module (same shape,
+  # different variable/local names) — no shared module was worth the added
+  # public surface for a 10-line pattern used by exactly two call sites, one
+  # of them private. If this needs a third branch or another caller, revisit
+  # both together rather than letting them drift.
+  vpc_access = lookup(var.regional-connector, local.reenqueue_region, null) != null ? {
+    network_interfaces = []
+    connector          = var.regional-connector[local.reenqueue_region]
+    egress             = "ALL_TRAFFIC" // This should not egress
+    } : {
     network_interfaces = [{
       network    = local.regions[local.reenqueue_region].network
       subnetwork = local.regions[local.reenqueue_region].subnet
     }]
-    egress = "ALL_TRAFFIC" // This should not egress
+    connector = null
+    egress    = "ALL_TRAFFIC" // This should not egress
   }
 
   team                  = local.team
@@ -79,5 +93,4 @@ module "reenqueue" {
   deletion_protection   = local.deletion_protection
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.47.9"
 }

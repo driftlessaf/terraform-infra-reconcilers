@@ -14,6 +14,23 @@ variable "regions" {
   }))
 }
 
+variable "regional-connector" {
+  type        = map(string)
+  description = <<EOD
+Forwarded to the receiver and dispatcher services (regional-go-service) and the
+reenqueue job (cron). Optional per-region Serverless VPC Access connector,
+keyed by region name, as a fully qualified id
+projects/<project>/locations/<region>/connectors/<name>. A region present here
+egresses through the connector instead of direct VPC egress — either because
+Cloud NAT does not translate direct VPC egress from a Shared-VPC service
+project, or to amortize network-interface provisioning across instances
+instead of allocating one per instance/revision. Declared identically here and
+in regional-go-reconciler's variables.tf because dispatcher-service.tf,
+receiver.tf, and reenqueue.tf are shared files between the two modules.
+EOD
+  default     = {}
+}
+
 variable "primary-region" {
   description = "The primary region for single-homed resources like the reenqueue job. Defaults to the first region in the regions map."
   type        = string

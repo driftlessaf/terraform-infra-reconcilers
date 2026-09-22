@@ -133,6 +133,24 @@ EOD
   default     = "ALL_TRAFFIC"
 }
 
+variable "regional-connector" {
+  type        = map(string)
+  description = <<EOD
+Forwarded to regional-go-service (reconciler, dispatcher, receiver) and
+regional-go-cron (long-mode reconciler-job). Optional per-region Serverless
+VPC Access connector, keyed by region name, as a fully qualified id
+projects/<project>/locations/<region>/connectors/<name>. A region present here
+egresses through the connector instead of direct VPC egress — either because
+Cloud NAT does not translate direct VPC egress from a Shared-VPC service
+project, or to amortize network-interface provisioning across instances
+instead of allocating one per instance/revision.
+
+Not forwarded when shards > 1 — the sharded workqueue path (workqueue/hyperqueue)
+does not currently support a connector.
+EOD
+  default     = {}
+}
+
 variable "service_account" {
   type        = string
   description = "The service account as which to run the reconciler service."
