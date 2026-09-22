@@ -68,12 +68,16 @@ locals {
   // service name would match nothing. Same long-mode special case as the
   // reconciler dashboard's workqueue section.
   //
-  // Long-mode caveat: the gauge is emitted only while a per-minute job
-  // execution is alive, so a fully-drained-but-still-dead-lettered queue may
-  // skip a scrape when an execution exits before the sidecar's 10s interval.
-  // duration = "0s" + auto_close = "3600s" tolerate the gaps (one sample above
-  // threshold in an hour opens the incident); a guaranteed on-exit metric flush
-  // in dispatcher-job would be a separate hardening.
+  // Long-mode contract: the gauge is emitted only while a per-minute job
+  // execution is alive, and an idle execution exits in well under the sidecar's
+  // 10s scrape interval. dispatcher-job therefore holds itself open for one
+  // scrape whenever the dead-letter queue is non-empty, every reportEvery and
+  // only then — so in long mode a present sample means "there is a backlog" and
+  // silence means "there is not". The signal is deliberately coarse: the hold
+  // keeps every container in the execution alive, sidecars included, so it is
+  // paid at a cadence auto_close can absorb rather than on every tick.
+  // auto_close is what turns the silence back into an all-clear, so it must
+  // stay set, and must stay well above reportEvery, for this alert to behave.
   dead_letter_alert_service_name = var.mode == "long" ? local.reconciler_service_name : local.dispatcher_service_name
 
   dispatcher_batch_size = var.batch-size != null ? var.batch-size : ceil(var.concurrent-work / length(var.regions))
