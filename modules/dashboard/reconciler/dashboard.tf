@@ -6,11 +6,29 @@ SPDX-License-Identifier: Apache-2.0
 locals {
   service_name   = var.service_name != "" ? var.service_name : "${var.name}-rec"
   workqueue_name = var.workqueue_name != "" ? var.workqueue_name : "${var.name}-wq"
+
+  // Dashboard-wide filters. Cloud Run built-in metrics carry the reconciler's
+  // name as the service_name resource label for a service and job_name for a
+  // job. Prometheus metrics carry it as the service_name metric label in both
+  // modes (the otel sidecar stamps it), and the grpc, github and agents
+  // sections rely on that filter for their scoping.
+  dashboard_filters = [
+    {
+      filterType  = "RESOURCE_LABEL"
+      stringValue = local.service_name
+      labelKey    = var.mode == "long" ? "job_name" : "service_name"
+    },
+    {
+      filterType  = "METRIC_LABEL"
+      stringValue = local.service_name
+      labelKey    = "service_name"
+    },
+  ]
 }
 
 // Workqueue metrics section
 module "workqueue-state" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/workqueue"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/workqueue"
 
   title           = "Workqueue State"
   service_name    = local.workqueue_name
@@ -20,48 +38,42 @@ module "workqueue-state" {
   shards          = var.shards
   filter          = []
   collapsed       = false
-  version         = "1.48.1"
 }
 
 // Reconciler service sections
 module "errgrp" {
-  source       = "chainguard-dev/common/infra//modules/dashboard/sections/errgrp"
+  source       = "../../../../../public/terraform-infra-common/modules/dashboard/sections/errgrp"
   title        = "Reconciler Error Reporting"
   project_id   = var.project_id
   service_name = local.service_name
   collapsed    = true
-  version      = "1.48.1"
 }
 
 module "reconciler-logs" {
-  source        = "chainguard-dev/common/infra//modules/dashboard/sections/logs"
+  source        = "../../../../../public/terraform-infra-common/modules/dashboard/sections/logs"
   title         = "Reconciler Logs"
   filter        = [var.mode == "long" ? "resource.labels.job_name=\"${local.service_name}\"" : "resource.labels.service_name=\"${local.service_name}\""]
   cloudrun_type = var.mode == "long" ? "job" : "service"
-  version       = "1.48.1"
 }
 
 module "http" {
-  source       = "chainguard-dev/common/infra//modules/dashboard/sections/http"
+  source       = "../../../../../public/terraform-infra-common/modules/dashboard/sections/http"
   title        = "HTTP"
   filter       = []
   service_name = local.service_name
-  version      = "1.48.1"
 }
 
 module "grpc" {
-  source       = "chainguard-dev/common/infra//modules/dashboard/sections/grpc"
+  source       = "../../../../../public/terraform-infra-common/modules/dashboard/sections/grpc"
   title        = "GRPC"
   filter       = []
   service_name = local.service_name
-  version      = "1.48.1"
 }
 
 module "github" {
-  source  = "chainguard-dev/common/infra//modules/dashboard/sections/github"
-  title   = "GitHub API"
-  filter  = []
-  version = "1.48.1"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/github"
+  title  = "GitHub API"
+  filter = []
 }
 
 // The agents section's 12 widgets land on a dedicated dashboard
@@ -69,12 +81,11 @@ module "github" {
 // combined with github they would push a reconciler past Cloud Monitoring's
 // 50-widget-per-dashboard limit. The widgets are scoped by service_name.
 module "agents" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/agents"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/agents"
   title  = "Agent Metrics"
   filter = [
     "metric.label.\"service_name\"=\"${local.service_name}\""
   ]
-  version = "1.48.1"
 }
 
 // When var.sections.microvm is set to a namespace, build two groups: the
@@ -85,42 +96,36 @@ module "agents" {
 // github+agents past Cloud Monitoring's 50-widget-per-dashboard limit.
 module "microvm" {
   count  = var.sections.microvm != null ? 1 : 0
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/microvm"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/microvm"
   filter = [
     "metric.label.\"service_name\"=\"${local.service_name}\""
   ]
   namespace = var.sections.microvm
   // Expanded by default: the whole dedicated dashboard is about microvm.
   collapsed = false
-  version   = "1.48.1"
 }
 
 module "resources" {
-  source                = "chainguard-dev/common/infra//modules/dashboard/sections/resources"
+  source                = "../../../../../public/terraform-infra-common/modules/dashboard/sections/resources"
   title                 = "Reconciler Resources"
   filter                = []
   cloudrun_name         = local.service_name
   cloudrun_type         = var.mode == "long" ? "job" : "service"
   notification_channels = var.notification_channels
-  version               = "1.48.1"
 }
 
 module "alerts" {
   for_each = var.alerts
 
-  source  = "chainguard-dev/common/infra//modules/dashboard/sections/alerts"
-  alert   = each.value
-  title   = "Alert: ${each.key}"
-  version = "1.48.1"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/alerts"
+  alert  = each.value
+  title  = "Alert: ${each.key}"
 }
 
-module "width" {
-  source  = "chainguard-dev/common/infra//modules/dashboard/sections/width"
-  version = "1.48.1"
-}
+module "width" { source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/width" }
 
 module "layout" {
-  source = "chainguard-dev/common/infra//modules/dashboard/sections/layout"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/layout"
   sections = concat(
     [for x in keys(var.alerts) : module.alerts[x].section],
     [
@@ -134,11 +139,10 @@ module "layout" {
     var.service_sections,
     [module.resources.section],
   )
-  version = "1.48.1"
 }
 
 module "dashboard" {
-  source = "chainguard-dev/common/infra//modules/dashboard"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard"
 
   object = {
     displayName = "Reconciler: ${var.name}"
@@ -146,27 +150,7 @@ module "dashboard" {
       "service" : ""
       "reconciler" : ""
     }, var.labels)
-    dashboardFilters = var.mode == "long" ? [
-      {
-        # Cloud Run Jobs use job_name as the resource label
-        filterType  = "RESOURCE_LABEL"
-        stringValue = local.service_name
-        labelKey    = "job_name"
-      },
-      ] : [
-      {
-        # for GCP Cloud Run built-in metrics
-        filterType  = "RESOURCE_LABEL"
-        stringValue = local.service_name
-        labelKey    = "service_name"
-      },
-      {
-        # for Prometheus user added metrics
-        filterType  = "METRIC_LABEL"
-        stringValue = local.service_name
-        labelKey    = "service_name"
-      },
-    ]
+    dashboardFilters = local.dashboard_filters
 
     // https://cloud.google.com/monitoring/api/ref_v3/rest/v1/projects.dashboards#mosaiclayout
     mosaicLayout = {
@@ -174,7 +158,6 @@ module "dashboard" {
       tiles   = module.layout.tiles,
     }
   }
-  version = "1.48.1"
 }
 
 // microvm observability gets its own dashboard. Its control-plane and agent-pod
@@ -184,14 +167,13 @@ module "dashboard" {
 // service_name.
 module "microvm_layout" {
   count    = var.sections.microvm != null ? 1 : 0
-  source   = "chainguard-dev/common/infra//modules/dashboard/sections/layout"
+  source   = "../../../../../public/terraform-infra-common/modules/dashboard/sections/layout"
   sections = module.microvm[0].sections
-  version  = "1.48.1"
 }
 
 module "microvm_dashboard" {
   count  = var.sections.microvm != null ? 1 : 0
-  source = "chainguard-dev/common/infra//modules/dashboard"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard"
 
   object = {
     displayName = "Reconciler microvm: ${var.name}"
@@ -207,7 +189,6 @@ module "microvm_dashboard" {
       tiles   = module.microvm_layout[0].tiles,
     }
   }
-  version = "1.48.1"
 }
 
 // agents observability gets its own dashboard so its 12 widgets don't push a
@@ -218,14 +199,13 @@ module "microvm_dashboard" {
 // widgets would not scope to this reconciler.
 module "agents_layout" {
   count    = var.sections.agents ? 1 : 0
-  source   = "chainguard-dev/common/infra//modules/dashboard/sections/layout"
+  source   = "../../../../../public/terraform-infra-common/modules/dashboard/sections/layout"
   sections = [module.agents.section]
-  version  = "1.48.1"
 }
 
 module "agents_dashboard" {
   count  = var.sections.agents ? 1 : 0
-  source = "chainguard-dev/common/infra//modules/dashboard"
+  source = "../../../../../public/terraform-infra-common/modules/dashboard"
 
   object = {
     displayName = "Reconciler agents: ${var.name}"
@@ -234,27 +214,7 @@ module "agents_dashboard" {
       "reconciler" : ""
       "agents" : ""
     }, var.labels)
-    dashboardFilters = var.mode == "long" ? [
-      {
-        # Cloud Run Jobs use job_name as the resource label
-        filterType  = "RESOURCE_LABEL"
-        stringValue = local.service_name
-        labelKey    = "job_name"
-      },
-      ] : [
-      {
-        # for GCP Cloud Run built-in metrics
-        filterType  = "RESOURCE_LABEL"
-        stringValue = local.service_name
-        labelKey    = "service_name"
-      },
-      {
-        # for Prometheus user added metrics
-        filterType  = "METRIC_LABEL"
-        stringValue = local.service_name
-        labelKey    = "service_name"
-      },
-    ]
+    dashboardFilters = local.dashboard_filters
 
     // https://cloud.google.com/monitoring/api/ref_v3/rest/v1/projects.dashboards#mosaiclayout
     mosaicLayout = {
@@ -262,5 +222,4 @@ module "agents_dashboard" {
       tiles   = module.agents_layout[0].tiles,
     }
   }
-  version = "1.48.1"
 }
