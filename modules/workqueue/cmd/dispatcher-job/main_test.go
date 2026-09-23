@@ -7,12 +7,52 @@ package main
 
 import (
 	"context"
+	"errors"
+	"sync/atomic"
 	"testing"
 	"testing/synctest"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+
+	"chainguard.dev/driftlessaf/workqueue"
 )
+
+// TestCountCalls pins that the wrapper counts every key it is handed, failed
+// ones included — a failed reconcile still records metrics that need a scrape
+// — and passes the callback's arguments and result through untouched.
+func TestCountCalls(t *testing.T) {
+	errBoom := errors.New("boom")
+	var gotKeys []string
+	inner := func(_ context.Context, key string, opts workqueue.Options) error {
+		gotKeys = append(gotKeys, key)
+		if opts.Priority != 7 {
+			t.Errorf("priority: got = %d, want = 7", opts.Priority)
+		}
+		if key == "bad" {
+			return errBoom
+		}
+		return nil
+	}
+
+	var n atomic.Int64
+	f := countCalls(inner, &n)
+	if got := n.Load(); got != 0 {
+		t.Fatalf("count before any call: got = %d, want = 0", got)
+	}
+	if err := f(t.Context(), "good", workqueue.Options{Priority: 7}); err != nil {
+		t.Errorf("good key: got err = %v, want nil", err)
+	}
+	if err := f(t.Context(), "bad", workqueue.Options{Priority: 7}); !errors.Is(err, errBoom) {
+		t.Errorf("bad key: got err = %v, want %v", err, errBoom)
+	}
+	if got := n.Load(); got != 2 {
+		t.Errorf("count: got = %d, want = 2", got)
+	}
+	if len(gotKeys) != 2 || gotKeys[0] != "good" || gotKeys[1] != "bad" {
+		t.Errorf("keys passed through: got = %v, want = [good bad]", gotKeys)
+	}
+}
 
 func TestShouldReport(t *testing.T) {
 	// Anchored on a known wall-clock instant: 12:00:00 UTC is a multiple of

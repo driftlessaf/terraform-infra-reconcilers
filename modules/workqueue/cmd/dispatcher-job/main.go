@@ -13,6 +13,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -45,6 +46,19 @@ const (
 	// not after the job does. await returns as soon as it is scraped, so a bound
 	// well above one interval costs nothing except when no scrape ever arrives.
 	scrapeWait = 30 * time.Second
+	// scrapeInterval is the otel sidecar's scrape_interval, also from
+	// regional-go-cron's otel config. The scrape await observes is the
+	// dispatcher's own; the reconciler sidecar is a separate target the
+	// collector scrapes at its own offset. Every target is scraped once per
+	// interval, so a full interval after the dispatcher's first post-dispatch
+	// scrape, every target has been scraped since the dispatch finished.
+	scrapeInterval = 10 * time.Second
+	// scrapeTimeout bounds how long a scrape the collector has started can take
+	// to finish. regional-go-cron's otel config sets no scrape_timeout, so it
+	// is Prometheus's default, which is also 10s. A scrape that starts at the
+	// very end of scrapeInterval may take this long to complete before its
+	// batch can begin flushing.
+	scrapeTimeout = 10 * time.Second
 	// batchFlush is the collector's batch processor timeout, also from
 	// regional-go-cron's otel config. Staying alive that much longer after the
 	// scrape lets the batch reach GMP before Cloud Run tears the sidecar down.
@@ -113,24 +127,48 @@ func main() {
 	}
 	defer client.Close()
 
+	var processed atomic.Int64
 	if err := dispatcher.HandleAsync(ctx, wq, env.Concurrency, env.BatchSize,
-		dispatcher.ServiceCallback(client), env.MaxRetry,
+		countCalls(dispatcher.ServiceCallback(client), &processed), env.MaxRetry,
 		dispatcher.WithOwnerConcurrency(env.OwnerConcurrency),
 		dispatcher.WithErrorIngressURI(ctx, env.ErrorEventIngressURI, env.WorkqueueName),
 	)(); err != nil {
 		clog.FatalContextf(ctx, "dispatch: %v", err)
 	}
 
-	// An idle iteration finishes in well under a scrape interval, so exiting
-	// here means the gauges it just set are never exported. A drained queue can
-	// afford that: the dead-letter alert's auto_close reads the resulting
-	// silence as "nothing to report". A non-empty dead-letter queue cannot —
-	// without a sample the alert closes and re-pages on the next stray scrape,
-	// over and over, for a backlog that never changed. So hold the process open
-	// for a scrape exactly when there is a backlog to report, on a cadence the
-	// alert's auto_close window absorbs.
-	if shouldReport(time.Now(), reportEvery) && deadLettered(ctx, prometheus.DefaultGatherer) > 0 {
+	switch {
+	case processed.Load() > 0:
+		// Every execution is a fresh process, and the collector exports nothing a
+		// target observed after its last scrape. A reconcile records its final
+		// observations (a run's duration, a key's outcome) just before its
+		// callback returns, which is just before this process exits and Cloud
+		// Run tears down the sidecars with it. Without a hold those are lost
+		// outright, not delayed. So an execution that did any work stays alive
+		// until every target — the reconciler, not just this dispatcher — has
+		// been scraped since the dispatch finished, that scrape has completed,
+		// and the batch has flushed. Idle executions, the common case on a
+		// quiet queue, skip this.
+		scraped.await(ctx, scrapeWait, scrapeInterval+scrapeTimeout+batchFlush)
+	case shouldReport(time.Now(), reportEvery) && deadLettered(ctx, prometheus.DefaultGatherer) > 0:
+		// An idle iteration finishes in well under a scrape interval, so exiting
+		// here means the gauges it just set are never exported. A drained queue
+		// can afford that: the dead-letter alert's auto_close reads the resulting
+		// silence as "nothing to report". A non-empty dead-letter queue cannot —
+		// without a sample the alert closes and re-pages on the next stray
+		// scrape, over and over, for a backlog that never changed. So hold the
+		// process open for a scrape exactly when there is a backlog to report, on
+		// a cadence the alert's auto_close window absorbs. Only this
+		// dispatcher's own gauge matters here, so its own scrape suffices.
 		scraped.await(ctx, scrapeWait, batchFlush)
+	}
+}
+
+// countCalls wraps a dispatch callback to count the keys it is handed, so main
+// can tell an execution that did work from an idle one.
+func countCalls(f dispatcher.Callback, n *atomic.Int64) dispatcher.Callback {
+	return func(ctx context.Context, key string, opts workqueue.Options) error {
+		n.Add(1)
+		return f(ctx, key, opts)
 	}
 }
 
@@ -183,11 +221,12 @@ func (s *scrapeSignal) Collect(chan<- prometheus.Metric) {
 	}
 }
 
-// await blocks until the metrics endpoint is scraped and the collector has had
-// flush long to forward the batch, or until wait elapses without a scrape.
-func (s *scrapeSignal) await(ctx context.Context, wait, flush time.Duration) {
-	// Discard any scrape that predates the dispatch iteration — including the
-	// Gather that read the dead-letter gauge.
+// await blocks until the metrics endpoint is scraped and then for settle more,
+// long enough for the collector to scrape any other targets and forward the
+// batch, or until wait elapses without a scrape.
+func (s *scrapeSignal) await(ctx context.Context, wait, settle time.Duration) {
+	// Discard any scrape that predates the end of the dispatch iteration —
+	// including the Gather that read the dead-letter gauge.
 	select {
 	case <-s.ch:
 	default:
@@ -198,13 +237,13 @@ func (s *scrapeSignal) await(ctx context.Context, wait, flush time.Duration) {
 	select {
 	case <-s.ch:
 	case <-t.C:
-		clog.WarnContextf(ctx, "exiting after %s without a metrics scrape; dead-letter gauge not exported", wait)
+		clog.WarnContextf(ctx, "exiting after %s without a metrics scrape; this execution's final metrics were not exported", wait)
 		return
 	case <-ctx.Done():
 		return
 	}
 
-	f := time.NewTimer(flush)
+	f := time.NewTimer(settle)
 	defer f.Stop()
 	select {
 	case <-f.C:
