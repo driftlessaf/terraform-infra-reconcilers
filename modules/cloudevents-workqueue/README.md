@@ -11,6 +11,11 @@ The module creates a **Subscriber Service** that:
 
 This module is designed to work with `github-events` module, which publishes GitHub webhook events as CloudEvents with extensions like `pullrequesturl` and `issueurl`.
 
+Callers that need to inspect an event before enqueueing can provide
+`subscriber_source` with a Go working directory and import path, plus any
+`subscriber_extra_env` entries. The replacement command receives the same
+workqueue URL, extension key, priority, and delay settings as the default.
+
 ## Key Features
 
 - **Flexible Event Filtering**: Support multiple Knative Trigger-style filters with OR logic

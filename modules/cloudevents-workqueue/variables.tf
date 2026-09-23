@@ -3,6 +3,24 @@ variable "project_id" {
   type        = string
 }
 
+variable "subscriber_source" {
+  description = "Optional replacement Go command for the subscriber service, with a working directory and import path."
+  type = object({
+    working_dir = string
+    importpath  = string
+  })
+  default = null
+}
+
+variable "subscriber_extra_env" {
+  description = "Additional environment variables for a replacement subscriber command."
+  type = list(object({
+    name  = string
+    value = string
+  }))
+  default = []
+}
+
 variable "name" {
   description = "The base name for resources"
   type        = string

@@ -44,13 +44,13 @@ module "subscriber" {
   containers = {
     "subscriber" = {
       source = {
-        importpath  = "./cmd/subscriber"
-        working_dir = path.module
+        importpath  = var.subscriber_source == null ? "./cmd/subscriber" : var.subscriber_source.importpath
+        working_dir = var.subscriber_source == null ? path.module : var.subscriber_source.working_dir
       }
       ports = [{
         container_port = 8080
       }]
-      env = [{
+      env = concat([{
         name  = "EXTENSION_KEY"
         value = var.extension_key
         }, {
@@ -59,7 +59,7 @@ module "subscriber" {
         }, {
         name  = "DELAY_SECONDS"
         value = tostring(var.delay_seconds)
-      }]
+      }], var.subscriber_extra_env)
       regional-env = [
         {
           name  = "WORKQUEUE_SERVICE"
