@@ -44,6 +44,15 @@ variable "shards" {
   default     = 1
 }
 
+variable "workqueue_latency_titles" {
+  description = "Optional titles for the workqueue processing and scheduled-wait latency charts."
+  type = object({
+    process = optional(string, "Work processing latency (p99)")
+    wait    = optional(string, "Work wait times (p99 by priority)")
+  })
+  default = {}
+}
+
 // Section visibility
 variable "sections" {
   description = "Configure visibility of optional dashboard sections"
@@ -98,4 +107,10 @@ variable "service_sections" {
   description = "Service-specific dashboard sections (outputs of dashboard/sections/* modules) appended to the layout before the resources section"
   type        = list(any)
   default     = []
+}
+
+variable "service_sections_first" {
+  description = "Place service-specific sections before the generic workqueue and reconciler sections."
+  type        = bool
+  default     = false
 }
