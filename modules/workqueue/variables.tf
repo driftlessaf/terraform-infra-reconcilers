@@ -42,6 +42,17 @@ variable "concurrent-work" {
   type        = number
 }
 
+variable "candidate-window-factor" {
+  description = "How far each dispatch pass shuffles its candidates, as a multiple of the keys that pass can launch (window = factor x launch slots). Any whole number is valid, there are no special steps. 0 disables the shuffle: every dispatcher takes the head of the queue, so dispatchers sharing a queue race for the same keys and lose most contested claims. Raising it spreads dispatchers over more keys, lowering lost claims, at the cost of how long a key can sit unpicked (up to the factor in passes when only one dispatcher is running). Measured with three dispatchers, lost-claim share of the slowest: 16 -> 11.2%, 24 -> 8.0%, 32 -> 6.5%, 48 -> 4.2%, 64 -> 3.4%. 48 is the smallest that keeps the slowest dispatcher under 5% and is the library default (dispatcher.DefaultCandidateWindowFactor); the module defaults to 0 so spreading is opt-in per environment. Go lower only if pick latency matters more than contention, higher only if loss is still high with more dispatchers. Above about 96 the window reaches the enumeration limit and larger values change nothing, so the input is capped at 128."
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.candidate-window-factor >= 0 && var.candidate-window-factor <= 128 && var.candidate-window-factor == floor(var.candidate-window-factor)
+    error_message = "candidate-window-factor must be a whole number from 0 to 128. 0 disables spreading; 48 is the measured recommendation; values above about 96 have no additional effect because the window is clipped to the enumerated list."
+  }
+}
+
 variable "regional-concurrent-work" {
   description = "Optional cap on concurrent work in each dispatcher region. Must be a positive integer when set. The global concurrent-work cap also applies."
   type        = number

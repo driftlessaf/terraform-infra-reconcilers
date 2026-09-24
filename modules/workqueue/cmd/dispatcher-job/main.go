@@ -70,6 +70,7 @@ const (
 type envConfig struct {
 	Concurrency                   int           `env:"WORKQUEUE_CONCURRENCY,required"`
 	OwnerConcurrency              int           `env:"WORKQUEUE_OWNER_CONCURRENCY,default=0"`
+	CandidateWindowFactor         int           `env:"WORKQUEUE_CANDIDATE_WINDOW_FACTOR,default=0"`
 	BatchSize                     int           `env:"WORKQUEUE_BATCH_SIZE,required"`
 	Mode                          string        `env:"WORKQUEUE_MODE,required"`
 	Bucket                        string        `env:"WORKQUEUE_BUCKET"`
@@ -131,6 +132,7 @@ func main() {
 	if err := dispatcher.HandleAsync(ctx, wq, env.Concurrency, env.BatchSize,
 		countCalls(dispatcher.ServiceCallback(client), &processed), env.MaxRetry,
 		dispatcher.WithOwnerConcurrency(env.OwnerConcurrency),
+		dispatcher.WithCandidateWindowFactor(env.CandidateWindowFactor),
 		dispatcher.WithErrorIngressURI(ctx, env.ErrorEventIngressURI, env.WorkqueueName),
 	)(); err != nil {
 		clog.FatalContextf(ctx, "dispatch: %v", err)

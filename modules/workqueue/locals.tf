@@ -26,6 +26,7 @@ locals {
   multi_regional_location     = var.multi_regional_location
   concurrent_work             = var.concurrent-work
   regional_concurrent_work    = var.regional-concurrent-work
+  candidate_window_factor     = var.candidate-window-factor
   max_retry                   = var.max-retry
   enable_dead_letter_alerting = var.enable_dead_letter_alerting
   dead_letter_alert_threshold = var.dead_letter_alert_threshold
