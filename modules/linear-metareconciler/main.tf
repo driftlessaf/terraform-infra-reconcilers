@@ -59,7 +59,8 @@ module "cloudevents-issues" {
 
   depends_on = [module.reconciler]
 
-  team = var.team
+  team    = var.team
+  product = var.product
 
   resource_manager_tags = var.resource_manager_tags
 }
@@ -93,7 +94,8 @@ module "cloudevents-comments" {
 
   depends_on = [module.reconciler]
 
-  team = var.team
+  team    = var.team
+  product = var.product
 
   resource_manager_tags = var.resource_manager_tags
 }

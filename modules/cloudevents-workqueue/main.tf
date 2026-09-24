@@ -37,7 +37,8 @@ module "subscriber" {
   notification_channels = var.notification_channels
   deletion_protection   = var.deletion_protection
 
-  team = var.team
+  team    = var.team
+  product = var.product
 
   resource_manager_tags = var.resource_manager_tags
 
@@ -138,7 +139,8 @@ module "trigger" {
   maximum_backoff       = var.maximum_backoff
   ack_deadline_seconds  = var.ack_deadline_seconds
 
-  team = var.team
+  team    = var.team
+  product = var.product
 
   resource_manager_tags = var.resource_manager_tags
 
