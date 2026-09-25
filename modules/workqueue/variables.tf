@@ -230,3 +230,23 @@ variable "queue_readers" {
   type        = list(string)
   default     = []
 }
+
+variable "retain_bucket_admin_binding" {
+  description = <<-EOT
+    Keep the roles/storage.admin binding on the workqueue bucket. True (the
+    default) is the access this module has always granted. False drops it,
+    leaving the receiver, dispatcher and additional_bucket_members on the
+    additive roles/storage.objectUser grants, which is everything the queue
+    actually uses.
+
+    It exists so the reduction can be taken one deployment at a time —
+    dev, then staging, then production — rather than reaching every caller of
+    this module on whichever apply runs first. Flipping it is the only step
+    that revokes anything. A later release removes both the binding and this
+    variable, so treat false as the destination rather than a supported
+    configuration.
+  EOT
+  type        = bool
+  default     = true
+  nullable    = false
+}

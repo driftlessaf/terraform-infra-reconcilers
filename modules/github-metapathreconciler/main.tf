@@ -55,12 +55,13 @@ module "reconciler" {
   github_app_id     = var.github_app_id
   github_app_key    = var.github_app_key
 
-  resync_floor_hours    = var.resync_floor_hours
-  broker                = var.broker
-  paused                = var.paused
-  error_event_ingress   = var.error_event_ingress
-  trace_event_ingress   = var.trace_event_ingress
-  resource_manager_tags = var.resource_manager_tags
+  resync_floor_hours          = var.resync_floor_hours
+  broker                      = var.broker
+  paused                      = var.paused
+  error_event_ingress         = var.error_event_ingress
+  trace_event_ingress         = var.trace_event_ingress
+  resource_manager_tags       = var.resource_manager_tags
+  retain_bucket_admin_binding = var.retain_bucket_admin_binding
 }
 
 # CloudEvents to Workqueue bridge for pull request events

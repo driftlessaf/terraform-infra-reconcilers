@@ -166,12 +166,30 @@ The job will:
 2. Re-queue each key with a fresh attempt counter (preserving the original priority)
 3. When the requeued key succeeds, the dead-letter entry is automatically cleaned up
 
+## Bucket IAM is additive
+
+Every grant this module makes on the queue bucket is a
+`google_storage_bucket_iam_member`, never a `google_storage_bucket_iam_binding`.
+A binding owns the complete member list for its role, so a binding here would
+remove anyone your own configuration grants that same role and then reverse
+your grant on every apply. You are free to add your own members on the bucket
+for any role, including the ones below.
+
+One binding is left, on `roles/storage.admin`, and it is on its way out. It
+duplicates access the additive `objectUser` grants cover, so the identities
+hold both until it goes. Nothing you configure needs to depend on it.
+
+Set `retain_bucket_admin_binding = false` to drop it for one deployment. That
+is the only step that takes access away, so take it where you can watch the
+result — dev, then staging, then production — rather than everywhere at once.
+A later release removes the binding and the variable together.
+
 <!-- BEGIN_TF_DOCS -->
 ## Read-only access for producers
 
 A producer that decides whether to enqueue more needs to read the queue's depth,
-which means `storage.objects.list` on the bucket. The two other bindings onto it
-— `roles/storage.admin` for the receiver and dispatcher, `roles/storage.objectAdmin`
+which means `storage.objects.list` on the bucket. The two other grants onto it
+— `roles/storage.objectUser` for the receiver and dispatcher, `roles/storage.objectAdmin`
 for DLQ operators — both grant delete, so without a third a caller would take the
 right to remove keys from `queued/`, `in-progress/` and `dead-letter/` in exchange
 for a count.

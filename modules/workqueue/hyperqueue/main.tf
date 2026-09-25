@@ -51,12 +51,13 @@ module "workqueue" {
   scheduled_wait_warning_threshold = var.scheduled_wait_warning_threshold
   enable_dead_letter_alerting      = var.enable_dead_letter_alerting
 
-  team                    = var.team
-  product                 = var.product
-  deletion_protection     = var.deletion_protection
-  notification_channels   = var.notification_channels
-  labels                  = var.labels
-  multi_regional_location = var.multi_regional_location
+  team                        = var.team
+  product                     = var.product
+  deletion_protection         = var.deletion_protection
+  notification_channels       = var.notification_channels
+  labels                      = var.labels
+  multi_regional_location     = var.multi_regional_location
+  retain_bucket_admin_binding = var.retain_bucket_admin_binding
 
   error_event_ingress = var.error_event_ingress
 
@@ -73,19 +74,18 @@ resource "google_service_account" "hyperqueue" {
 module "hyperqueue-calls-receiver" {
   for_each = { for pair in local.auth_pairs : pair.key => pair }
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = var.project_id
   region     = each.value.region
   name       = module.workqueue[each.value.shard].receiver.name
 
   service-account = google_service_account.hyperqueue.email
-  version         = "1.50.0"
 }
 
 # Hyperqueue service using regional-go-service
 module "hyperqueue-service" {
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = var.project_id
   name               = "${var.name}-hq"
@@ -120,5 +120,4 @@ module "hyperqueue-service" {
   notification_channels = var.notification_channels
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.50.0"
 }

@@ -297,3 +297,21 @@ variable "resource_manager_tags" {
     error_message = "resource_manager_tags keys must be tagKeys/<numeric-id> and values must be tagValues/<numeric-id>."
   }
 }
+
+variable "retain_bucket_admin_binding" {
+  description = <<-EOT
+    Keep the roles/storage.admin binding on the workqueue bucket. True (the
+    default) is the access this module has always granted. False drops it,
+    leaving the queue identities on the additive roles/storage.objectUser
+    grants, which is everything the queue actually uses.
+
+    Forwarded to regional-go-reconciler. It exists so the reduction can be taken one deployment
+    at a time -- dev, then staging, then production -- rather than reaching
+    every caller on whichever apply runs first. A later release removes the
+    binding and this variable together, so treat false as the destination
+    rather than a supported configuration.
+  EOT
+  type        = bool
+  default     = true
+  nullable    = false
+}
