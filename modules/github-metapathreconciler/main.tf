@@ -121,7 +121,7 @@ module "dashboard" {
   }
 
   labels = merge({
-    "${var.name}" : ""
+    (var.name) : ""
     "github" : ""
     "team" : var.team
     "product" : var.product

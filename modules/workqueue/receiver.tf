@@ -55,7 +55,7 @@ module "receiver-service" {
         {
           # The receiver doesn't use this, but the workqueue constructor wants it.
           name  = "WORKQUEUE_CONCURRENCY"
-          value = "${local.concurrent_work}"
+          value = local.concurrent_work
         },
       ]
       regional-env = [
