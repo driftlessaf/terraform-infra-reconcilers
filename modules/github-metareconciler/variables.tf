@@ -145,6 +145,16 @@ variable "concurrent-work" {
   default     = 1
 }
 
+variable "mode" {
+  description = "Reconciler mode: short runs Cloud Run services; long runs a Cloud Run Job per dispatch tick."
+  type        = string
+  default     = "short"
+  validation {
+    condition     = contains(["short", "long"], var.mode)
+    error_message = "mode must be short or long"
+  }
+}
+
 variable "max-retry" {
   description = "The maximum number of times a task will be retried."
   type        = number

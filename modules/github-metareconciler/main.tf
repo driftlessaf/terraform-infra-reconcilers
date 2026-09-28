@@ -30,6 +30,7 @@ module "reconciler" {
   egress          = var.egress
 
   # Workqueue configuration
+  mode            = var.mode
   concurrent-work = var.concurrent-work
   max-retry       = var.max-retry
 
@@ -134,6 +135,7 @@ module "dashboard" {
   name            = var.name
   max_retry       = var.max-retry
   concurrent_work = var.concurrent-work
+  mode            = var.mode
 
   sections = {
     github  = true
