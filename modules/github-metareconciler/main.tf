@@ -150,6 +150,8 @@ module "dashboard" {
     "product" : var.product
   }, var.dashboard_labels)
 
+  service_sections = var.dashboard_service_sections
+
   alerts                = var.dashboard_alerts
   notification_channels = var.notification_channels
 }

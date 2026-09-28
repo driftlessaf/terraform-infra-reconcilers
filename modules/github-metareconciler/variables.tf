@@ -233,6 +233,12 @@ variable "dashboard_alerts" {
   default     = {}
 }
 
+variable "dashboard_service_sections" {
+  description = "Service-specific dashboard sections (outputs of dashboard/sections/* modules) appended to this reconciler's dashboard. A reconciler whose own metrics answer a question the generic sections cannot renders them here rather than in a second dashboard nobody opens."
+  type        = list(any)
+  default     = []
+}
+
 variable "notification_channels" {
   type        = list(string)
   description = "Notification channels for alerts"
