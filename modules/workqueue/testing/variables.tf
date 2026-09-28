@@ -2,6 +2,12 @@ variable "namespace" {
   type = string
 }
 
+variable "ko_platforms" {
+  description = "Platforms for images built by the ko provider."
+  type        = list(string)
+  default     = ["linux/amd64"]
+}
+
 variable "name" {
   type = string
 }

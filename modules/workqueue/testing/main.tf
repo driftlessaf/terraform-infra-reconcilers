@@ -25,6 +25,7 @@ resource "ko_build" "inmem" {
   base_image  = "chainguard/static:latest"
   importpath  = "./cmd/inmem"
   working_dir = "${path.module}/../"
+  platforms   = var.ko_platforms
 }
 
 resource "kubernetes_manifest" "inmem-ksvc" {
