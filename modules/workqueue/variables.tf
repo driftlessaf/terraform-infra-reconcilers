@@ -54,7 +54,7 @@ variable "candidate-window-factor" {
 }
 
 variable "regional-concurrent-work" {
-  description = "Optional cap on concurrent work in each dispatcher region. Must be a positive integer when set. The global concurrent-work cap also applies."
+  description = "Optional cap on concurrent work in each dispatcher region. Defaults to ceil(concurrent-work / number of regions) when unset. Must be a positive integer when set. The global concurrent-work cap also applies."
   type        = number
   default     = null
 

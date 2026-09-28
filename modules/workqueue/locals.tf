@@ -25,7 +25,7 @@ locals {
   deletion_protection         = var.deletion_protection
   multi_regional_location     = var.multi_regional_location
   concurrent_work             = var.concurrent-work
-  regional_concurrent_work    = var.regional-concurrent-work
+  regional_concurrent_work    = var.regional-concurrent-work != null ? var.regional-concurrent-work : ceil(var.concurrent-work / length(var.regions))
   candidate_window_factor     = var.candidate-window-factor
   max_retry                   = var.max-retry
   enable_dead_letter_alerting = var.enable_dead_letter_alerting
