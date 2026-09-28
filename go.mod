@@ -3,11 +3,11 @@ module chainguard.dev/terraform-infra-reconcilers
 go 1.27.0
 
 require (
-	chainguard.dev/driftlessaf v0.10.142
+	chainguard.dev/driftlessaf v0.7.1
 	chainguard.dev/go-grpc-kit v0.20.0
 	cloud.google.com/go/storage v1.67.0
 	github.com/chainguard-dev/clog v1.8.1
-	github.com/chainguard-dev/terraform-infra-common v1.51.1
+	github.com/chainguard-dev/terraform-infra-common v1.25.0
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/google/go-github/v88 v88.0.0
 	github.com/prometheus/client_golang v1.24.1
@@ -20,7 +20,7 @@ require (
 
 require (
 	cel.dev/expr v0.25.2 // indirect
-	chainguard.dev/sdk v0.1.299 // indirect
+	chainguard.dev/sdk v0.1.257 // indirect
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/auth v0.23.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
@@ -122,15 +122,15 @@ require (
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
-	golang.org/x/crypto v0.56.0 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20260727155853-b88d891fe743 // indirect
-	golang.org/x/mod v0.39.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260811182544-a038080d80e5 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260908163034-4bcc4b2ee518 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
-	golang.org/x/tools v0.49.0 // indirect
+	golang.org/x/tools v0.50.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.297.0 // indirect
 	google.golang.org/genproto v0.0.0-20260715232425-e75dac1f907d // indirect
@@ -139,3 +139,9 @@ require (
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
+
+replace chainguard.dev/driftlessaf => ../go-driftlessaf
+
+replace chainguard.dev/sdk => ../../public/sdk
+
+replace github.com/chainguard-dev/terraform-infra-common => ../terraform-infra-common
