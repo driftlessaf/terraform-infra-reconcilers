@@ -12,6 +12,17 @@ variable "subscriber_source" {
   default = null
 }
 
+variable "scaling" {
+  description = "Scaling of the subscriber service, passed to regional-go-service. Bound max_instances (and service_max_instances, which bounds every revision receiving traffic combined) when a replacement subscriber holds per-instance resources such as database connections."
+  type = object({
+    min_instances                    = optional(number, 0)
+    max_instances                    = optional(number, 100)
+    service_max_instances            = optional(number)
+    max_instance_request_concurrency = optional(number)
+  })
+  default = {}
+}
+
 variable "subscriber_extra_env" {
   description = "Additional environment variables for a replacement subscriber command."
   type = list(object({

@@ -264,6 +264,7 @@ No requirements.
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | The GCP project ID | `string` | n/a | yes |
 | <a name="input_regions"></a> [regions](#input\_regions) | A map of regions to launch services in (see regional-go-service module for format) | <pre>map(object({<br/>    network = string<br/>    subnet  = string<br/>  }))</pre> | n/a | yes |
 | <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags to bind to this module's taggable resources, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
+| <a name="input_scaling"></a> [scaling](#input\_scaling) | Scaling of the subscriber service, passed to regional-go-service. Bound max\_instances (and service\_max\_instances, which bounds every revision receiving traffic combined) when a replacement subscriber holds per-instance resources such as database connections. | <pre>object({<br/>    min_instances                    = optional(number, 0)<br/>    max_instances                    = optional(number, 100)<br/>    service_max_instances            = optional(number)<br/>    max_instance_request_concurrency = optional(number)<br/>  })</pre> | `{}` | no |
 | <a name="input_team"></a> [team](#input\_team) | Team label to apply to resources (replaces deprecated 'squad'). | `string` | n/a | yes |
 | <a name="input_workqueue"></a> [workqueue](#input\_workqueue) | The workqueue to send events to | <pre>object({<br/>    name = string<br/>  })</pre> | n/a | yes |
 
