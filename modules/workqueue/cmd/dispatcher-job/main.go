@@ -3,22 +3,16 @@ Copyright 2026 Chainguard, Inc.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// dispatcher-job claims workqueue keys, reconciles them through a reconciler
-// sidecar container, and exits when the last one finishes. It is designed to
-// run as a Cloud Run Job, replacing the long-running dispatcher service for
-// workloads whose reconciliation exceeds Cloud Run's request timeout. By
-// default it makes a single dispatch pass at startup; with
-// WORKQUEUE_CLAIM_WINDOW set it keeps claiming into its free slots for that
-// long (see claimLoop).
+// dispatcher-job performs a single iteration of the workqueue dispatch loop and
+// exits. It is designed to run as a Cloud Run Job alongside a reconciler sidecar
+// container, replacing the long-running dispatcher service for workloads whose
+// reconciliation exceeds Cloud Run's request timeout.
 package main
 
 import (
 	"context"
-	"errors"
-	"math/rand/v2"
 	"os"
 	"os/signal"
-	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -83,11 +77,6 @@ type envConfig struct {
 	Target                        string        `env:"WORKQUEUE_TARGET,required"`
 	MaxRetry                      int           `env:"WORKQUEUE_MAX_RETRY,default=0"`
 	ScheduledWaitWarningThreshold time.Duration `env:"WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD,default=0s"`
-	// ClaimWindow is how long after startup the job keeps claiming keys
-	// into its free slots, every ClaimPoll (jittered), while it still has
-	// work in flight. Zero makes the single pass at startup the only one.
-	ClaimWindow time.Duration `env:"WORKQUEUE_CLAIM_WINDOW,default=0s"`
-	ClaimPoll   time.Duration `env:"WORKQUEUE_CLAIM_POLL,default=10s"`
 
 	ErrorEventIngressURI string `env:"ERROR_EVENT_INGRESS_URI"`
 	WorkqueueName        string `env:"WORKQUEUE_NAME"`
@@ -112,9 +101,6 @@ func main() {
 	}
 	if env.BatchSize <= 0 {
 		clog.FatalContextf(ctx, "WORKQUEUE_BATCH_SIZE must be positive, got %d", env.BatchSize)
-	}
-	if env.ClaimWindow > 0 && env.ClaimPoll <= 0 {
-		clog.FatalContextf(ctx, "WORKQUEUE_CLAIM_POLL must be positive with a claim window, got %s", env.ClaimPoll)
 	}
 
 	scraped := newScrapeSignal()
@@ -142,18 +128,13 @@ func main() {
 	}
 	defer client.Close()
 
-	var processed, inUse atomic.Int64
-	claims := &reservingQueue{Interface: wq, inUse: &inUse, first: firstClaimLogger(ctx, time.Now())}
-	callback := releaseSlot(countCalls(dispatcher.ServiceCallback(client), &processed), &inUse)
-	opts := []dispatcher.Option{
+	var processed atomic.Int64
+	if err := dispatcher.HandleAsync(ctx, wq, env.Concurrency, env.BatchSize,
+		countCalls(dispatcher.ServiceCallback(client), &processed), env.MaxRetry,
 		dispatcher.WithOwnerConcurrency(env.OwnerConcurrency),
 		dispatcher.WithCandidateWindowFactor(env.CandidateWindowFactor),
 		dispatcher.WithErrorIngressURI(ctx, env.ErrorEventIngressURI, env.WorkqueueName),
-	}
-	pass := func(ctx context.Context, batch int) dispatcher.Future {
-		return dispatcher.HandleAsync(ctx, claims, env.Concurrency, batch, callback, env.MaxRetry, opts...)
-	}
-	if err := claimLoop(ctx, env.BatchSize, env.ClaimWindow, env.ClaimPoll, &inUse, &processed, pass); err != nil {
+	)(); err != nil {
 		clog.FatalContextf(ctx, "dispatch: %v", err)
 	}
 
@@ -190,197 +171,6 @@ func countCalls(f dispatcher.Callback, n *atomic.Int64) dispatcher.Callback {
 	return func(ctx context.Context, key string, opts workqueue.Options) error {
 		n.Add(1)
 		return f(ctx, key, opts)
-	}
-}
-
-// passFunc runs one dispatch pass that claims at most batch keys and returns
-// the future that joins them: dispatcher.HandleAsync, bound to this job's
-// queue and callback.
-type passFunc func(ctx context.Context, batch int) dispatcher.Future
-
-// claimLoop runs the job's dispatch passes and returns once every key they
-// claimed has finished. The first pass runs at once and claims up to
-// batchSize keys. With a window, the job then keeps claiming until window has
-// passed since it started: every poll (jittered by up to half either way) a
-// pass claims into whatever slots finished keys freed, and a job whose keys
-// have all finished makes one more pass before it exits. A key queued while
-// the job runs then waits for the next poll rather than for the next
-// execution. Cloud Run takes minutes to start an execution, and starts
-// several at once, so a job that claims only at startup leaves a run queued
-// for minutes behind jobs with free slots.
-//
-// The loop claims only while the job has work: a job whose last pass
-// claimed nothing and has nothing in flight returns, as a single-pass job
-// does, rather than stay alive — and billed — to poll an empty queue. A lost
-// claim (a sibling won the key) costs its slot for one poll instead of for
-// the job's life, and the jitter spreads siblings that started in the same
-// second across the poll. A pass's error is logged and claiming goes on, so
-// one failed enumeration does not strand the keys already in flight; every
-// error is returned once the keys have finished.
-//
-// inUse counts this job's own slots in use: a claim holds one from the
-// moment its Start begins, through the callback, until the callback returns
-// (reservingQueue, releaseSlot), so a claim still completing its Start is
-// never offered to a later pass. claimed counts every key handed to a
-// callback (countCalls).
-func claimLoop(ctx context.Context, batchSize int, window, poll time.Duration, inUse, claimed *atomic.Int64, pass passFunc) error {
-	started := time.Now()
-	var (
-		mu   sync.Mutex
-		errs []error
-		wg   sync.WaitGroup
-	)
-	// Every pass signals done once; the loop and the drain below receive
-	// exactly that many.
-	done := make(chan struct{})
-	outstanding := 0
-	launch := func(batch int) {
-		outstanding++
-		fut := pass(ctx, batch)
-		wg.Go(func() {
-			if err := fut(); err != nil {
-				clog.WarnContextf(ctx, "dispatch pass: %v", err)
-				mu.Lock()
-				errs = append(errs, err)
-				mu.Unlock()
-			}
-			done <- struct{}{}
-		})
-	}
-	passes := 1
-	launch(batchSize)
-	deadline := started.Add(window)
-	// claimedAtDry is the claim count when the job last ran out of work;
-	// running out again with no claim since means the queue has nothing.
-	var claimedAtDry int64
-loop:
-	for window > 0 {
-		remaining := time.Until(deadline)
-		if remaining <= 0 {
-			break
-		}
-		t := time.NewTimer(min(jittered(poll), remaining))
-		select {
-		case <-ctx.Done():
-			t.Stop()
-			break loop
-		case <-done:
-			t.Stop()
-			outstanding--
-			if outstanding > 0 {
-				continue
-			}
-			n := claimed.Load()
-			if n == claimedAtDry {
-				break loop
-			}
-			claimedAtDry = n
-			passes++
-			launch(batchSize)
-		case <-t.C:
-			if free := batchSize - int(inUse.Load()); free > 0 {
-				passes++
-				launch(free)
-			}
-		}
-	}
-	go func() {
-		for range outstanding {
-			<-done
-		}
-	}()
-	wg.Wait()
-	clog.InfoContextf(ctx, "dispatcher-job: %d key(s) claimed in %d dispatch pass(es) over %s (claim window %s)", claimed.Load(), passes, time.Since(started).Round(time.Millisecond), window)
-	return errors.Join(errs...)
-}
-
-// jittered spreads d uniformly over [d/2, 3d/2).
-func jittered(d time.Duration) time.Duration {
-	if d <= 1 {
-		return d
-	}
-	return d/2 + rand.N(d) //nolint:gosec // G404: jitter, not security-sensitive
-}
-
-// reservingQueue is the job's queue with its claims counted against the
-// job's own capacity. The dispatcher starts each claim on a goroutine of its
-// own, and a claim whose in-progress copy has landed can still be deleting
-// its queued object when the next poll counts free slots; counting only
-// running callbacks would offer that slot again, and the job's sidecar,
-// sized for batchSize runs, would carry more. A claim takes a slot of inUse
-// when its Start begins and gives it back if the Start fails; a started
-// key's slot is released when its callback returns (releaseSlot). first is
-// told of the first key the job claims.
-type reservingQueue struct {
-	workqueue.Interface
-	inUse *atomic.Int64
-	first func(key string)
-	once  sync.Once
-}
-
-var (
-	_ workqueue.Interface     = (*reservingQueue)(nil)
-	_ workqueue.CapacityAware = (*reservingQueue)(nil)
-)
-
-func (q *reservingQueue) Enumerate(ctx context.Context) ([]workqueue.ObservedInProgressKey, []workqueue.QueuedKey, []workqueue.DeadLetteredKey, error) {
-	wip, next, dead, err := q.Interface.Enumerate(ctx)
-	return wip, q.reserving(next), dead, err
-}
-
-// EnumerateWithCapacity keeps the queue's capacity-aware listing when it
-// has one, and is a plain Enumerate otherwise.
-func (q *reservingQueue) EnumerateWithCapacity(ctx context.Context, totalCapacity int) ([]workqueue.ObservedInProgressKey, []workqueue.QueuedKey, []workqueue.DeadLetteredKey, error) {
-	bounded, ok := q.Interface.(workqueue.CapacityAware)
-	if !ok {
-		return q.Enumerate(ctx)
-	}
-	wip, next, dead, err := bounded.EnumerateWithCapacity(ctx, totalCapacity)
-	return wip, q.reserving(next), dead, err
-}
-
-func (q *reservingQueue) reserving(next []workqueue.QueuedKey) []workqueue.QueuedKey {
-	out := make([]workqueue.QueuedKey, 0, len(next))
-	for _, k := range next {
-		out = append(out, reservingKey{QueuedKey: k, q: q})
-	}
-	return out
-}
-
-// reservingKey is a queued key whose Start holds a slot of its queue's
-// inUse while it runs and, when it succeeds, until the key's callback
-// returns.
-type reservingKey struct {
-	workqueue.QueuedKey
-	q *reservingQueue
-}
-
-func (k reservingKey) Start(ctx context.Context) (workqueue.OwnedInProgressKey, error) {
-	k.q.inUse.Add(1)
-	oip, err := k.QueuedKey.Start(ctx)
-	if err != nil {
-		k.q.inUse.Add(-1)
-		return nil, err
-	}
-	k.q.once.Do(func() { k.q.first(k.Name()) })
-	return oip, nil
-}
-
-// releaseSlot wraps a dispatch callback to give back the slot its key's
-// Start took (reservingKey) once the callback returns.
-func releaseSlot(f dispatcher.Callback, inUse *atomic.Int64) dispatcher.Callback {
-	return func(ctx context.Context, key string, opts workqueue.Options) error {
-		defer inUse.Add(-1)
-		return f(ctx, key, opts)
-	}
-}
-
-// firstClaimLogger logs, once, how long after the job started it claimed
-// its first key: with the execution's creation time, what a run waits to be
-// picked up.
-func firstClaimLogger(ctx context.Context, started time.Time) func(key string) {
-	return func(key string) {
-		clog.InfoContextf(ctx, "dispatcher-job: first key %q claimed %s after startup", key, time.Since(started).Round(time.Millisecond))
 	}
 }
 
