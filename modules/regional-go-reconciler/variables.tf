@@ -467,6 +467,34 @@ variable "scheduled_wait_warning_threshold" {
   }
 }
 
+variable "claim_window" {
+  description = "Long mode only: how long after it starts a job execution keeps claiming keys into its free slots (every claim_poll, while it still has work in flight) instead of claiming once at startup. \"0s\" keeps the single pass at startup. Leave room within job_timeout for a key claimed at the end of the window to finish."
+  type        = string
+  default     = "0s"
+
+  validation {
+    condition = (
+      can(regex("^(0s|[1-9][0-9]*(ns|us|µs|ms|s|m|h))$", var.claim_window)) &&
+      can(timeadd("2000-01-01T00:00:00Z", var.claim_window))
+    )
+    error_message = "claim_window must be 0s or a positive Go duration with one unit (for example, 600s or 10m)."
+  }
+}
+
+variable "claim_poll" {
+  description = "Long mode only: how often, jittered by up to half either way, a job execution inside its claim_window looks for keys to claim into its free slots."
+  type        = string
+  default     = "10s"
+
+  validation {
+    condition = (
+      can(regex("^[1-9][0-9]*(ms|s|m)$", var.claim_poll)) &&
+      can(timeadd("2000-01-01T00:00:00Z", var.claim_poll))
+    )
+    error_message = "claim_poll must be a positive Go duration with one unit (for example, 10s)."
+  }
+}
+
 variable "execution_environment" {
   description = "The execution environment for the service (options: EXECUTION_ENVIRONMENT_GEN1, EXECUTION_ENVIRONMENT_GEN2)."
   type        = string

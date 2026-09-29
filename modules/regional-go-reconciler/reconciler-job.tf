@@ -10,6 +10,8 @@ locals {
     { name = "WORKQUEUE_TARGET", value = "http://localhost:8081" },
     { name = "WORKQUEUE_BUCKET", value = google_storage_bucket.global-workqueue[0].name },
     { name = "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD", value = var.scheduled_wait_warning_threshold },
+    { name = "WORKQUEUE_CLAIM_WINDOW", value = var.claim_window },
+    { name = "WORKQUEUE_CLAIM_POLL", value = var.claim_poll },
     { name = "METRICS_PORT", value = "2113" },
   ] : []
 
@@ -23,12 +25,13 @@ locals {
 }
 
 // Long-mode reconciler: a Cloud Run Job that fires once per cron tick.
-// The dispatcher-job container performs a single dispatch iteration and exits;
-// user reconciler containers run as sidecars on localhost:8081.
+// The dispatcher-job container claims keys (once at startup, or through
+// var.claim_window) and exits when the last one finishes; user reconciler
+// containers run as sidecars on localhost:8081.
 
 module "reconciler-job" {
   count              = var.mode == "long" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-cron"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -108,5 +111,4 @@ module "reconciler-job" {
   labels                = merge({ "service" : local.reconciler_service_name }, var.labels)
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.51.3"
 }
