@@ -37,6 +37,12 @@ variable "job_timeout" {
   default     = "3600s"
 }
 
+variable "claim_window" {
+  description = "Long mode only: how long after it starts a job execution keeps claiming keys into its free slots (every claim_poll, while it still has work in flight) instead of claiming once at startup. \"0s\" keeps the single pass at startup. Leave room within job_timeout for a key claimed at the end of the window to finish."
+  type        = string
+  default     = "0s"
+}
+
 variable "max-retry" {
   description = "The maximum number of times a task will be retried before being moved to the dead-letter queue. Set to 0 for unlimited retries. Defaults to null so the inner workqueue module's default applies."
   type        = number
