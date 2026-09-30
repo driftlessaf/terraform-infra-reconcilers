@@ -190,6 +190,7 @@ Key variables:
 - `broker`: Map of region to CloudEvents broker topic
 - `resync_period_hours`: How often to run full reconciliation (1-744)
 - `paused`: Pause both cron and push listeners
+- `enable_push_listener`: Set false to reconcile only on resync, e.g. when most pushes to matched paths are the reconciler's own writes
 - `deletion_protection`: Prevent accidental deletion (disable during initial rollout)
 
 ## Prebuilt sidecars
@@ -233,6 +234,7 @@ No resources.
 | <a name="input_egress"></a> [egress](#input\_egress) | Which type of egress traffic to send through the VPC.<br/><br/>- ALL\_TRAFFIC sends all traffic through regional VPC network. This should be used if service is not expected to egress to the Internet.<br/>- PRIVATE\_RANGES\_ONLY sends only traffic to private IP addresses through regional VPC network | `string` | `"ALL_TRAFFIC"` | no |
 | <a name="input_enable_dead_letter_alerting"></a> [enable\_dead\_letter\_alerting](#input\_enable\_dead\_letter\_alerting) | Whether to enable alerting for dead-lettered keys. | `bool` | `true` | no |
 | <a name="input_enable_profiler"></a> [enable\_profiler](#input\_enable\_profiler) | Enable continuous profiling for the service.  This has a small performance impact, which shouldn't matter for production services. | `bool` | `true` | no |
+| <a name="input_enable_push_listener"></a> [enable\_push\_listener](#input\_enable\_push\_listener) | Whether to reconcile matched paths as soon as a push changes them. When false, the push listener receives no push events and only the resync cron enqueues paths. | `bool` | `true` | no |
 | <a name="input_error_event_ingress"></a> [error\_event\_ingress](#input\_error\_event\_ingress) | Optional CloudEvents ingress for emitting reconciler error events. Set to null to disable. | <pre>object({<br/>    name = string<br/>  })</pre> | `null` | no |
 | <a name="input_execution_environment"></a> [execution\_environment](#input\_execution\_environment) | The execution environment for the service (options: EXECUTION\_ENVIRONMENT\_GEN1, EXECUTION\_ENVIRONMENT\_GEN2). | `string` | `"EXECUTION_ENVIRONMENT_GEN2"` | no |
 | <a name="input_github_app_id"></a> [github\_app\_id](#input\_github\_app\_id) | GitHub App ID. When non-zero, the push listener and resync cron authenticate using the app instead of Octo STS. | `number` | `0` | no |

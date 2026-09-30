@@ -470,6 +470,12 @@ variable "primary-region" {
   type        = string
 }
 
+variable "enable_push_listener" {
+  description = "Whether to reconcile matched paths as soon as a push changes them. When false, the push listener receives no push events and only the resync cron enqueues paths."
+  type        = bool
+  default     = true
+}
+
 variable "paused" {
   description = "Whether to pause both the cron service and push listener"
   type        = bool

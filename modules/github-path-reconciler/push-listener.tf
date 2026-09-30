@@ -66,7 +66,7 @@ locals {
   # webhooks for reach the handler. The handler discovers per-repo config by
   # fetching .{identity}.yaml at the pushed SHA. This mirrors the pattern in
   # cloudevents-prs in the github-metapathreconciler module.
-  push_subscriptions = var.paused ? {} : (
+  push_subscriptions = var.paused || !var.enable_push_listener ? {} : (
     length(var.repos) > 0 ? {
       for pair in setproduct(keys(var.regions), var.repos) :
       "${pair[1].owner}/${pair[1].repo}/${pair[0]}" => {
