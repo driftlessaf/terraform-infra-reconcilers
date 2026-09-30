@@ -233,20 +233,25 @@ variable "queue_readers" {
 
 variable "retain_bucket_admin_binding" {
   description = <<-EOT
-    Keep the roles/storage.admin binding on the workqueue bucket. True (the
-    default) is the access this module has always granted. False drops it,
-    leaving the receiver, dispatcher and additional_bucket_members on the
-    additive roles/storage.objectUser grants, which is everything the queue
-    actually uses.
+    Keep the roles/storage.admin binding on the workqueue bucket. False (the
+    default) drops it, leaving the receiver, dispatcher and
+    additional_bucket_members on the additive roles/storage.objectUser grants,
+    which is everything the queue actually uses: every GCS call in
+    go-driftlessaf/workqueue/gcs is object-scoped.
 
-    It exists so the reduction can be taken one deployment at a time —
-    dev, then staging, then production — rather than reaching every caller of
-    this module on whichever apply runs first. Flipping it is the only step
-    that revokes anything. A later release removes both the binding and this
-    variable, so treat false as the destination rather than a supported
-    configuration.
+    True is the escape hatch, not the norm. Set it if this deployment's
+    objectUser grants have not been applied yet — the binding's destroy is not
+    ordered after the members' create, so a caller taking both in one apply has
+    a brief window with no access. An environment that has provisioned since
+    the grants were introduced already holds them and needs nothing.
+
+    The default was true for one release, so the reduction could be taken and
+    watched a deployment at a time: dev, then staging, then production. That
+    happened, on every shape that exists — idle and loaded queues, a sharded
+    deployment across all its shards, and production. The default now carries
+    the result. A later release removes the binding and this variable together.
   EOT
   type        = bool
-  default     = true
+  default     = false
   nullable    = false
 }

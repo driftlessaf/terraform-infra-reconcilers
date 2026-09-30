@@ -175,14 +175,23 @@ remove anyone your own configuration grants that same role and then reverse
 your grant on every apply. You are free to add your own members on the bucket
 for any role, including the ones below.
 
-One binding is left, on `roles/storage.admin`, and it is on its way out. It
-duplicates access the additive `objectUser` grants cover, so the identities
-hold both until it goes. Nothing you configure needs to depend on it.
+There was one binding, on `roles/storage.admin`, and it is gone by default. It
+duplicated access the additive `objectUser` grants cover, so nothing you
+configure should depend on it.
 
-Set `retain_bucket_admin_binding = false` to drop it for one deployment. That
-is the only step that takes access away, so take it where you can watch the
-result — dev, then staging, then production — rather than everywhere at once.
-A later release removes the binding and the variable together.
+It was retained by default for one release so the reduction could be taken and
+watched a deployment at a time rather than reaching every caller on whichever
+apply ran first. That is done — on idle and loaded queues, on a sharded
+deployment across all of its shards, and in production — so the default now
+carries the result. A caller that sets nothing drops the binding on its next
+apply and keeps the `objectUser` grants.
+
+Set `retain_bucket_admin_binding = true` to defer. The one case that needs it:
+your deployment has not applied the `objectUser` grants yet, because the
+binding's destroy is not ordered after the members' create, so taking both in
+one apply leaves a brief window with no access. Applying once at `true`, then
+removing the override, sequences them. A later release removes the binding and
+the variable together.
 
 <!-- BEGIN_TF_DOCS -->
 ## Read-only access for producers

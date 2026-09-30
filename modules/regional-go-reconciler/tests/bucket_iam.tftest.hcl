@@ -114,9 +114,50 @@ run "sharded_deployment_grants_nothing_on_a_bucket_it_does_not_create" {
   }
 }
 
-# The inlined dispatcher runs as var.service_account, which is in the outgoing
-# binding as well as the additive grants. Dropping the binding must not leave
-# it short.
+# The binding is gone by default here too, and the inlined dispatcher -- which
+# runs as var.service_account and was named in that binding -- has to be left
+# standing on the additive grants rather than short.
+run "the_inlined_dispatcher_keeps_its_grant_with_the_binding_gone_by_default" {
+  command = plan
+
+  assert {
+    condition     = length(google_storage_bucket_iam_binding.global-authorize-access) == 0
+    error_message = "the storage.admin binding must be gone by default"
+  }
+  assert {
+    condition = contains(
+      google_storage_bucket_iam_member.queue-writers[*].member,
+      "serviceAccount:fixture@fixture-project.iam.gserviceaccount.com",
+    )
+    error_message = "the reconciler service account must keep a write grant once the binding is gone"
+  }
+}
+
+# True is the escape hatch, for a caller whose objectUser grants have not been
+# applied yet. It has to restore the binding with the inlined dispatcher still
+# named in it, or deferring would itself drop that account's broader access.
+run "retaining_the_binding_restores_it_with_the_inlined_dispatcher" {
+  command = plan
+
+  variables {
+    retain_bucket_admin_binding = true
+  }
+
+  assert {
+    condition     = google_storage_bucket_iam_binding.global-authorize-access[0].role == "roles/storage.admin"
+    error_message = "retain_bucket_admin_binding = true must materialize the binding on its original role"
+  }
+  assert {
+    condition = contains(
+      google_storage_bucket_iam_binding.global-authorize-access[0].members,
+      "serviceAccount:fixture@fixture-project.iam.gserviceaccount.com",
+    )
+    error_message = "the retained binding must still name the inlined dispatcher's account"
+  }
+}
+
+# The explicit false, now equal to the default, kept because a caller may still
+# write it and it must not diverge from the default's behaviour.
 run "dropping_the_admin_binding_leaves_the_inlined_dispatcher_granted" {
   command = plan
 

@@ -60,16 +60,39 @@ run "receiver_and_dispatcher_hold_object_user_additively" {
   }
 }
 
-# The binding these members replace. It is still here on purpose: dropping it in
-# the same change that adds the members would put a revoke and a grant in one
-# apply with no ordering between them. Removing it is a separate change, and
-# this assertion is what that change has to update.
-run "outgoing_storage_admin_binding_is_still_present" {
+# The binding these members replace is gone by default. It was retained for one
+# release so the reduction could be taken and watched a deployment at a time,
+# rather than reaching every caller on whichever apply ran first. That happened,
+# so the default now carries the result and a caller that sets nothing takes the
+# reduction on its next apply.
+run "storage_admin_binding_is_absent_by_default" {
   command = plan
 
   assert {
+    condition     = length(google_storage_bucket_iam_binding.global-authorize-access) == 0
+    error_message = "the storage.admin binding must be gone by default; objectUser members replace it"
+  }
+}
+
+# True is the escape hatch, for a caller whose objectUser grants have not been
+# applied yet: the binding's destroy is not ordered after the members' create, so
+# taking both in one apply leaves a brief window with no access. It has to keep
+# working, and keep granting exactly what it granted before, or deferring is not
+# actually available.
+run "retaining_the_binding_restores_it_unchanged" {
+  command = plan
+
+  variables {
+    retain_bucket_admin_binding = true
+  }
+
+  assert {
     condition     = google_storage_bucket_iam_binding.global-authorize-access[0].role == "roles/storage.admin"
-    error_message = "the outgoing binding must keep its original role until it is removed outright"
+    error_message = "retain_bucket_admin_binding = true must materialize the binding on its original role"
+  }
+  assert {
+    condition     = length(google_storage_bucket_iam_member.queue-writers) == 2
+    error_message = "retaining the binding must not disturb the additive objectUser grants"
   }
 }
 

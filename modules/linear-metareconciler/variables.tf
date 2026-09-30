@@ -312,6 +312,6 @@ variable "retain_bucket_admin_binding" {
     rather than a supported configuration.
   EOT
   type        = bool
-  default     = true
+  default     = false
   nullable    = false
 }
