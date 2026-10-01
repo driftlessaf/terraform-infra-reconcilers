@@ -3,6 +3,16 @@ Copyright 2026 Chainguard, Inc.
 SPDX-License-Identifier: Apache-2.0
 */
 
+terraform {
+  required_providers {
+    ko     = { source = "ko-build/ko" }
+    cosign = { source = "chainguard-dev/cosign" }
+    # Declare transitive providers so test mocks attach at this module's root.
+    google      = { source = "hashicorp/google" }
+    google-beta = { source = "hashicorp/google-beta" }
+  }
+}
+
 # Regional Go reconciler for processing Linear issues and comments
 module "reconciler" {
   source             = "../regional-go-reconciler"
@@ -18,8 +28,14 @@ module "reconciler" {
   egress          = var.egress
 
   # Workqueue configuration
+  mode            = var.mode
   concurrent-work = var.concurrent-work
   max-retry       = var.max-retry
+
+  # Long mode only: the reconciler runs as a Cloud Run Job per dispatch tick.
+  job_timeout  = var.job_timeout
+  claim_window = var.claim_window
+  claim_poll   = var.claim_poll
 
   # Container configuration
   containers = var.containers
@@ -109,6 +125,7 @@ module "dashboard" {
   name            = var.name
   max_retry       = var.max-retry
   concurrent_work = var.concurrent-work
+  mode            = var.mode
 
   sections = {
     agents = true

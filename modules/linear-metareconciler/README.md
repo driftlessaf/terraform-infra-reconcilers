@@ -7,15 +7,6 @@ No requirements.
 
 No providers.
 
-## Modules
-
-| Name | Source | Version |
-| ---- | ------ | ------- |
-| <a name="module_cloudevents-comments"></a> [cloudevents-comments](#module\_cloudevents-comments) | ../cloudevents-workqueue | n/a |
-| <a name="module_cloudevents-issues"></a> [cloudevents-issues](#module\_cloudevents-issues) | ../cloudevents-workqueue | n/a |
-| <a name="module_dashboard"></a> [dashboard](#module\_dashboard) | ../dashboard/reconciler | n/a |
-| <a name="module_reconciler"></a> [reconciler](#module\_reconciler) | ../regional-go-reconciler | n/a |
-
 ## Resources
 
 No resources.
@@ -25,6 +16,8 @@ No resources.
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_broker"></a> [broker](#input\_broker) | A map from region names to the Pub/Sub topic used as a CloudEvents broker | `map(string)` | n/a | yes |
+| <a name="input_claim_poll"></a> [claim\_poll](#input\_claim\_poll) | Long mode only: how often, jittered by up to half either way, a job execution inside its claim\_window looks for keys to claim into its free slots. | `string` | `"10s"` | no |
+| <a name="input_claim_window"></a> [claim\_window](#input\_claim\_window) | Long mode only: how long after it starts a job execution keeps claiming keys into its free slots (every claim\_poll, while it still has work in flight) instead of claiming once at startup. "0s" keeps the single pass at startup. Leave room within job\_timeout for a key claimed at the end of the window to finish. | `string` | `"0s"` | no |
 | <a name="input_comment_filters"></a> [comment\_filters](#input\_comment\_filters) | CloudEvents filters for selecting Linear comment events to process.<br/><br/>Comment events carry a `team` extension extracted from the embedded issue<br/>URL by the linear-events trampoline, so they can be filtered by team the<br/>same way as issue events.<br/><br/>Examples:<br/>  # All comment events<br/>  comment\_filters = [<br/>    { "type" = "dev.chainguard.linear.comment" }<br/>  ]<br/><br/>  # Comment events from a specific team<br/>  comment\_filters = [<br/>    { "type" = "dev.chainguard.linear.comment", "team" = "ENG" }<br/>  ] | `list(map(string))` | `[]` | no |
 | <a name="input_comment_priority"></a> [comment\_priority](#input\_comment\_priority) | Priority for comment events in the workqueue | `number` | `25` | no |
 | <a name="input_comment_skip_authors"></a> [comment\_skip\_authors](#input\_comment\_skip\_authors) | Linear user UUIDs whose comments should NOT trigger reconciliation.<br/><br/>Useful for ignoring comments from automation bots that post to issues<br/>without expecting the reconciler to act (e.g. an issue-sizing bot whose<br/>comments are conversational, not directives). The trampoline emits the<br/>comment author as the `authorid` CloudEvent extension; each entry here<br/>becomes a `NOT attributes.ce-authorid="<uuid>"` clause AND-composed with<br/>`comment_filters`, so matching events are filtered out at the PubSub<br/>subscription layer — the reconciler service is never invoked.<br/><br/>Look up Linear user UUIDs via the GraphQL API or the Linear admin UI;<br/>display names are not used because they can drift if a user renames. | `list(string)` | `[]` | no |
@@ -37,8 +30,10 @@ No resources.
 | <a name="input_error_event_ingress"></a> [error\_event\_ingress](#input\_error\_event\_ingress) | Optional CloudEvents ingress for emitting reconciler error events. Set to null to disable. | <pre>object({<br/>    name = string<br/>  })</pre> | `null` | no |
 | <a name="input_issue_filters"></a> [issue\_filters](#input\_issue\_filters) | CloudEvents filters for selecting Linear issue events to process.<br/><br/>Each filter is a map of attribute key-value pairs that must match exactly.<br/>Multiple filters are combined with OR logic.<br/><br/>Examples:<br/>  # All issue events<br/>  issue\_filters = [<br/>    { "type" = "dev.chainguard.linear.issue" }<br/>  ]<br/><br/>  # Issue events from a specific team<br/>  issue\_filters = [<br/>    { "type" = "dev.chainguard.linear.issue", "team" = "ENG" }<br/>  ] | `list(map(string))` | <pre>[<br/>  {<br/>    "type": "dev.chainguard.linear.issue"<br/>  }<br/>]</pre> | no |
 | <a name="input_issue_priority"></a> [issue\_priority](#input\_issue\_priority) | Priority for issue events in the workqueue | `number` | `50` | no |
+| <a name="input_job_timeout"></a> [job\_timeout](#input\_job\_timeout) | Maximum time allowed for a single long-mode job execution (e.g. "3600s"). Only used when mode is "long". | `string` | `"3600s"` | no |
 | <a name="input_launch_stage"></a> [launch\_stage](#input\_launch\_stage) | The launch stage of the Cloud Run service (e.g. BETA to leverage features like disk volumes). | `string` | `"GA"` | no |
 | <a name="input_max-retry"></a> [max-retry](#input\_max-retry) | The maximum number of times a task will be retried. | `number` | `3` | no |
+| <a name="input_mode"></a> [mode](#input\_mode) | Reconciler mode. "short" (default) runs the reconciler and dispatcher as Cloud Run services. "long" runs a Cloud Run Job per dispatch tick, with the dispatcher and reconciler in one execution, for reconciliations that run longer than a request should be held open. | `string` | `"short"` | no |
 | <a name="input_name"></a> [name](#input\_name) | Name for the reconciler service | `string` | n/a | yes |
 | <a name="input_notification_channels"></a> [notification\_channels](#input\_notification\_channels) | Notification channels for alerts | `list(string)` | `[]` | no |
 | <a name="input_observability_role"></a> [observability\_role](#input\_observability\_role) | Fully-qualified id of a single role (e.g. from the observability-role module) to grant the service account in place of the three built-in observability roles (monitoring.metricWriter, cloudtrace.agent, cloudprofiler.agent). Collapsing to one role keeps large projects under the 1,500-member IAM policy limit. | `string` | `null` | no |
@@ -48,6 +43,7 @@ No resources.
 | <a name="input_regions"></a> [regions](#input\_regions) | A map from region names to a network and subnetwork. | <pre>map(object({<br/>    network = string<br/>    subnet  = string<br/>  }))</pre> | n/a | yes |
 | <a name="input_request_timeout_seconds"></a> [request\_timeout\_seconds](#input\_request\_timeout\_seconds) | The request timeout for the service in seconds. | `number` | `300` | no |
 | <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags to bind to this module's taggable resources, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
+| <a name="input_retain_bucket_admin_binding"></a> [retain\_bucket\_admin\_binding](#input\_retain\_bucket\_admin\_binding) | Keep the roles/storage.admin binding on the workqueue bucket. True (the<br/>default) is the access this module has always granted. False drops it,<br/>leaving the queue identities on the additive roles/storage.objectUser<br/>grants, which is everything the queue actually uses.<br/><br/>Forwarded to regional-go-reconciler. It exists so the reduction can be taken one deployment<br/>at a time -- dev, then staging, then production -- rather than reaching<br/>every caller on whichever apply runs first. A later release removes the<br/>binding and this variable together, so treat false as the destination<br/>rather than a supported configuration. | `bool` | `false` | no |
 | <a name="input_service_account"></a> [service\_account](#input\_service\_account) | Service account email to run the reconciler | `string` | n/a | yes |
 | <a name="input_team"></a> [team](#input\_team) | Team label for the service | `string` | n/a | yes |
 | <a name="input_trace_event_ingress"></a> [trace\_event\_ingress](#input\_trace\_event\_ingress) | Optional CloudEvents broker for agent-trace and state-transition emission, forwarded to the underlying reconciler. When set, the reconciler is authorized to publish to the named broker and EVENT\_INGRESS\_URI is populated on the reconciler containers. Set to null to disable. | <pre>object({<br/>    name = string<br/>  })</pre> | `null` | no |

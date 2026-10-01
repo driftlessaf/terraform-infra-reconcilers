@@ -203,6 +203,34 @@ variable "concurrent-work" {
   default     = 1
 }
 
+variable "mode" {
+  description = "Reconciler mode. \"short\" (default) runs the reconciler and dispatcher as Cloud Run services. \"long\" runs a Cloud Run Job per dispatch tick, with the dispatcher and reconciler in one execution, for reconciliations that run longer than a request should be held open."
+  type        = string
+  default     = "short"
+  validation {
+    condition     = contains(["short", "long"], var.mode)
+    error_message = "mode must be \"short\" or \"long\""
+  }
+}
+
+variable "job_timeout" {
+  description = "Maximum time allowed for a single long-mode job execution (e.g. \"3600s\"). Only used when mode is \"long\"."
+  type        = string
+  default     = "3600s"
+}
+
+variable "claim_window" {
+  description = "Long mode only: how long after it starts a job execution keeps claiming keys into its free slots (every claim_poll, while it still has work in flight) instead of claiming once at startup. \"0s\" keeps the single pass at startup. Leave room within job_timeout for a key claimed at the end of the window to finish."
+  type        = string
+  default     = "0s"
+}
+
+variable "claim_poll" {
+  description = "Long mode only: how often, jittered by up to half either way, a job execution inside its claim_window looks for keys to claim into its free slots."
+  type        = string
+  default     = "10s"
+}
+
 variable "max-retry" {
   description = "The maximum number of times a task will be retried."
   type        = number
