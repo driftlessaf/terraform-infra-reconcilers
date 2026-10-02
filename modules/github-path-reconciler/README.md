@@ -218,6 +218,16 @@ No requirements.
 
 No providers.
 
+## Modules
+
+| Name | Source | Version |
+| ---- | ------ | ------- |
+| <a name="module_authorize-receiver-per-region"></a> [authorize-receiver-per-region](#module\_authorize-receiver-per-region) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_cron"></a> [cron](#module\_cron) | ../../../../public/terraform-infra-common/modules/cron | n/a |
+| <a name="module_push-listener"></a> [push-listener](#module\_push-listener) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
+| <a name="module_push-subscription"></a> [push-subscription](#module\_push-subscription) | ../../../../public/terraform-infra-common/modules/cloudevent-trigger | n/a |
+| <a name="module_reconciler"></a> [reconciler](#module\_reconciler) | ../regional-go-reconciler | n/a |
+
 ## Resources
 
 No resources.
@@ -225,7 +235,7 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_batch-size"></a> [batch-size](#input\_batch-size) | Optional cap on how much work to launch per dispatcher pass. | `number` | `null` | no |
 | <a name="input_broker"></a> [broker](#input\_broker) | A map from each of the input region names to the name of the Broker topic in that region. | `map(string)` | n/a | yes |
 | <a name="input_claim_window"></a> [claim\_window](#input\_claim\_window) | Long mode only: how long after it starts a job execution keeps claiming keys into its free slots (every claim\_poll, while it still has work in flight) instead of claiming once at startup. "0s" keeps the single pass at startup. Leave room within job\_timeout for a key claimed at the end of the window to finish. | `string` | `"0s"` | no |
@@ -274,7 +284,7 @@ No resources.
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue. |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The workqueue receiver object for connecting triggers. |
 <!-- END_TF_DOCS -->

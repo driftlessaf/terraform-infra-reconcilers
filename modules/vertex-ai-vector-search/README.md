@@ -81,6 +81,10 @@ to partition data by corpus at the application level.
 | ---- | ------- |
 | <a name="provider_google"></a> [google](#provider\_google) | >= 7.9.0 |
 
+## Modules
+
+No modules.
+
 ## Resources
 
 | Name | Type |

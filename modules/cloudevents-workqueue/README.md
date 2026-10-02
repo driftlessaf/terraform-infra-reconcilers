@@ -265,6 +265,8 @@ No requirements.
 | <a name="input_regions"></a> [regions](#input\_regions) | A map of regions to launch services in (see regional-go-service module for format) | <pre>map(object({<br/>    network = string<br/>    subnet  = string<br/>  }))</pre> | n/a | yes |
 | <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags to bind to this module's taggable resources, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
 | <a name="input_scaling"></a> [scaling](#input\_scaling) | Scaling of the subscriber service, passed to regional-go-service. Bound max\_instances (and service\_max\_instances, which bounds every revision receiving traffic combined) when a replacement subscriber holds per-instance resources such as database connections. | <pre>object({<br/>    min_instances                    = optional(number, 0)<br/>    max_instances                    = optional(number, 100)<br/>    service_max_instances            = optional(number)<br/>    max_instance_request_concurrency = optional(number)<br/>  })</pre> | `{}` | no |
+| <a name="input_subscriber_extra_env"></a> [subscriber\_extra\_env](#input\_subscriber\_extra\_env) | Additional environment variables for a replacement subscriber command. | <pre>list(object({<br/>    name  = string<br/>    value = string<br/>  }))</pre> | `[]` | no |
+| <a name="input_subscriber_source"></a> [subscriber\_source](#input\_subscriber\_source) | Optional replacement Go command for the subscriber service, with a working directory and import path. | <pre>object({<br/>    working_dir = string<br/>    importpath  = string<br/>  })</pre> | `null` | no |
 | <a name="input_team"></a> [team](#input\_team) | Team label to apply to resources (replaces deprecated 'squad'). | `string` | n/a | yes |
 | <a name="input_workqueue"></a> [workqueue](#input\_workqueue) | The workqueue to send events to | <pre>object({<br/>    name = string<br/>  })</pre> | n/a | yes |
 
@@ -273,4 +275,5 @@ No requirements.
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_subscriber"></a> [subscriber](#output\_subscriber) | n/a |
+| <a name="output_subscriber_service_account"></a> [subscriber\_service\_account](#output\_subscriber\_service\_account) | Subscriber service account for read grants on caller-owned state. |
 <!-- END_TF_DOCS -->

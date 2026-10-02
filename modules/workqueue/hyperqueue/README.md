@@ -55,19 +55,27 @@ No requirements.
 ## Providers
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="provider_google"></a> [google](#provider\_google) | n/a |
+
+## Modules
+
+| Name | Source | Version |
+| ---- | ------ | ------- |
+| <a name="module_hyperqueue-calls-receiver"></a> [hyperqueue-calls-receiver](#module\_hyperqueue-calls-receiver) | ../../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_hyperqueue-service"></a> [hyperqueue-service](#module\_hyperqueue-service) | ../../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
+| <a name="module_workqueue"></a> [workqueue](#module\_workqueue) | ../ | n/a |
 
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [google_service_account.hyperqueue](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_batch-size"></a> [batch-size](#input\_batch-size) | Optional cap on how much work to launch per dispatcher pass. | `number` | `null` | no |
 | <a name="input_concurrent-work"></a> [concurrent-work](#input\_concurrent-work) | The amount of concurrent work to dispatch at a given time (distributed across shards). | `number` | n/a | yes |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Whether to enable delete protection for the service. | `bool` | `true` | no |
@@ -92,6 +100,6 @@ No requirements.
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The hyperqueue router service (clients queue work here) |
 <!-- END_TF_DOCS -->

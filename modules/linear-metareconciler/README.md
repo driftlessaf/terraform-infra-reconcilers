@@ -7,6 +7,15 @@ No requirements.
 
 No providers.
 
+## Modules
+
+| Name | Source | Version |
+| ---- | ------ | ------- |
+| <a name="module_cloudevents-comments"></a> [cloudevents-comments](#module\_cloudevents-comments) | ../cloudevents-workqueue | n/a |
+| <a name="module_cloudevents-issues"></a> [cloudevents-issues](#module\_cloudevents-issues) | ../cloudevents-workqueue | n/a |
+| <a name="module_dashboard"></a> [dashboard](#module\_dashboard) | ../dashboard/reconciler | n/a |
+| <a name="module_reconciler"></a> [reconciler](#module\_reconciler) | ../regional-go-reconciler | n/a |
+
 ## Resources
 
 No resources.
@@ -43,7 +52,6 @@ No resources.
 | <a name="input_regions"></a> [regions](#input\_regions) | A map from region names to a network and subnetwork. | <pre>map(object({<br/>    network = string<br/>    subnet  = string<br/>  }))</pre> | n/a | yes |
 | <a name="input_request_timeout_seconds"></a> [request\_timeout\_seconds](#input\_request\_timeout\_seconds) | The request timeout for the service in seconds. | `number` | `300` | no |
 | <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags to bind to this module's taggable resources, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
-| <a name="input_retain_bucket_admin_binding"></a> [retain\_bucket\_admin\_binding](#input\_retain\_bucket\_admin\_binding) | Keep the roles/storage.admin binding on the workqueue bucket. True (the<br/>default) is the access this module has always granted. False drops it,<br/>leaving the queue identities on the additive roles/storage.objectUser<br/>grants, which is everything the queue actually uses.<br/><br/>Forwarded to regional-go-reconciler. It exists so the reduction can be taken one deployment<br/>at a time -- dev, then staging, then production -- rather than reaching<br/>every caller on whichever apply runs first. A later release removes the<br/>binding and this variable together, so treat false as the destination<br/>rather than a supported configuration. | `bool` | `false` | no |
 | <a name="input_service_account"></a> [service\_account](#input\_service\_account) | Service account email to run the reconciler | `string` | n/a | yes |
 | <a name="input_team"></a> [team](#input\_team) | Team label for the service | `string` | n/a | yes |
 | <a name="input_trace_event_ingress"></a> [trace\_event\_ingress](#input\_trace\_event\_ingress) | Optional CloudEvents broker for agent-trace and state-transition emission, forwarded to the underlying reconciler. When set, the reconciler is authorized to publish to the named broker and EVENT\_INGRESS\_URI is populated on the reconciler containers. Set to null to disable. | <pre>object({<br/>    name = string<br/>  })</pre> | `null` | no |

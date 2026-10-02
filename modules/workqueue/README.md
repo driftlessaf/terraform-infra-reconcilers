@@ -191,7 +191,6 @@ the `objectUser` grants, apply an intermediate version with
 after the members' create, so taking both in one apply leaves a brief window
 with no access. There is no override in this version.
 
-<!-- BEGIN_TF_DOCS -->
 ## Read-only access for producers
 
 A producer that decides whether to enqueue more needs to read the queue's depth,
@@ -218,6 +217,7 @@ see the Producer backpressure section of `gcs/README.md`. Note it counts ONE
 bucket: a sharded queue gives each shard its own, so a producer in front of
 `hyperqueue` needs a reader on each and has to sum them.
 
+<!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 No requirements.
@@ -225,15 +225,27 @@ No requirements.
 ## Providers
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="provider_google"></a> [google](#provider\_google) | n/a |
 | <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | n/a |
 | <a name="provider_random"></a> [random](#provider\_random) | n/a |
 
+## Modules
+
+| Name | Source | Version |
+| ---- | ------ | ------- |
+| <a name="module_change-trigger-calls-dispatcher"></a> [change-trigger-calls-dispatcher](#module\_change-trigger-calls-dispatcher) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_cron-trigger-calls-dispatcher"></a> [cron-trigger-calls-dispatcher](#module\_cron-trigger-calls-dispatcher) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_dispatcher-calls-error-broker"></a> [dispatcher-calls-error-broker](#module\_dispatcher-calls-error-broker) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_dispatcher-calls-target"></a> [dispatcher-calls-target](#module\_dispatcher-calls-target) | ../../../../public/terraform-infra-common/modules/authorize-private-service | n/a |
+| <a name="module_dispatcher-service"></a> [dispatcher-service](#module\_dispatcher-service) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
+| <a name="module_receiver-service"></a> [receiver-service](#module\_receiver-service) | ../../../../public/terraform-infra-common/modules/regional-go-service | n/a |
+| <a name="module_reenqueue"></a> [reenqueue](#module\_reenqueue) | ../../../../public/terraform-infra-common/modules/cron | n/a |
+
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [google-beta_google_project_service_identity.pubsub](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_project_service_identity) | resource |
 | [google_cloud_scheduler_job.cron](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_scheduler_job) | resource |
 | [google_monitoring_alert_policy.dead_letter_queue](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
@@ -249,6 +261,7 @@ No requirements.
 | [google_storage_bucket.global-workqueue](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket) | resource |
 | [google_storage_bucket_iam_member.dlq-operators](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_storage_bucket_iam_member.queue-readers](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
+| [google_storage_bucket_iam_member.queue-writers](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_storage_bucket_iam_member.reenqueue-bucket-access](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_storage_notification.global-object-change-notifications](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_notification) | resource |
 | [google_tags_location_tag_binding.global_workqueue_bucket](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/tags_location_tag_binding) | resource |
@@ -266,7 +279,7 @@ No requirements.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_batch-size"></a> [batch-size](#input\_batch-size) | Optional cap on how much work to launch per dispatcher pass. Defaults to ceil(concurrent-work / number of regions) when unset. | `number` | `null` | no |
 | <a name="input_candidate-window-factor"></a> [candidate-window-factor](#input\_candidate-window-factor) | How far each dispatch pass shuffles its candidates, as a multiple of the keys that pass can launch (window = factor x launch slots). Any whole number is valid, there are no special steps. 0 disables the shuffle: every dispatcher takes the head of the queue, so dispatchers sharing a queue race for the same keys and lose most contested claims. Raising it spreads dispatchers over more keys, lowering lost claims, at the cost of how long a key can sit unpicked (up to the factor in passes when only one dispatcher is running). Measured with three dispatchers, lost-claim share of the slowest: 16 -> 11.2%, 24 -> 8.0%, 32 -> 6.5%, 48 -> 4.2%, 64 -> 3.4%. 48 is the smallest that keeps the slowest dispatcher under 5% and is the library default (dispatcher.DefaultCandidateWindowFactor); the module defaults to 0 so spreading is opt-in per environment. Go lower only if pick latency matters more than contention, higher only if loss is still high with more dispatchers. Above about 96 the window reaches the enumeration limit and larger values change nothing, so the input is capped at 128. | `number` | `0` | no |
 | <a name="input_concurrent-work"></a> [concurrent-work](#input\_concurrent-work) | The amount of concurrent work to dispatch at a given time. | `number` | n/a | yes |
@@ -290,6 +303,7 @@ No requirements.
 | <a name="input_receiver_ingress"></a> [receiver\_ingress](#input\_receiver\_ingress) | The ingress traffic setting for the workqueue receiver service. INGRESS\_TRAFFIC\_ALL allows callers outside the VPC (e.g. Cloud Run services without VPC egress) to enqueue work. | `string` | `"INGRESS_TRAFFIC_INTERNAL_ONLY"` | no |
 | <a name="input_reconciler-service"></a> [reconciler-service](#input\_reconciler-service) | The name of the reconciler service that the workqueue will dispatch work to. | <pre>object({<br/>    name = string<br/>  })</pre> | n/a | yes |
 | <a name="input_regional-concurrent-work"></a> [regional-concurrent-work](#input\_regional-concurrent-work) | Optional cap on concurrent work in each dispatcher region. Defaults to ceil(concurrent-work / number of regions) when unset. Must be a positive integer when set. The global concurrent-work cap also applies. | `number` | `null` | no |
+| <a name="input_regional-connector"></a> [regional-connector](#input\_regional-connector) | Forwarded to the receiver and dispatcher services (regional-go-service) and the<br/>reenqueue job (cron). Optional per-region Serverless VPC Access connector,<br/>keyed by region name, as a fully qualified id<br/>projects/<project>/locations/<region>/connectors/<name>. A region present here<br/>egresses through the connector instead of direct VPC egress — either because<br/>Cloud NAT does not translate direct VPC egress from a Shared-VPC service<br/>project, or to amortize network-interface provisioning across instances<br/>instead of allocating one per instance/revision. Declared identically here and<br/>in regional-go-reconciler's variables.tf because dispatcher-service.tf,<br/>receiver.tf, and reenqueue.tf are shared files between the two modules. | `map(string)` | `{}` | no |
 | <a name="input_regions"></a> [regions](#input\_regions) | A map from region names to a network and subnetwork.  A service will be created in each region configured to egress the specified traffic via the specified subnetwork. | <pre>map(object({<br/>    network = string<br/>    subnet  = string<br/>  }))</pre> | n/a | yes |
 | <a name="input_resource_manager_tags"></a> [resource\_manager\_tags](#input\_resource\_manager\_tags) | Resource Manager tags to bind to this module's taggable resources, as tagKeys/<id> => tagValues/<id>. | `map(string)` | `{}` | no |
 | <a name="input_scheduled_wait_warning_threshold"></a> [scheduled\_wait\_warning\_threshold](#input\_scheduled\_wait\_warning\_threshold) | Duration after which claiming an eligible GCS workqueue key emits a structured warning (for example, "1h"). Set to "0s" to disable. | `string` | `"0s"` | no |
@@ -299,7 +313,7 @@ No requirements.
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue. |
 | <a name="output_dispatcher"></a> [dispatcher](#output\_dispatcher) | n/a |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | n/a |

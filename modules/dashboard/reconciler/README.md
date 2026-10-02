@@ -98,6 +98,28 @@ No requirements.
 
 No providers.
 
+## Modules
+
+| Name | Source | Version |
+| ---- | ------ | ------- |
+| <a name="module_agents"></a> [agents](#module\_agents) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/agents | n/a |
+| <a name="module_agents_dashboard"></a> [agents\_dashboard](#module\_agents\_dashboard) | ../../../../../public/terraform-infra-common/modules/dashboard | n/a |
+| <a name="module_agents_layout"></a> [agents\_layout](#module\_agents\_layout) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/layout | n/a |
+| <a name="module_alerts"></a> [alerts](#module\_alerts) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/alerts | n/a |
+| <a name="module_dashboard"></a> [dashboard](#module\_dashboard) | ../../../../../public/terraform-infra-common/modules/dashboard | n/a |
+| <a name="module_errgrp"></a> [errgrp](#module\_errgrp) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/errgrp | n/a |
+| <a name="module_github"></a> [github](#module\_github) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/github | n/a |
+| <a name="module_grpc"></a> [grpc](#module\_grpc) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/grpc | n/a |
+| <a name="module_http"></a> [http](#module\_http) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/http | n/a |
+| <a name="module_layout"></a> [layout](#module\_layout) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/layout | n/a |
+| <a name="module_microvm"></a> [microvm](#module\_microvm) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/microvm | n/a |
+| <a name="module_microvm_dashboard"></a> [microvm\_dashboard](#module\_microvm\_dashboard) | ../../../../../public/terraform-infra-common/modules/dashboard | n/a |
+| <a name="module_microvm_layout"></a> [microvm\_layout](#module\_microvm\_layout) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/layout | n/a |
+| <a name="module_reconciler-logs"></a> [reconciler-logs](#module\_reconciler-logs) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/logs | n/a |
+| <a name="module_resources"></a> [resources](#module\_resources) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/resources | n/a |
+| <a name="module_width"></a> [width](#module\_width) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/width | n/a |
+| <a name="module_workqueue-state"></a> [workqueue-state](#module\_workqueue-state) | ../../../../../public/terraform-infra-common/modules/dashboard/sections/workqueue | n/a |
+
 ## Resources
 
 No resources.
@@ -105,10 +127,9 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_alerts"></a> [alerts](#input\_alerts) | Map of alert names to alert configurations | <pre>map(object({<br/>    displayName         = string<br/>    documentation       = string<br/>    userLabels          = map(string)<br/>    project             = string<br/>    notificationChannel = string<br/>  }))</pre> | `{}` | no |
 | <a name="input_concurrent_work"></a> [concurrent\_work](#input\_concurrent\_work) | The amount of concurrent work the workqueue dispatches | `number` | `20` | no |
-| <a name="input_service_sections"></a> [service\_sections](#input\_service\_sections) | Service-specific dashboard sections (outputs of dashboard/sections/* modules) appended to the layout before the resources section | `list(any)` | `[]` | no |
 | <a name="input_labels"></a> [labels](#input\_labels) | Additional labels to add to the dashboard | `map(string)` | `{}` | no |
 | <a name="input_max_retry"></a> [max\_retry](#input\_max\_retry) | The maximum number of retry attempts for workqueue tasks | `number` | `20` | no |
 | <a name="input_mode"></a> [mode](#input\_mode) | Reconciler mode: "short" (Cloud Run Service) or "long" (Cloud Run Job per cron tick) | `string` | `"short"` | no |
@@ -117,12 +138,15 @@ No resources.
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | The GCP project ID | `string` | n/a | yes |
 | <a name="input_sections"></a> [sections](#input\_sections) | Configure visibility of optional dashboard sections | <pre>object({<br/>    github = optional(bool, false)<br/>    agents = optional(bool, false)<br/>    // microvm, unlike the others, is a namespace string rather than a bool:<br/>    // set it to the GKE namespace this reconciler's microvm agent pods run in<br/>    // to add the control-plane (scoped by service_name) and agent-pod (scoped<br/>    // to that namespace) sections. Null omits them.<br/>    microvm = optional(string, null)<br/>  })</pre> | `{}` | no |
 | <a name="input_service_name"></a> [service\_name](#input\_service\_name) | The name of the reconciler service (defaults to name-rec) | `string` | `""` | no |
+| <a name="input_service_sections"></a> [service\_sections](#input\_service\_sections) | Service-specific dashboard sections (outputs of dashboard/sections/* modules) appended to the layout before the resources section | `list(any)` | `[]` | no |
+| <a name="input_service_sections_first"></a> [service\_sections\_first](#input\_service\_sections\_first) | Place service-specific sections before the generic workqueue and reconciler sections. | `bool` | `false` | no |
 | <a name="input_shards"></a> [shards](#input\_shards) | Number of workqueue shards. When > 1, dashboard shows per-shard metrics. | `number` | `1` | no |
+| <a name="input_workqueue_latency_titles"></a> [workqueue\_latency\_titles](#input\_workqueue\_latency\_titles) | Optional titles for the workqueue processing and scheduled-wait latency charts. | <pre>object({<br/>    process = optional(string, "Work processing latency (p99)")<br/>    wait    = optional(string, "Work wait times (p99 by priority)")<br/>  })</pre> | `{}` | no |
 | <a name="input_workqueue_name"></a> [workqueue\_name](#input\_workqueue\_name) | The name of the workqueue (defaults to name-wq) | `string` | `""` | no |
 
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_json"></a> [json](#output\_json) | n/a |
 <!-- END_TF_DOCS -->

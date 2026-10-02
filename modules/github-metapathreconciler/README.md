@@ -64,5 +64,6 @@ No resources.
 
 | Name | Description |
 | ---- | ----------- |
+| <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue. |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The workqueue receiver object for connecting triggers. |
 <!-- END_TF_DOCS -->
