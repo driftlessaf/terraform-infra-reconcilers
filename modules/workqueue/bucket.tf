@@ -81,33 +81,6 @@ resource "google_storage_bucket_iam_member" "queue-writers" {
   member = local.queue_writer_members[count.index]
 }
 
-// The storage.admin binding the members above replace, on its way out.
-//
-// It is still here by default, and that default is the whole point. Adding the
-// grants above revokes nothing from anyone: every identity keeps the access it
-// had, and gains a narrower grant that duplicates part of it. So this module
-// can change under all of its callers without any of them losing anything on
-// the apply that picks it up.
-//
-// Dropping this binding is the step that revokes, and
-// retain_bucket_admin_binding is how a single deployment takes that step on
-// its own schedule -- dev first, then staging, then production. A later
-// release removes the binding and the variable together, once the deployments
-// have been through it.
-//
-// It stays a binding rather than becoming members because it is being deleted:
-// converting it would rewrite state for every caller twice.
-resource "google_storage_bucket_iam_binding" "global-authorize-access" {
-  count = local.workqueue_enabled && local.retain_bucket_admin_binding ? 1 : 0
-
-  bucket = google_storage_bucket.global-workqueue[0].name
-  role   = "roles/storage.admin"
-  members = concat([
-    "serviceAccount:${google_service_account.receiver[0].email}",
-    "serviceAccount:${google_service_account.dispatcher[0].email}",
-  ], local.additional_bucket_members)
-}
-
 // Read-only access to the bucket, for producers that need to see the queue's
 // shape rather than change it.
 //

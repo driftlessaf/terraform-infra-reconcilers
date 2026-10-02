@@ -8,10 +8,6 @@ moved {
   to   = google_storage_bucket.global-workqueue
 }
 moved {
-  from = module.workqueue[0].google_storage_bucket_iam_binding.global-authorize-access
-  to   = google_storage_bucket_iam_binding.global-authorize-access
-}
-moved {
   from = module.workqueue[0].google_pubsub_topic.global-object-change-notifications
   to   = google_pubsub_topic.global-object-change-notifications
 }
@@ -165,10 +161,6 @@ moved {
 moved {
   from = google_storage_bucket.global-workqueue
   to   = google_storage_bucket.global-workqueue[0]
-}
-moved {
-  from = google_storage_bucket_iam_binding.global-authorize-access
-  to   = google_storage_bucket_iam_binding.global-authorize-access[0]
 }
 moved {
   from = random_string.receiver

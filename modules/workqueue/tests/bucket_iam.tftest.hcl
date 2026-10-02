@@ -60,42 +60,6 @@ run "receiver_and_dispatcher_hold_object_user_additively" {
   }
 }
 
-# The binding these members replace is gone by default. It was retained for one
-# release so the reduction could be taken and watched a deployment at a time,
-# rather than reaching every caller on whichever apply ran first. That happened,
-# so the default now carries the result and a caller that sets nothing takes the
-# reduction on its next apply.
-run "storage_admin_binding_is_absent_by_default" {
-  command = plan
-
-  assert {
-    condition     = length(google_storage_bucket_iam_binding.global-authorize-access) == 0
-    error_message = "the storage.admin binding must be gone by default; objectUser members replace it"
-  }
-}
-
-# True is the escape hatch, for a caller whose objectUser grants have not been
-# applied yet: the binding's destroy is not ordered after the members' create, so
-# taking both in one apply leaves a brief window with no access. It has to keep
-# working, and keep granting exactly what it granted before, or deferring is not
-# actually available.
-run "retaining_the_binding_restores_it_unchanged" {
-  command = plan
-
-  variables {
-    retain_bucket_admin_binding = true
-  }
-
-  assert {
-    condition     = google_storage_bucket_iam_binding.global-authorize-access[0].role == "roles/storage.admin"
-    error_message = "retain_bucket_admin_binding = true must materialize the binding on its original role"
-  }
-  assert {
-    condition     = length(google_storage_bucket_iam_member.queue-writers) == 2
-    error_message = "retaining the binding must not disturb the additive objectUser grants"
-  }
-}
-
 # A queue reader must not be swept into the write grants. This module grants
 # three roles on one bucket -- objectUser, objectAdmin to dlq operators, and
 # objectViewer to readers -- and all three are additive for the same reason.
@@ -118,20 +82,12 @@ run "queue_readers_do_not_enter_the_write_grants" {
   }
 }
 
-# Flipping the gate is the only step that revokes anything, and it must revoke
-# only that binding: the additive grants the identities depend on afterwards
-# have to survive it.
-run "dropping_the_admin_binding_leaves_the_object_user_grants" {
+# objectUser is the whole of the queue's write access now that the storage.admin
+# binding is gone. Nothing may widen it back: the queue only ever calls
+# object-scoped GCS methods, so a broader role here would be unused privilege.
+run "object_user_is_the_only_write_access" {
   command = plan
 
-  variables {
-    retain_bucket_admin_binding = false
-  }
-
-  assert {
-    condition     = length(google_storage_bucket_iam_binding.global-authorize-access) == 0
-    error_message = "retain_bucket_admin_binding = false must remove the storage.admin binding"
-  }
   assert {
     condition     = length(google_storage_bucket_iam_member.queue-writers) == 2
     error_message = "the receiver and dispatcher must keep their grants once the binding is gone"

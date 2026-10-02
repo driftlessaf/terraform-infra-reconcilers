@@ -60,12 +60,7 @@ locals {
   // workqueue bucket, alongside the receiver and dispatcher. Inline deployments
   // set this to their service account, which is the identity their dispatcher
   // runs as -- so it needs the same object access rather than more.
-  //
-  // They are also still in the outgoing storage.admin binding, for the one
-  // release it survives.
   additional_bucket_members = []
-
-  retain_bucket_admin_binding = var.retain_bucket_admin_binding
 
   // queue_reader_members are IAM members granted roles/storage.objectViewer on
   // the workqueue bucket, so a producer can read the queue's depth without also

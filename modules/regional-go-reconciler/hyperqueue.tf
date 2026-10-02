@@ -36,8 +36,7 @@ module "workqueue-sharded" {
   notification_channels = var.notification_channels
   labels                = var.labels
 
-  multi_regional_location     = var.multi_regional_location
-  retain_bucket_admin_binding = var.retain_bucket_admin_binding
+  multi_regional_location = var.multi_regional_location
 
   error_event_ingress = var.error_event_ingress
 

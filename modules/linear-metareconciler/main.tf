@@ -43,12 +43,12 @@ module "reconciler" {
   request_timeout_seconds = var.request_timeout_seconds
   launch_stage            = var.launch_stage
 
-  notification_channels       = var.notification_channels
-  deletion_protection         = var.deletion_protection
-  error_event_ingress         = var.error_event_ingress
-  trace_event_ingress         = var.trace_event_ingress
-  resource_manager_tags       = var.resource_manager_tags
-  retain_bucket_admin_binding = var.retain_bucket_admin_binding
+  notification_channels = var.notification_channels
+  deletion_protection   = var.deletion_protection
+  error_event_ingress   = var.error_event_ingress
+  trace_event_ingress   = var.trace_event_ingress
+  resource_manager_tags = var.resource_manager_tags
+
 }
 
 # CloudEvents to Workqueue bridge for issue events

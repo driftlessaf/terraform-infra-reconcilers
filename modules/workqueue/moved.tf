@@ -17,10 +17,6 @@ moved {
   to   = google_storage_bucket.global-workqueue[0]
 }
 moved {
-  from = google_storage_bucket_iam_binding.global-authorize-access
-  to   = google_storage_bucket_iam_binding.global-authorize-access[0]
-}
-moved {
   from = random_string.receiver
   to   = random_string.receiver[0]
 }

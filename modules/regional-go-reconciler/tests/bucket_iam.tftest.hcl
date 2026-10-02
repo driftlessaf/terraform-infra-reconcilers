@@ -114,90 +114,24 @@ run "sharded_deployment_grants_nothing_on_a_bucket_it_does_not_create" {
   }
 }
 
-# The binding is gone by default here too, and the inlined dispatcher -- which
-# runs as var.service_account and was named in that binding -- has to be left
-# standing on the additive grants rather than short.
-run "the_inlined_dispatcher_keeps_its_grant_with_the_binding_gone_by_default" {
+# The inlined dispatcher runs as var.service_account and was named in the
+# storage.admin binding that used to sit on this bucket. With the binding gone
+# it has to be left standing on the additive grants rather than short, which is
+# the one thing its removal could have broken.
+run "the_inlined_dispatcher_keeps_its_write_grant" {
   command = plan
 
-  assert {
-    condition     = length(google_storage_bucket_iam_binding.global-authorize-access) == 0
-    error_message = "the storage.admin binding must be gone by default"
-  }
   assert {
     condition = contains(
       google_storage_bucket_iam_member.queue-writers[*].member,
       "serviceAccount:fixture@fixture-project.iam.gserviceaccount.com",
     )
-    error_message = "the reconciler service account must keep a write grant once the binding is gone"
-  }
-}
-
-# True is the escape hatch, for a caller whose objectUser grants have not been
-# applied yet. It has to restore the binding with the inlined dispatcher still
-# named in it, or deferring would itself drop that account's broader access.
-run "retaining_the_binding_restores_it_with_the_inlined_dispatcher" {
-  command = plan
-
-  variables {
-    retain_bucket_admin_binding = true
-  }
-
-  assert {
-    condition     = google_storage_bucket_iam_binding.global-authorize-access[0].role == "roles/storage.admin"
-    error_message = "retain_bucket_admin_binding = true must materialize the binding on its original role"
+    error_message = "the reconciler service account must hold a write grant"
   }
   assert {
-    condition = contains(
-      google_storage_bucket_iam_binding.global-authorize-access[0].members,
-      "serviceAccount:fixture@fixture-project.iam.gserviceaccount.com",
-    )
-    error_message = "the retained binding must still name the inlined dispatcher's account"
-  }
-}
-
-# The explicit false, now equal to the default, kept because a caller may still
-# write it and it must not diverge from the default's behaviour.
-run "dropping_the_admin_binding_leaves_the_inlined_dispatcher_granted" {
-  command = plan
-
-  variables {
-    retain_bucket_admin_binding = false
-  }
-
-  assert {
-    condition     = length(google_storage_bucket_iam_binding.global-authorize-access) == 0
-    error_message = "retain_bucket_admin_binding = false must remove the storage.admin binding"
-  }
-  assert {
-    condition = contains(
-      google_storage_bucket_iam_member.queue-writers[*].member,
-      "serviceAccount:fixture@fixture-project.iam.gserviceaccount.com",
-    )
-    error_message = "the reconciler service account must keep a write grant once the binding is gone"
-  }
-}
-
-# Sharded deployments get their buckets from workqueue/hyperqueue, which stands
-# up one workqueue module per shard. The gate has to reach through both hops or
-# it is unusable for exactly the deployments with the most buckets.
-#
-# The assertion is weaker than it should be: terraform test can only address
-# resources in the configuration under test, so a nested shard's binding is out
-# of reach and a dropped pass-through cannot be caught here. What this does
-# catch is the variable going missing from hyperqueue or from the call, which
-# fails the plan outright.
-run "the_gate_reaches_the_sharded_path" {
-  command = plan
-
-  variables {
-    shards                      = 2
-    regional-concurrent-work    = 2
-    retain_bucket_admin_binding = false
-  }
-
-  assert {
-    condition     = length(google_storage_bucket_iam_binding.global-authorize-access) == 0
-    error_message = "a sharded deployment has no inline binding to keep"
+    condition = alltrue([
+      for m in google_storage_bucket_iam_member.queue-writers : m.role == "roles/storage.objectUser"
+    ])
+    error_message = "the inlined dispatcher's grant must be objectUser, not a broader role"
   }
 }
