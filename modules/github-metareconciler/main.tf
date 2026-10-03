@@ -33,6 +33,7 @@ module "reconciler" {
   mode            = var.mode
   concurrent-work = var.concurrent-work
   max-retry       = var.max-retry
+  claim_window    = var.claim_window
 
   # Dead-letter alerting configuration
   dead_letter_alert_threshold = var.dead_letter_alert_threshold

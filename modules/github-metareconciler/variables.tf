@@ -161,6 +161,12 @@ variable "max-retry" {
   default     = 3
 }
 
+variable "claim_window" {
+  description = "Long mode only: how long after it starts a job execution keeps claiming keys into its free slots (every claim_poll, while it still has work in flight) instead of claiming once at startup. \"0s\" keeps the single pass at startup. Leave room within job_timeout for a key claimed at the end of the window to finish."
+  type        = string
+  default     = "0s"
+}
+
 variable "dead_letter_alert_threshold" {
   description = "Number of dead-lettered keys above which the alert fires."
   type        = number
