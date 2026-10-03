@@ -448,7 +448,7 @@ variable "request_timeout_seconds" {
 }
 
 variable "job_timeout" {
-  description = "Maximum time allowed for a single long-mode job execution (e.g. \"3600s\"). Only used when mode is \"long\"."
+  description = "Maximum time allowed for a single long-mode job execution (e.g. \"3600s\"). Every reconcile in the execution must also return 2 minutes before it, so one that would run out the clock counts as a failed attempt and dead-letters after max_retry instead of retrying forever. Only used when mode is \"long\"."
   type        = string
   default     = "3600s"
 }
@@ -468,7 +468,7 @@ variable "scheduled_wait_warning_threshold" {
 }
 
 variable "claim_window" {
-  description = "Long mode only: how long after it starts a job execution keeps claiming keys into its free slots (every claim_poll, while it still has work in flight) instead of claiming once at startup. \"0s\" keeps the single pass at startup. Leave room within job_timeout for a key claimed at the end of the window to finish."
+  description = "Long mode only: how long after it starts a job execution keeps claiming keys into its free slots (every claim_poll, while it still has work in flight) instead of claiming once at startup. \"0s\" keeps the single pass at startup. Leave room for a key claimed at the end of the window to finish 2 minutes before job_timeout; a window that reaches that deadline fails the job at startup."
   type        = string
   default     = "0s"
 

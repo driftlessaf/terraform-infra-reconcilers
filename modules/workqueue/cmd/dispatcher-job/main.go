@@ -69,6 +69,15 @@ const (
 	// regional-go-cron's otel config. Staying alive that much longer after the
 	// scrape lets the batch reach GMP before Cloud Run tears the sidecar down.
 	batchFlush = 5 * time.Second
+	// deadlineMargin is how long before the job's timeout every reconcile must
+	// have returned. The dispatcher records a timed-out reconcile as a failed
+	// attempt only while its own context is alive; Cloud Run's SIGTERM at the
+	// timeout would turn it into a shutdown, which requeues without spending an
+	// attempt, so a reconcile that always runs out the clock would loop forever
+	// instead of dead-lettering. The margin covers that requeue write and the
+	// metrics hold after it (scrapeWait plus a scrape, its timeout, and the
+	// batch flush).
+	deadlineMargin = 2 * time.Minute
 )
 
 // envConfig is read in main rather than at package scope so that tests of this
@@ -88,6 +97,10 @@ type envConfig struct {
 	// work in flight. Zero makes the single pass at startup the only one.
 	ClaimWindow time.Duration `env:"WORKQUEUE_CLAIM_WINDOW,default=0s"`
 	ClaimPoll   time.Duration `env:"WORKQUEUE_CLAIM_POLL,default=10s"`
+	// JobTimeout is the job execution's timeout. When set, every reconcile
+	// must return deadlineMargin before it (see withDeadline). Zero leaves
+	// reconciles unbounded.
+	JobTimeout time.Duration `env:"WORKQUEUE_JOB_TIMEOUT,default=0s"`
 
 	ErrorEventIngressURI string `env:"ERROR_EVENT_INGRESS_URI"`
 	WorkqueueName        string `env:"WORKQUEUE_NAME"`
@@ -97,6 +110,10 @@ type envConfig struct {
 }
 
 func main() {
+	// Cloud Run's timeout clock runs from about when this process starts, so
+	// the reconcile deadline is measured from here; deadlineMargin also absorbs
+	// the container start before it.
+	started := time.Now()
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
@@ -115,6 +132,14 @@ func main() {
 	}
 	if env.ClaimWindow > 0 && env.ClaimPoll <= 0 {
 		clog.FatalContextf(ctx, "WORKQUEUE_CLAIM_POLL must be positive with a claim window, got %s", env.ClaimPoll)
+	}
+	if env.JobTimeout > 0 && env.JobTimeout <= deadlineMargin {
+		clog.FatalContextf(ctx, "WORKQUEUE_JOB_TIMEOUT must exceed %s, got %s", deadlineMargin, env.JobTimeout)
+	}
+	// A key claimed after the reconcile deadline would fail at once and spend
+	// an attempt without ever running.
+	if env.JobTimeout > 0 && env.ClaimWindow >= env.JobTimeout-deadlineMargin {
+		clog.FatalContextf(ctx, "WORKQUEUE_CLAIM_WINDOW (%s) must end before the reconcile deadline, %s before WORKQUEUE_JOB_TIMEOUT (%s)", env.ClaimWindow, deadlineMargin, env.JobTimeout)
 	}
 
 	scraped := newScrapeSignal()
@@ -144,7 +169,11 @@ func main() {
 
 	var processed, inUse atomic.Int64
 	claims := &reservingQueue{Interface: wq, inUse: &inUse, first: firstClaimLogger(ctx, time.Now())}
-	callback := releaseSlot(countCalls(dispatcher.ServiceCallback(client), &processed), &inUse)
+	reconcile := dispatcher.ServiceCallback(client)
+	if env.JobTimeout > 0 {
+		reconcile = withDeadline(reconcile, started.Add(env.JobTimeout-deadlineMargin))
+	}
+	callback := releaseSlot(countCalls(reconcile, &processed), &inUse)
 	opts := []dispatcher.Option{
 		dispatcher.WithOwnerConcurrency(env.OwnerConcurrency),
 		dispatcher.WithCandidateWindowFactor(env.CandidateWindowFactor),
@@ -181,6 +210,18 @@ func main() {
 		// a cadence the alert's auto_close window absorbs. Only this
 		// dispatcher's own gauge matters here, so its own scrape suffices.
 		scraped.await(ctx, scrapeWait, batchFlush)
+	}
+}
+
+// withDeadline wraps a dispatch callback so the reconcile it runs returns by
+// deadline. A reconcile still running then fails with the context's deadline
+// error while the dispatcher is alive, so the dispatcher spends one of the key's
+// attempts on it and, once they run out, dead-letters it.
+func withDeadline(f dispatcher.Callback, deadline time.Time) dispatcher.Callback {
+	return func(ctx context.Context, key string, opts workqueue.Options) error {
+		ctx, cancel := context.WithDeadline(ctx, deadline)
+		defer cancel()
+		return f(ctx, key, opts)
 	}
 }
 

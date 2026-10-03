@@ -12,6 +12,7 @@ locals {
     { name = "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD", value = var.scheduled_wait_warning_threshold },
     { name = "WORKQUEUE_CLAIM_WINDOW", value = var.claim_window },
     { name = "WORKQUEUE_CLAIM_POLL", value = var.claim_poll },
+    { name = "WORKQUEUE_JOB_TIMEOUT", value = var.job_timeout },
     { name = "METRICS_PORT", value = "2113" },
   ] : []
 
