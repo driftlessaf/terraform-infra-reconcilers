@@ -14,7 +14,7 @@ require (
 	github.com/sethvargo/go-envconfig v1.4.3
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/sync v0.23.0
-	google.golang.org/grpc v1.83.2
+	google.golang.org/grpc v1.84.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -102,7 +102,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
 	github.com/snabb/httpreaderat v1.0.4 // indirect
-	github.com/spiffe/go-spiffe/v2 v2.7.0 // indirect
+	github.com/spiffe/go-spiffe/v2 v2.8.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
