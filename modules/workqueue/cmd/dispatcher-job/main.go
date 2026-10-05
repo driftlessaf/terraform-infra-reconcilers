@@ -36,15 +36,6 @@ import (
 )
 
 const (
-	// reportEvery is how often a job with a backlog pays to publish the gauge.
-	// The alert's auto_close is an hour, so the series only has to carry a
-	// sample more often than that; five minutes leaves room to miss eleven
-	// consecutive reports before the incident falsely clears. Holding on every
-	// tick instead would buy a minute of detection latency for roughly five
-	// times the cost, and the cost is not the dispatcher's — the hold keeps the
-	// whole execution alive, reconciler sidecars included, which on a queue like
-	// axlotl-decant is another 4 vCPU and 8GiB.
-	reportEvery = 5 * time.Minute
 	// scrapeWait bounds how long the job stays alive waiting to be scraped. The
 	// otel sidecar in regional-go-cron scrapes every 10s (see its
 	// otel-config/config.yaml), but every execution starts a fresh sidecar, so
@@ -107,6 +98,12 @@ type envConfig struct {
 	// Identity is recorded as the owner of keys this job claims. The module sets
 	// it to the job's region.
 	Identity string `env:"WORKQUEUE_OWNER"`
+	// ReportEvery is how often an idle job with a dead-letter backlog pays to
+	// publish the gauge (see shouldReport). It must stay well under the
+	// alert's one-hour auto_close. The gate passes only executions that run in
+	// a wall-clock minute divisible by it, which executions on a sparser
+	// schedule than every minute can miss every time.
+	ReportEvery time.Duration `env:"WORKQUEUE_REPORT_EVERY,default=5m"`
 }
 
 func main() {
@@ -129,6 +126,9 @@ func main() {
 	}
 	if env.BatchSize <= 0 {
 		clog.FatalContextf(ctx, "WORKQUEUE_BATCH_SIZE must be positive, got %d", env.BatchSize)
+	}
+	if env.ReportEvery < time.Minute || env.ReportEvery%time.Minute != 0 {
+		clog.FatalContextf(ctx, "WORKQUEUE_REPORT_EVERY must be a positive whole number of minutes, got %s", env.ReportEvery)
 	}
 	if env.ClaimWindow > 0 && env.ClaimPoll <= 0 {
 		clog.FatalContextf(ctx, "WORKQUEUE_CLAIM_POLL must be positive with a claim window, got %s", env.ClaimPoll)
@@ -199,7 +199,7 @@ func main() {
 		// and the batch has flushed. Idle executions, the common case on a
 		// quiet queue, skip this.
 		scraped.await(ctx, scrapeWait, scrapeInterval+scrapeTimeout+batchFlush)
-	case shouldReport(time.Now(), reportEvery) && deadLettered(ctx, prometheus.DefaultGatherer) > 0:
+	case shouldReport(time.Now(), env.ReportEvery) && deadLettered(ctx, prometheus.DefaultGatherer) > 0:
 		// An idle iteration finishes in well under a scrape interval, so exiting
 		// here means the gauges it just set are never exported. A drained queue
 		// can afford that: the dead-letter alert's auto_close reads the resulting

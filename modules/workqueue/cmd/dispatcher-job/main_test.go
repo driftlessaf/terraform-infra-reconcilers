@@ -103,31 +103,67 @@ func TestShouldReport(t *testing.T) {
 }
 
 // TestShouldReportCadence pins the rate rather than individual instants: over an
-// hour of per-minute executions the gate must fire often enough that the alert's
-// auto_close window never elapses without a sample.
+// hour of executions on a schedule, paired with the report interval the module
+// sets for it, the gate must fire often enough that the alert's auto_close
+// window never elapses without a sample. Executions run minutes after their
+// tick (Cloud Run start latency), so a sparse schedule rarely lands on the
+// gate's wall-clock minutes.
 func TestShouldReportCadence(t *testing.T) {
 	const autoClose = time.Hour
 	base := time.Date(2026, 9, 22, 12, 0, 0, 0, time.UTC)
 
-	var fired int
-	var longestGap time.Duration
-	var last time.Time
-	for i := range 60 {
-		at := base.Add(time.Duration(i) * time.Minute)
-		if !shouldReport(at, reportEvery) {
-			continue
-		}
-		fired++
-		if !last.IsZero() && at.Sub(last) > longestGap {
-			longestGap = at.Sub(last)
-		}
-		last = at
-	}
-	if want := int(time.Hour / reportEvery); fired != want {
-		t.Errorf("reports in an hour: got = %d, want = %d", fired, want)
-	}
-	if longestGap >= autoClose {
-		t.Errorf("longest gap between reports: got = %s, want < %s (auto_close)", longestGap, autoClose)
+	for _, tc := range []struct {
+		name      string
+		tick      time.Duration
+		latency   time.Duration
+		every     time.Duration
+		wantFired int
+	}{{
+		name:      "every-minute schedule with the default interval",
+		tick:      time.Minute,
+		latency:   2*time.Minute + 30*time.Second,
+		every:     5 * time.Minute,
+		wantFired: 12,
+	}, {
+		name:      "five-minute schedule with a one-minute interval",
+		tick:      5 * time.Minute,
+		latency:   2*time.Minute + 30*time.Second,
+		every:     time.Minute,
+		wantFired: 12,
+	}, {
+		name:      "thirty-minute schedule with a one-minute interval",
+		tick:      30 * time.Minute,
+		latency:   2*time.Minute + 30*time.Second,
+		every:     time.Minute,
+		wantFired: 2,
+	}, {
+		name:      "five-minute schedule with the default interval never reports",
+		tick:      5 * time.Minute,
+		latency:   2*time.Minute + 30*time.Second,
+		every:     5 * time.Minute,
+		wantFired: 0,
+	}} {
+		t.Run(tc.name, func(t *testing.T) {
+			var fired int
+			var longestGap time.Duration
+			var last time.Time
+			for at := base.Add(tc.latency); at.Before(base.Add(time.Hour).Add(tc.latency)); at = at.Add(tc.tick) {
+				if !shouldReport(at, tc.every) {
+					continue
+				}
+				fired++
+				if !last.IsZero() && at.Sub(last) > longestGap {
+					longestGap = at.Sub(last)
+				}
+				last = at
+			}
+			if fired != tc.wantFired {
+				t.Errorf("reports in an hour: got = %d, want = %d", fired, tc.wantFired)
+			}
+			if longestGap >= autoClose {
+				t.Errorf("longest gap between reports: got = %s, want < %s (auto_close)", longestGap, autoClose)
+			}
+		})
 	}
 }
 

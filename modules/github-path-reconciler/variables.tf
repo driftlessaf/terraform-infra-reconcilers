@@ -37,6 +37,12 @@ variable "job_timeout" {
   default     = "3600s"
 }
 
+variable "schedule" {
+  description = "Long mode only: the unix-cron schedule on which the reconciler job starts an execution in each region. See regional-go-reconciler's schedule for the supported grammar and tradeoff."
+  type        = string
+  default     = "* * * * *"
+}
+
 variable "claim_window" {
   description = "Long mode only: how long after it starts a job execution keeps claiming keys into its free slots (every claim_poll, while it still has work in flight) instead of claiming once at startup. \"0s\" keeps the single pass at startup. Leave room within job_timeout for a key claimed at the end of the window to finish."
   type        = string

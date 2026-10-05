@@ -1,5 +1,5 @@
 locals {
-  long_mode_dispatcher_env = var.mode == "long" ? [
+  long_mode_dispatcher_env = var.mode == "long" ? concat([
     { name = "WORKQUEUE_MODE", value = "gcs" },
     { name = "WORKQUEUE_CONCURRENCY", value = tostring(local.concurrent_work) },
     { name = "WORKQUEUE_OWNER_CONCURRENCY", value = tostring(coalesce(local.regional_concurrent_work, 0)) },
@@ -14,7 +14,16 @@ locals {
     { name = "WORKQUEUE_CLAIM_POLL", value = var.claim_poll },
     { name = "WORKQUEUE_JOB_TIMEOUT", value = var.job_timeout },
     { name = "METRICS_PORT", value = "2113" },
-  ] : []
+    ], var.schedule == "* * * * *" ? [] : [
+    // The dispatcher's default dead-letter report gate fires only on 5-minute
+    // wall-clock marks, which executions on a sparser schedule, starting minutes
+    // after their tick, can miss every time. Report from every idle execution.
+    { name = "WORKQUEUE_REPORT_EVERY", value = "1m" },
+  ]) : []
+
+  job_cronspec = { for k in keys(var.regions) : k => {
+    schedule = var.schedule
+  } }
 
   // Cloud Run Jobs receive empty_dir volumes only, projected from var.volumes.
   // csi entries and var.regional-volumes stay service-only: regional-go-cron
@@ -25,14 +34,14 @@ locals {
   } if v.empty_dir != null] : []
 }
 
-// Long-mode reconciler: a Cloud Run Job that fires once per cron tick.
+// Long-mode reconciler: a Cloud Run Job that fires once per var.schedule tick.
 // The dispatcher-job container claims keys (once at startup, or through
 // var.claim_window) and exits when the last one finishes; user reconciler
 // containers run as sidecars on localhost:8081.
 
 module "reconciler-job" {
   count              = var.mode == "long" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-cron"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -55,9 +64,7 @@ module "reconciler-job" {
 
   regions = var.regions
 
-  regional-cronspec = { for k in keys(var.regions) : k => {
-    schedule = "* * * * *"
-  } }
+  regional-cronspec = local.job_cronspec
 
   containers = merge(
     // Dispatcher-job as the entry-point container.
@@ -112,5 +119,4 @@ module "reconciler-job" {
   labels                = merge({ "service" : local.reconciler_service_name }, var.labels)
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.55.3"
 }
