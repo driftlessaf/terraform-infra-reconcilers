@@ -10,8 +10,7 @@ locals {
   // Dashboard-wide filters. Cloud Run built-in metrics carry the reconciler's
   // name as the service_name resource label for a service and job_name for a
   // job. Prometheus metrics carry it as the service_name metric label in both
-  // modes (the otel sidecar stamps it), and the grpc, github and agents
-  // sections rely on that filter for their scoping.
+  // modes (the otel sidecar stamps it).
   dashboard_filters = [
     {
       filterType  = "RESOURCE_LABEL"
@@ -24,6 +23,10 @@ locals {
       labelKey    = "service_name"
     },
   ]
+
+  // Prometheus widgets filter on service_name themselves instead of relying on
+  // the dashboard-wide filter.
+  prometheus_filter = ["metric.label.\"service_name\"=\"${local.service_name}\""]
 }
 
 // Workqueue metrics section
@@ -58,10 +61,11 @@ module "reconciler-logs" {
 }
 
 module "http" {
-  source       = "../../../../../public/terraform-infra-common/modules/dashboard/sections/http"
-  title        = "HTTP"
-  filter       = []
-  service_name = local.service_name
+  source        = "../../../../../public/terraform-infra-common/modules/dashboard/sections/http"
+  title         = "HTTP"
+  filter        = []
+  cloudrun_type = var.mode == "long" ? "job" : "service"
+  service_name  = local.service_name
 }
 
 module "grpc" {
@@ -74,7 +78,7 @@ module "grpc" {
 module "github" {
   source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/github"
   title  = "GitHub API"
-  filter = []
+  filter = local.prometheus_filter
 }
 
 // The agents section's 12 widgets land on a dedicated dashboard
@@ -84,9 +88,7 @@ module "github" {
 module "agents" {
   source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/agents"
   title  = "Agent Metrics"
-  filter = [
-    "metric.label.\"service_name\"=\"${local.service_name}\""
-  ]
+  filter = local.prometheus_filter
 }
 
 // When var.sections.microvm is set to a namespace, build two groups: the
@@ -96,11 +98,9 @@ module "agents" {
 // reconciler dashboard: their 14 widgets would push reconcilers that also enable
 // github+agents past Cloud Monitoring's 50-widget-per-dashboard limit.
 module "microvm" {
-  count  = var.sections.microvm != null ? 1 : 0
-  source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/microvm"
-  filter = [
-    "metric.label.\"service_name\"=\"${local.service_name}\""
-  ]
+  count     = var.sections.microvm != null ? 1 : 0
+  source    = "../../../../../public/terraform-infra-common/modules/dashboard/sections/microvm"
+  filter    = local.prometheus_filter
   namespace = var.sections.microvm
   // Expanded by default: the whole dedicated dashboard is about microvm.
   collapsed = false
@@ -135,8 +135,7 @@ module "layout" {
       module.errgrp.section,
       module.reconciler-logs.section,
     ],
-    var.mode == "short" ? [module.http.section] : [],
-    [module.grpc.section],
+    [module.http.section, module.grpc.section],
     var.sections.github ? [module.github.section] : [],
     var.service_sections_first ? [] : var.service_sections,
     [module.resources.section],
