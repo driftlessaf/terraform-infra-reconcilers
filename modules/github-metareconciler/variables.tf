@@ -42,6 +42,12 @@ variable "extra_brokers" {
   default     = {}
 }
 
+variable "drop_shared_types" {
+  description = "ce-types whose shared-broker PR-event subscriptions to remove once the broker ingress routes them to their extra_brokers topics. Only subscriptions filtered on exactly that type are removed. Forwarded to cloudevents-workqueue."
+  type        = set(string)
+  default     = []
+}
+
 variable "error_event_ingress" {
   description = "Optional CloudEvents ingress for emitting reconciler error events. Set to null to disable."
   type = object({

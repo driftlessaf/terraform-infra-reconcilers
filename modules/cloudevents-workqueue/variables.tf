@@ -71,6 +71,36 @@ EOD
   default     = {}
 }
 
+variable "drop_shared_types" {
+  description = <<EOD
+ce-types whose shared-broker triggers to remove once the broker ingress routes
+them to dedicated topics, where the `extra_brokers` triggers receive them. Only
+a trigger whose filter `type` equals a listed type is removed; untyped and
+prefix-matched triggers keep their shared subscription, and every other trigger
+keeps its address and name. Each removed trigger's region must have that type's
+topic in `extra_brokers`.
+
+Removing a trigger destroys its shared push subscription and its dead-letter
+topic and subscription, discarding anything still in backlog or dead letters.
+Cut over in separate applies:
+1. Set `extra_brokers` and apply, so the dedicated triggers exist.
+2. Route the type to its dedicated topics at the broker ingress and apply.
+3. Wait until the shared subscription's backlog and dead letters are empty.
+4. Set `drop_shared_types` and apply.
+Reverse the order to roll back: clear `drop_shared_types` and apply before
+routing the type back to the shared topic. Callers should gate this input on
+the broker's cleanup state (for example a prereqs output listing types whose
+route and drop_shared are both set) so it cannot apply before step 3.
+EOD
+  type        = set(string)
+  default     = []
+
+  validation {
+    condition     = !contains(var.drop_shared_types, "")
+    error_message = "drop_shared_types entries must be non-empty ce-types."
+  }
+}
+
 variable "filters" {
   description = <<EOD
 A list of Knative Trigger-style filters over cloud event attributes.

@@ -215,3 +215,88 @@ run "no_parallel_trigger_for_excluded_types" {
     error_message = "parallel triggers must respect type prefixes and type exclusions"
   }
 }
+
+run "dropping_nothing_keeps_every_trigger" {
+  command = plan
+
+  variables {
+    extra_brokers = {
+      "dev.chainguard.github.check_run" = {
+        "us-central1" = "dedicated-check-run-us-central1"
+        "us-east4"    = "dedicated-check-run-us-east4"
+      }
+    }
+  }
+
+  assert {
+    condition     = length(local.dropped_shared_triggers) == 0 && local.shared_trigger_index == local.trigger_index
+    error_message = "drop_shared_types must default to removing no shared trigger"
+  }
+
+  assert {
+    condition     = toset(keys(module.trigger)) == toset(concat(keys(local.trigger_index), keys(local.extra_trigger_index)))
+    error_message = "the trigger set must be unchanged when drop_shared_types is unset"
+  }
+}
+
+run "dropping_check_run_removes_only_its_shared_triggers" {
+  command = plan
+
+  variables {
+    extra_brokers = {
+      "dev.chainguard.github.check_run" = {
+        "us-central1" = "dedicated-check-run-us-central1"
+        "us-east4"    = "dedicated-check-run-us-east4"
+      }
+    }
+    # No filter names workflow_job, so listing it removes nothing: the untyped
+    # filter keeps its shared trigger.
+    drop_shared_types = [
+      "dev.chainguard.github.check_run",
+      "dev.chainguard.github.workflow_job",
+    ]
+  }
+
+  assert {
+    condition = toset(keys(module.trigger)) == toset([
+      "us-central1-0",
+      "us-central1-2",
+      "us-east4-0",
+      "us-east4-2",
+      "us-central1-1-x-dev.chainguard.github.check_run",
+      "us-central1-2-x-dev.chainguard.github.check_run",
+      "us-east4-1-x-dev.chainguard.github.check_run",
+      "us-east4-2-x-dev.chainguard.github.check_run",
+    ])
+    error_message = "only the shared check_run triggers must be removed; the dedicated and other shared triggers stay"
+  }
+
+  assert {
+    condition = alltrue([
+      for k, t in local.shared_trigger_index : t == local.trigger_index[k] && t.suffix == "" && startswith(t.broker, "shared-")
+    ])
+    error_message = "remaining shared triggers must keep their keys, names, and shared broker"
+  }
+
+  assert {
+    condition = alltrue([
+      for k, t in local.extra_trigger_index : startswith(t.broker, "dedicated-check-run-") && t.suffix == "-x0511"
+    ])
+    error_message = "dedicated triggers must keep their topic and type-derived suffix"
+  }
+}
+
+run "dropping_a_type_without_a_topic_in_a_region_is_rejected" {
+  command = plan
+
+  variables {
+    extra_brokers = {
+      "dev.chainguard.github.check_run" = {
+        "us-east4" = "dedicated-check-run-us-east4"
+      }
+    }
+    drop_shared_types = ["dev.chainguard.github.check_run"]
+  }
+
+  expect_failures = [google_service_account.subscriber]
+}

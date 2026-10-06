@@ -24,6 +24,17 @@ resource "google_service_account" "subscriber" {
   account_id   = module.subscriber-name.result
   display_name = "CloudEvents to Workqueue Subscriber"
   description  = "Service account for ${var.name} CloudEvents subscriber"
+
+  lifecycle {
+    # Dropping a shared trigger without a dedicated one in its region would
+    # stop delivery of that type there.
+    precondition {
+      condition = alltrue([
+        for t in local.dropped_shared_triggers : can(var.extra_brokers[t.filter.type][t.region])
+      ])
+      error_message = "each drop_shared_types entry must have an extra_brokers topic in every region whose shared trigger it drops."
+    }
+  }
 }
 
 // Deploy the subscriber service
@@ -135,12 +146,24 @@ locals {
       )
     }
   ]...)
+
+  // Shared triggers whose filter names a type in var.drop_shared_types. They
+  // are removed only after extra_trigger_index is built from the full index,
+  // so the dedicated triggers and every other key are unchanged.
+  dropped_shared_triggers = {
+    for key, t in local.trigger_index : key => t
+    if contains(var.drop_shared_types, lookup(t.filter, "type", ""))
+  }
+  shared_trigger_index = {
+    for key, t in local.trigger_index : key => t
+    if !contains(keys(local.dropped_shared_triggers), key)
+  }
 }
 
 // Create a subscription to the broker with filters for the specified event types
 // We need a trigger for each region, each filter, and each prefix set
 module "trigger" {
-  for_each = merge(local.trigger_index, local.extra_trigger_index)
+  for_each = merge(local.shared_trigger_index, local.extra_trigger_index)
 
   source = "../../../../public/terraform-infra-common/modules/cloudevent-trigger"
 
