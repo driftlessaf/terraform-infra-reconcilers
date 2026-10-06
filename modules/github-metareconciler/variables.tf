@@ -269,6 +269,17 @@ variable "request_timeout_seconds" {
   default     = 300
 }
 
+variable "scaling" {
+  description = "Scaling configuration for the reconciler service, forwarded to regional-go-reconciler. max_instance_request_concurrency bounds how many reconciles share one instance; set it to 1 for per-key work (clones, builds, agents) too heavy to share. Applies in short mode only: a long-mode reconciler is a Cloud Run Job and has no service to scale."
+  type = object({
+    min_instances                    = optional(number, 0)
+    max_instances                    = optional(number, 100)
+    service_max_instances            = optional(number)
+    max_instance_request_concurrency = optional(number, 1000)
+  })
+  default = {}
+}
+
 variable "team" {
   type        = string
   description = "Team label for the service"

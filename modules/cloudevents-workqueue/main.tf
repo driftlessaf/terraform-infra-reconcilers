@@ -10,12 +10,11 @@ terraform {
 }
 
 module "subscriber-name" {
-  source = "chainguard-dev/common/infra//modules/limited-concat"
+  source = "../../../../public/terraform-infra-common/modules/limited-concat"
   prefix = var.name
   suffix = "-sub"
   // https://cloud.google.com/iam/docs/service-accounts-create
-  limit   = 30
-  version = "1.56.0"
+  limit = 30
 }
 
 // Create a service account for the service
@@ -29,7 +28,7 @@ resource "google_service_account" "subscriber" {
 
 // Deploy the subscriber service
 module "subscriber" {
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -74,20 +73,18 @@ module "subscriber" {
       ]
     }
   }
-  version = "1.56.0"
 }
 
 // Authorize the subscriber to call the workqueue in each region
 module "subscriber-calls-workqueue" {
   for_each = var.regions
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id      = var.project_id
   region          = each.key
   name            = var.workqueue.name
   service-account = google_service_account.subscriber.email
-  version         = "1.56.0"
 }
 
 locals {
@@ -145,7 +142,7 @@ locals {
 module "trigger" {
   for_each = merge(local.trigger_index, local.extra_trigger_index)
 
-  source = "chainguard-dev/common/infra//modules/cloudevent-trigger"
+  source = "../../../../public/terraform-infra-common/modules/cloudevent-trigger"
 
   project_id = var.project_id
   name       = "${var.name}-${each.value.region}-${each.value.index}${each.value.suffix}"
@@ -175,5 +172,4 @@ module "trigger" {
   resource_manager_tags = var.resource_manager_tags
 
   depends_on = [module.subscriber]
-  version    = "1.56.0"
 }

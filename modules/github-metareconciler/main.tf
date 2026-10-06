@@ -35,6 +35,8 @@ module "reconciler" {
   max-retry       = var.max-retry
   claim_window    = var.claim_window
 
+  scaling = var.scaling
+
   # Dead-letter alerting configuration
   dead_letter_alert_threshold = var.dead_letter_alert_threshold
   dead_letter_alert_duration  = var.dead_letter_alert_duration
