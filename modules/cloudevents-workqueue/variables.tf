@@ -50,6 +50,27 @@ variable "broker" {
   description = "A map from each of the input region names to the name of the Broker topic in that region."
 }
 
+variable "extra_brokers" {
+  description = <<EOD
+Additional broker topics, keyed by ce-type then region, such as entries from
+the cloudevent-broker `dedicated` output. Each trigger whose type clauses can
+match a listed type (its filter `type` is that type or unset, any `type` prefix
+matches it, and `filter_not` does not exclude it) gets a parallel trigger on
+that type's topic in its region, with the same filter clauses and subscriber. The shared-broker triggers stay, so delivery continues on
+whichever topic the broker ingress publishes the type to. Each parallel
+subscription is billed for its topic's full volume, so list only types this
+subscriber consumes. Regions not in `regions` are ignored.
+
+  extra_brokers = {
+    "dev.chainguard.github.check_run" = {
+      "us-east4" = "enforce-prod-ingress-dev-chainguard-github-check_run-us-east4"
+    }
+  }
+EOD
+  type        = map(map(string))
+  default     = {}
+}
+
 variable "filters" {
   description = <<EOD
 A list of Knative Trigger-style filters over cloud event attributes.

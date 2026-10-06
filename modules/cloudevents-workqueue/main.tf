@@ -3,6 +3,9 @@ terraform {
     cosign = { source = "chainguard-dev/cosign" }
     google = { source = "hashicorp/google" }
     random = { source = "hashicorp/random" }
+    # Declare transitive providers so test mocks attach at this module's root.
+    ko          = { source = "ko-build/ko" }
+    google-beta = { source = "hashicorp/google-beta" }
   }
 }
 
@@ -107,19 +110,42 @@ locals {
       prefix = local.filter_prefix_sets[triple[1]]
       index  = triple[1] * length(var.filters) + triple[2]
       broker = var.broker[triple[0]]
+      suffix = ""
     }
   }
+
+  // Parallel triggers on the dedicated topics in var.extra_brokers. A shared
+  // trigger gets one for each listed type its type clauses can match in its
+  // region: the filter's type when it names one, a type prefix it requires,
+  // and no type it excludes. The suffix comes from the type rather than its
+  // position, so listing another type never renames an existing subscription.
+  excluded_types = [for f in var.filter_not : f.value if f.key == "type"]
+  extra_trigger_index = merge([
+    for key, t in local.trigger_index : {
+      for type, topics in var.extra_brokers :
+      "${key}-x-${type}" => merge(t, {
+        broker = topics[t.region]
+        suffix = "-x${substr(sha256(type), 0, 4)}"
+      })
+      if(
+        contains(keys(topics), t.region) &&
+        lookup(t.filter, "type", type) == type &&
+        startswith(type, lookup(t.prefix, "type", "")) &&
+        !contains(local.excluded_types, type)
+      )
+    }
+  ]...)
 }
 
 // Create a subscription to the broker with filters for the specified event types
 // We need a trigger for each region, each filter, and each prefix set
 module "trigger" {
-  for_each = local.trigger_index
+  for_each = merge(local.trigger_index, local.extra_trigger_index)
 
   source = "../../../../public/terraform-infra-common/modules/cloudevent-trigger"
 
   project_id = var.project_id
-  name       = "${var.name}-${each.value.region}-${each.value.index}"
+  name       = "${var.name}-${each.value.region}-${each.value.index}${each.value.suffix}"
   broker     = each.value.broker
 
   private-service = {

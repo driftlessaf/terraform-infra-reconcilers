@@ -36,6 +36,12 @@ variable "broker" {
   type        = map(string)
 }
 
+variable "extra_brokers" {
+  description = "Additional broker topics keyed by ce-type then region, such as entries from the cloudevent-broker `dedicated` output. The PR-event subscription gets a parallel subscription on that topic for each listed type it consumes, alongside the shared-broker one. Forwarded to cloudevents-workqueue."
+  type        = map(map(string))
+  default     = {}
+}
+
 variable "error_event_ingress" {
   description = "Optional CloudEvents ingress for emitting reconciler error events. Set to null to disable."
   type = object({

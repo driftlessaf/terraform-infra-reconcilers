@@ -94,7 +94,8 @@ module "cloudevents-prs" {
   name       = "${var.name}-pr"
   regions    = var.regions
 
-  broker = var.broker
+  broker        = var.broker
+  extra_brokers = var.extra_brokers
   # One trigger per (subject × type); the issues subscription keeps the unscoped
   # var.filters. The pullrequesturl attribute requirement still excludes branch CI.
   filters = flatten([

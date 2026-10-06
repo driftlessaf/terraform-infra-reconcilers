@@ -74,7 +74,8 @@ module "cloudevents-prs" {
   name       = "${var.name}-pr"
   regions    = var.regions
 
-  broker = var.broker
+  broker        = var.broker
+  extra_brokers = var.extra_brokers
   # One trigger per (subject × type); when repos is empty the allowlist flows for
   # any repo. The pullrequesturl attribute requirement still excludes branch CI.
   filters = length(var.repos) > 0 ? flatten([
