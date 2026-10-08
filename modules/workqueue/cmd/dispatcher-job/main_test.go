@@ -131,11 +131,11 @@ func TestShouldReportCadence(t *testing.T) {
 		every:     time.Minute,
 		wantFired: 12,
 	}, {
-		name:      "thirty-minute schedule with a one-minute interval",
-		tick:      30 * time.Minute,
+		name:      "fifteen-minute schedule with a one-minute interval",
+		tick:      15 * time.Minute,
 		latency:   2*time.Minute + 30*time.Second,
 		every:     time.Minute,
-		wantFired: 2,
+		wantFired: 4,
 	}, {
 		name:      "five-minute schedule with the default interval never reports",
 		tick:      5 * time.Minute,

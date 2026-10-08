@@ -63,24 +63,34 @@ run "sparse_schedule_reports_every_execution" {
   }
 }
 
-run "thirty_minute_schedule_is_accepted" {
+run "fifteen_minute_schedule_is_accepted" {
   command = plan
 
   variables {
-    schedule = "*/30 * * * *"
+    schedule = "*/15 * * * *"
   }
 
   assert {
-    condition     = local.job_cronspec["us-central1"].schedule == "*/30 * * * *"
+    condition     = local.job_cronspec["us-central1"].schedule == "*/15 * * * *"
     error_message = "a valid schedule was not passed to the job's Cloud Scheduler trigger"
   }
 }
 
-run "schedule_sparser_than_thirty_minutes_is_rejected" {
+run "schedule_sparser_than_fifteen_minutes_is_rejected" {
   command = plan
 
   variables {
-    schedule = "*/31 * * * *"
+    schedule = "*/16 * * * *"
+  }
+
+  expect_failures = [var.schedule]
+}
+
+run "thirty_minute_schedule_is_rejected" {
+  command = plan
+
+  variables {
+    schedule = "*/30 * * * *"
   }
 
   expect_failures = [var.schedule]

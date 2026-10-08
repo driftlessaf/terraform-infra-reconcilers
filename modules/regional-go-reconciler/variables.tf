@@ -482,16 +482,19 @@ variable "claim_window" {
 }
 
 variable "schedule" {
-  description = "Long mode only: the unix-cron schedule on which Cloud Scheduler starts a job execution in each region, either \"* * * * *\" or \"*/N * * * *\" with N from 1 to 30. Every execution bills at least one minute of the full job shape (Cloud Run Jobs' minimum), even when the queue is empty, so a queue that is usually idle can trade pickup latency for cost with e.g. \"*/5 * * * *\". A key enqueued while no execution is running waits for the next tick."
+  description = "Long mode only: the unix-cron schedule on which Cloud Scheduler starts a job execution in each region, either \"* * * * *\" or \"*/N * * * *\" with N from 1 to 15. Every execution bills at least one minute of the full job shape (Cloud Run Jobs' minimum), even when the queue is empty, so a queue that is usually idle can trade pickup latency for cost with e.g. \"*/5 * * * *\". A key enqueued while no execution is running waits for the next tick."
   type        = string
   default     = "* * * * *"
 
   validation {
-    // Capped at every 30 minutes: idle executions are what publish the
+    // Capped at every 15 minutes: idle executions are what publish the
     // dead-letter gauge, and the dead-letter alert auto-closes an hour after
-    // its last sample.
-    condition     = can(regex("^(\\*|\\*/([1-9]|[12][0-9]|30)) \\* \\* \\* \\*$", var.schedule))
-    error_message = "schedule must be \"* * * * *\" or \"*/N * * * *\" with N from 1 to 30 (for example, \"*/5 * * * *\")."
+    // its last sample. At the cap, even if the next two executions are missed,
+    // the one after them starts 45 minutes after the last sample, leaving 15
+    // minutes for startup before a standing backlog could falsely resolve and
+    // re-page.
+    condition     = can(regex("^(\\*|\\*/([1-9]|1[0-5])) \\* \\* \\* \\*$", var.schedule))
+    error_message = "schedule must be \"* * * * *\" or \"*/N * * * *\" with N from 1 to 15 (for example, \"*/5 * * * *\")."
   }
 }
 
