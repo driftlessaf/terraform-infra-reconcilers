@@ -132,6 +132,29 @@ resource "google_pubsub_topic_iam_binding" "global-gcs-publishes-to-topic" {
   members = ["serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"]
 }
 
+// Where the dispatcher is event-driven, each notification wakes it in its
+// region, so only object changes that can let a pass launch work are
+// published. The two notifications below cover the two ways that happens:
+//
+//   - a key becomes claimable: it is written or requeued under queued/
+//     (OBJECT_FINALIZE), or a duplicate enqueue raises its priority or pulls
+//     its not-before earlier (OBJECT_METADATA_UPDATE);
+//   - a worker slot frees up: a lease under in-progress/ is completed,
+//     requeued or dead-lettered (OBJECT_DELETE).
+//
+// Everything else is the dispatcher's own bookkeeping: the in-progress copy
+// and queued delete of every claim, lease heartbeats, and dead-letter writes.
+// A not-before passing or a lease expiring changes no object at all; the
+// per-minute cron covers those, and any trigger the dispatch rate limit sheds.
+// A key whose enqueue trigger was shed therefore waits for the next enqueue,
+// freed slot, or cron pass.
+//
+// Changing the filter replaces the queued/ notification. create_before_destroy
+// and the dependency on the in-progress/ notification create both filtered
+// notifications before the unfiltered one is removed. Cloud Storage can take
+// up to 30 seconds to start delivering a new notification, so a change in
+// that window may go unpublished and wait for the cron pass, as a shed
+// trigger does. The overlap otherwise only sends duplicate triggers.
 resource "google_storage_notification" "global-object-change-notifications" {
   for_each = local.workqueue_enabled ? local.regions : {}
 
@@ -140,9 +163,30 @@ resource "google_storage_notification" "global-object-change-notifications" {
   // validates this permission at creation time.
   depends_on = [
     google_pubsub_topic_iam_binding.global-gcs-publishes-to-topic,
+    google_storage_notification.global-lease-release-notifications,
   ]
 
-  bucket         = google_storage_bucket.global-workqueue[0].name
-  payload_format = "JSON_API_V1"
-  topic          = google_pubsub_topic.global-object-change-notifications[each.key].id
+  bucket             = google_storage_bucket.global-workqueue[0].name
+  payload_format     = "JSON_API_V1"
+  topic              = google_pubsub_topic.global-object-change-notifications[each.key].id
+  object_name_prefix = "queued/"
+  event_types        = ["OBJECT_FINALIZE", "OBJECT_METADATA_UPDATE"]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "google_storage_notification" "global-lease-release-notifications" {
+  for_each = local.workqueue_enabled ? local.regions : {}
+
+  depends_on = [
+    google_pubsub_topic_iam_binding.global-gcs-publishes-to-topic,
+  ]
+
+  bucket             = google_storage_bucket.global-workqueue[0].name
+  payload_format     = "JSON_API_V1"
+  topic              = google_pubsub_topic.global-object-change-notifications[each.key].id
+  object_name_prefix = "in-progress/"
+  event_types        = ["OBJECT_DELETE"]
 }
