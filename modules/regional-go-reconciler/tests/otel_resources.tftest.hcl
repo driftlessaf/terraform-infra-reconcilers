@@ -73,3 +73,38 @@ run "explicit_otel_resources_are_forwarded_verbatim" {
     error_message = "an explicit otel_resources override resolved to ${jsonencode(local.otel_resources)}"
   }
 }
+
+# Long mode runs the reconciler in a regional-go-cron job, which takes only
+# the limits and has its own default for an unset value.
+
+run "long_mode_unset_otel_resources_takes_the_job_default" {
+  command = plan
+
+  variables {
+    mode = "long"
+  }
+
+  assert {
+    condition     = module.reconciler-job[0].containers["us-central1"][2].resources[0].limits == tomap({ cpu = "250m", memory = "512Mi" })
+    error_message = "an unset otel_resources must leave the long-mode job sidecar at the regional-go-cron default of 250m CPU and 512Mi memory"
+  }
+}
+
+run "long_mode_explicit_otel_resources_reach_the_job" {
+  command = plan
+
+  variables {
+    mode = "long"
+    otel_resources = {
+      limits = {
+        cpu    = "500m"
+        memory = "1Gi"
+      }
+    }
+  }
+
+  assert {
+    condition     = module.reconciler-job[0].containers["us-central1"][2].resources[0].limits == tomap({ cpu = "500m", memory = "1Gi" })
+    error_message = "an explicit otel_resources override must reach the long-mode job sidecar"
+  }
+}

@@ -112,6 +112,11 @@ module "reconciler-job" {
   volumes      = local.job_volumes
   launch_stage = var.launch_stage
 
+  // Job containers have no cpu_idle or startup_cpu_boost, so only limits carry
+  // over. An unset otel_resources stays null so regional-go-cron applies its
+  // own default rather than the service-mode one in local.otel_resources.
+  otel_resources = var.otel_resources != null ? { limits = var.otel_resources.limits } : null
+
   timeout               = var.job_timeout
   max_retries           = 0
   deletion_protection   = var.deletion_protection

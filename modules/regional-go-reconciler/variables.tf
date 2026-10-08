@@ -427,7 +427,7 @@ variable "enable_observability_iam" {
 }
 
 variable "otel_resources" {
-  description = "The resource clause for the otel sidecar container. Null takes the module default."
+  description = "The resource clause for the otel sidecar container. Short mode applies it to the reconciler service; long mode applies its limits to the reconciler job. Null takes the default of the module that runs the sidecar."
   type = object({
     limits = optional(object(
       {
