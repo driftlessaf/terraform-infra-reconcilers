@@ -76,6 +76,17 @@ locals {
   // stay set, and must stay well above reportEvery, for this alert to behave.
   dead_letter_alert_service_name = var.mode == "long" ? local.reconciler_service_name : local.dispatcher_service_name
 
+  // The service-level cap also limits instances across revisions during a
+
+  // rollout, which Cloud Run may briefly exceed. Null leaves the per-revision
+
+  // default and omits the service-level cap, which keeps any value already
+
+  // deployed.
+  dispatcher_scaling = {
+    max_instances         = var.dispatcher_max_instances
+    service_max_instances = var.dispatcher_max_instances
+  }
   dispatcher_batch_size = var.batch-size != null ? var.batch-size : ceil(var.concurrent-work / length(var.regions))
   reenqueue_region      = coalesce(var.primary-region, keys(var.regions)[0])
 

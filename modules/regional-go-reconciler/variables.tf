@@ -104,6 +104,38 @@ variable "candidate-window-factor" {
   }
 }
 
+variable "dispatch_period" {
+  description = "Short mode only. Minimum spacing between dispatch passes each dispatcher instance admits, as a Go duration. Passes may overlap, and a pass with free slots lists the whole queued prefix, so a longer period bounds how many full listings a deep queue starts. Triggers inside the period are acknowledged and dropped."
+  type        = string
+  default     = "1s"
+
+  validation {
+    condition     = can(regex("^[1-9][0-9]{0,5}(ms|s|m)$", var.dispatch_period))
+    error_message = "dispatch_period must be a positive Go duration of at most six digits with one unit (for example, 1s or 60s)."
+  }
+
+  validation {
+    condition     = var.shards == 1 || var.dispatch_period == "1s"
+    error_message = "dispatch_period is not forwarded to sharded workqueues; leave it at 1s when shards > 1."
+  }
+}
+
+variable "dispatcher_max_instances" {
+  description = "Optional cap on dispatcher service instances in each region, applied to each revision and to the service across revisions. Short mode only. Each instance admits its own dispatch passes, and every admitted pass with free slots lists the whole queued prefix, so a deep queue costs one full listing per admitted pass on every instance. Cloud Run may briefly exceed the cap. Unset leaves the regional-go-service defaults on a dispatcher that was never capped; to remove a cap, set 100, because unsetting it keeps the deployed service-level cap."
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.dispatcher_max_instances == null ? true : var.dispatcher_max_instances >= 1 && floor(var.dispatcher_max_instances) == var.dispatcher_max_instances
+    error_message = "dispatcher_max_instances must be a positive integer when set."
+  }
+
+  validation {
+    condition     = var.shards == 1 || var.dispatcher_max_instances == null
+    error_message = "dispatcher_max_instances is not forwarded to sharded workqueues; leave it unset when shards > 1."
+  }
+}
+
 variable "regional-concurrent-work" {
   description = "Optional cap on concurrent work in each dispatcher region. Defaults to ceil(concurrent-work / number of regions) when unset. Must be a positive integer when set. The global concurrent-work cap also applies."
   type        = number

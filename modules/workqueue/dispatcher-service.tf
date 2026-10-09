@@ -5,6 +5,7 @@ locals {
     { name = "WORKQUEUE_OWNER_CONCURRENCY", value = tostring(coalesce(local.regional_concurrent_work, 0)) },
     { name = "WORKQUEUE_MAX_RETRY", value = tostring(local.max_retry) },
     { name = "WORKQUEUE_CANDIDATE_WINDOW_FACTOR", value = tostring(local.candidate_window_factor) },
+    { name = "WORKQUEUE_DISPATCH_PERIOD", value = var.dispatch_period },
     { name = "WORKQUEUE_BATCH_SIZE", value = tostring(local.dispatcher_batch_size) },
     { name = "WORKQUEUE_NAME", value = local.name },
     { name = "WORKQUEUE_SCHEDULED_WAIT_WARNING_THRESHOLD", value = var.scheduled_wait_warning_threshold },
@@ -26,6 +27,8 @@ module "dispatcher-service" {
 
   # Give the things in the workqueue a lot of time to process the key.
   request_timeout_seconds = 3600
+
+  scaling = local.dispatcher_scaling
 
   regional-connector = var.regional-connector
 

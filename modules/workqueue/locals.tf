@@ -31,6 +31,18 @@ locals {
   reconciler_service_name     = var.reconciler-service.name
   cpu_idle                    = var.cpu_idle
 
+  // The service-level cap also limits instances across revisions during a
+
+  // rollout, which Cloud Run may briefly exceed. Null leaves the per-revision
+
+  // default and omits the service-level cap, which keeps any value already
+
+  // deployed.
+  dispatcher_scaling = {
+    max_instances         = var.dispatcher_max_instances
+    service_max_instances = var.dispatcher_max_instances
+  }
+
   receiver_service_name   = "${var.name}-rcv"
   dispatcher_service_name = "${var.name}-dsp"
   reenqueue_job_name      = "${var.name}-req"

@@ -168,9 +168,9 @@ No requirements.
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_google"></a> [google](#provider\_google) | n/a |
-| <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | n/a |
-| <a name="provider_random"></a> [random](#provider\_random) | n/a |
+| <a name="provider_google"></a> [google](#provider\_google) | 8.6.0 |
+| <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | 8.6.0 |
+| <a name="provider_random"></a> [random](#provider\_random) | 3.9.1 |
 
 ## Modules
 
@@ -236,6 +236,8 @@ No requirements.
 | <a name="input_dead_letter_alert_duration"></a> [dead\_letter\_alert\_duration](#input\_dead\_letter\_alert\_duration) | How long the dead-lettered keys count must stay above the threshold before the alert fires (e.g. '0s', '600s'). | `string` | `"0s"` | no |
 | <a name="input_dead_letter_alert_threshold"></a> [dead\_letter\_alert\_threshold](#input\_dead\_letter\_alert\_threshold) | Number of dead-lettered keys above which the alert fires. | `number` | `1` | no |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Whether to enable delete protection for the service. | `bool` | `true` | no |
+| <a name="input_dispatch_period"></a> [dispatch\_period](#input\_dispatch\_period) | Short mode only. Minimum spacing between dispatch passes each dispatcher instance admits, as a Go duration. Passes may overlap, and a pass with free slots lists the whole queued prefix, so a longer period bounds how many full listings a deep queue starts. Triggers inside the period are acknowledged and dropped. | `string` | `"1s"` | no |
+| <a name="input_dispatcher_max_instances"></a> [dispatcher\_max\_instances](#input\_dispatcher\_max\_instances) | Optional cap on dispatcher service instances in each region, applied to each revision and to the service across revisions. Short mode only. Each instance admits its own dispatch passes, and every admitted pass with free slots lists the whole queued prefix, so a deep queue costs one full listing per admitted pass on every instance. Cloud Run may briefly exceed the cap. Unset leaves the regional-go-service defaults on a dispatcher that was never capped; to remove a cap, set 100, because unsetting it keeps the deployed service-level cap. | `number` | `null` | no |
 | <a name="input_dlq_operators"></a> [dlq\_operators](#input\_dlq\_operators) | IAM members granted roles/storage.objectAdmin on the workqueue bucket for dead-letter queue operations (inspect, drain, purge). Format: "user:email" or "serviceAccount:email". | `list(string)` | `[]` | no |
 | <a name="input_egress"></a> [egress](#input\_egress) | Which type of egress traffic to send through the VPC.<br/><br/>- ALL\_TRAFFIC sends all traffic through regional VPC network. This should be used if service is not expected to egress to the Internet.<br/>- PRIVATE\_RANGES\_ONLY sends only traffic to private IP addresses through regional VPC network | `string` | `"ALL_TRAFFIC"` | no |
 | <a name="input_enable_dead_letter_alerting"></a> [enable\_dead\_letter\_alerting](#input\_enable\_dead\_letter\_alerting) | Whether to enable alerting for dead-lettered keys. | `bool` | `true` | no |

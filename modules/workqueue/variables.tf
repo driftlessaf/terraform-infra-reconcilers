@@ -42,6 +42,28 @@ variable "concurrent-work" {
   type        = number
 }
 
+variable "dispatch_period" {
+  description = "Short mode only. Minimum spacing between dispatch passes each dispatcher instance admits, as a Go duration. Passes may overlap, and a pass with free slots lists the whole queued prefix, so a longer period bounds how many full listings a deep queue starts. Triggers inside the period are acknowledged and dropped."
+  type        = string
+  default     = "1s"
+
+  validation {
+    condition     = can(regex("^[1-9][0-9]{0,5}(ms|s|m)$", var.dispatch_period))
+    error_message = "dispatch_period must be a positive Go duration of at most six digits with one unit (for example, 1s or 60s)."
+  }
+}
+
+variable "dispatcher_max_instances" {
+  description = "Optional cap on dispatcher service instances in each region, applied to each revision and to the service across revisions. Short mode only. Each instance admits its own dispatch passes, and every admitted pass with free slots lists the whole queued prefix, so a deep queue costs one full listing per admitted pass on every instance. Cloud Run may briefly exceed the cap. Unset leaves the regional-go-service defaults on a dispatcher that was never capped; to remove a cap, set 100, because unsetting it keeps the deployed service-level cap."
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.dispatcher_max_instances == null ? true : var.dispatcher_max_instances >= 1 && floor(var.dispatcher_max_instances) == var.dispatcher_max_instances
+    error_message = "dispatcher_max_instances must be a positive integer when set."
+  }
+}
+
 variable "candidate-window-factor" {
   description = "How far each dispatch pass shuffles its candidates, as a multiple of the keys that pass can launch (window = factor x launch slots). Any whole number is valid, there are no special steps. 0 disables the shuffle: every dispatcher takes the head of the queue, so dispatchers sharing a queue race for the same keys and lose most contested claims. Raising it spreads dispatchers over more keys, lowering lost claims, at the cost of how long a key can sit unpicked (up to the factor in passes when only one dispatcher is running). Measured with three dispatchers, lost-claim share of the slowest: 16 -> 11.2%, 24 -> 8.0%, 32 -> 6.5%, 48 -> 4.2%, 64 -> 3.4%. 48 is the smallest that keeps the slowest dispatcher under 5% and is the library default (dispatcher.DefaultCandidateWindowFactor); the module defaults to 0 so spreading is opt-in per environment. Go lower only if pick latency matters more than contention, higher only if loss is still high with more dispatchers. Above about 96 the window reaches the enumeration limit and larger values change nothing, so the input is capped at 128."
   type        = number

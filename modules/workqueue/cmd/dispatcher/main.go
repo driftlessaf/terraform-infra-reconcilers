@@ -34,6 +34,8 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	Concurrency           int `env:"WORKQUEUE_CONCURRENCY"`
 	OwnerConcurrency      int `env:"WORKQUEUE_OWNER_CONCURRENCY,default=0"`
 	CandidateWindowFactor int `env:"WORKQUEUE_CANDIDATE_WINDOW_FACTOR,default=0"`
+	// DispatchPeriod is the minimum spacing between admitted dispatch passes.
+	DispatchPeriod time.Duration `env:"WORKQUEUE_DISPATCH_PERIOD,default=1s"`
 	// BatchSize is required; enforced in main().
 	BatchSize int `env:"WORKQUEUE_BATCH_SIZE"`
 	// Mode is required; enforced in main().
@@ -108,6 +110,7 @@ func main() {
 			wq, env.Concurrency, env.BatchSize, dispatcher.ServiceCallback(client), env.MaxRetry,
 			dispatcher.WithOwnerConcurrency(env.OwnerConcurrency),
 			dispatcher.WithCandidateWindowFactor(env.CandidateWindowFactor),
+			dispatcher.WithDispatchPeriod(env.DispatchPeriod),
 			dispatcher.WithErrorIngressURI(ctx, env.ErrorEventIngressURI, env.WorkqueueName),
 		)),
 		ReadHeaderTimeout: 10 * time.Second,
