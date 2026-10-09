@@ -26,12 +26,14 @@ locals {
   }
   squad_label = {
     squad = var.team
-    team  = var.team
   }
-  product_label = var.product != "" ? {
-    product = var.product
-  } : {}
-  merged_labels = merge(local.default_labels, local.squad_label, local.product_label, var.labels)
+  merged_labels = merge(local.default_labels, local.squad_label, var.labels)
+
+  # Vertex AI does not support tags, so its resources carry the owner labels.
+  attribution_labels = merge(
+    { team = var.team },
+    var.product != "" ? { product = var.product } : {},
+  )
 
   gcs_bucket_name = var.gcs_bucket_name != "" ? var.gcs_bucket_name : "${var.project}-${var.name}-embeddings"
 }
@@ -77,7 +79,7 @@ resource "google_vertex_ai_index" "this" {
   region       = var.region
   display_name = var.name
   description  = var.description
-  labels       = local.merged_labels
+  labels       = merge(local.merged_labels, local.attribution_labels)
 
   metadata {
     config {
@@ -120,7 +122,7 @@ resource "google_vertex_ai_index_endpoint" "this" {
   region       = var.region
   display_name = "${var.name}-endpoint"
   description  = "Vector search endpoint for ${var.name}"
-  labels       = local.merged_labels
+  labels       = merge(local.merged_labels, local.attribution_labels)
 
   # CMEK for the index endpoint when encryption_key_name is set, keeping the
   # whole vector store under one key; otherwise Google-managed encryption.

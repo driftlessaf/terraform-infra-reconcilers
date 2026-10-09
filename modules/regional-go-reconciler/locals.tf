@@ -13,13 +13,8 @@ locals {
 
   squad_label = {
     squad = var.team
-    team  = var.team
   }
-  product_label = var.product != "" ? {
-    product = var.product
-  } : {}
-
-  merged_labels = merge(local.default_labels, local.squad_label, local.product_label, var.labels)
+  merged_labels = merge(local.default_labels, local.squad_label, var.labels)
 
   // Mirrors the regional-go-service default. Passing the caller's null straight
   // through would clear the sidecar resource clause instead of inheriting it.

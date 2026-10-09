@@ -134,8 +134,6 @@ module "dashboard" {
   labels = merge({
     (var.name) : ""
     "linear" : ""
-    "team" : var.team
-    "product" : var.product
   }, var.dashboard_labels)
 
   alerts                = var.dashboard_alerts

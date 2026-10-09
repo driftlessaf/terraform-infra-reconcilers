@@ -151,8 +151,6 @@ module "dashboard" {
   labels = merge({
     (var.name) : ""
     "github" : ""
-    "team" : var.team
-    "product" : var.product
   }, var.dashboard_labels)
 
   service_sections = var.dashboard_service_sections
