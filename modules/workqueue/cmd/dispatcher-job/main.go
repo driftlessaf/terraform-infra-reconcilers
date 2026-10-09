@@ -360,8 +360,9 @@ type reservingQueue struct {
 }
 
 var (
-	_ workqueue.Interface     = (*reservingQueue)(nil)
-	_ workqueue.CapacityAware = (*reservingQueue)(nil)
+	_ workqueue.Interface          = (*reservingQueue)(nil)
+	_ workqueue.CapacityAware      = (*reservingQueue)(nil)
+	_ workqueue.OwnerCapacityAware = (*reservingQueue)(nil)
 )
 
 func (q *reservingQueue) Enumerate(ctx context.Context) ([]workqueue.ObservedInProgressKey, []workqueue.QueuedKey, []workqueue.DeadLetteredKey, error) {
@@ -377,6 +378,17 @@ func (q *reservingQueue) EnumerateWithCapacity(ctx context.Context, totalCapacit
 		return q.Enumerate(ctx)
 	}
 	wip, next, dead, err := bounded.EnumerateWithCapacity(ctx, totalCapacity)
+	return wip, q.reserving(next), dead, err
+}
+
+// EnumerateWithOwnerCapacity keeps the queue's owner-aware listing when it
+// has one, and falls back to EnumerateWithCapacity otherwise.
+func (q *reservingQueue) EnumerateWithOwnerCapacity(ctx context.Context, totalCapacity, ownerCapacity int) ([]workqueue.ObservedInProgressKey, []workqueue.QueuedKey, []workqueue.DeadLetteredKey, error) {
+	owned, ok := q.Interface.(workqueue.OwnerCapacityAware)
+	if !ok {
+		return q.EnumerateWithCapacity(ctx, totalCapacity)
+	}
+	wip, next, dead, err := owned.EnumerateWithOwnerCapacity(ctx, totalCapacity, ownerCapacity)
 	return wip, q.reserving(next), dead, err
 }
 
