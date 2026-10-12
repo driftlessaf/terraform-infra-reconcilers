@@ -22,7 +22,7 @@ resource "kubernetes_manifest" "svc-acct" {
 }
 
 resource "ko_build" "inmem" {
-  base_image  = "cgr.dev/chainguard/static:latest"
+  base_image  = "chainguard/static:latest"
   importpath  = "./cmd/inmem"
   working_dir = "${path.module}/../"
   platforms   = var.ko_platforms
