@@ -49,6 +49,10 @@ var env = envconfig.MustProcess(context.Background(), &struct {
 	// TickMinutes is the cron firing cadence (= shard size = floor for any
 	// per-repo resync period).
 	TickMinutes int `env:"TICK_MINUTES"` // required; enforced in main()
+
+	// Priority is the workqueue priority stamped on every key this run
+	// enqueues. A re-enqueue raises an already-queued key to it.
+	Priority int64 `env:"PRIORITY, default=0"`
 }{})
 
 func main() {
@@ -103,7 +107,7 @@ func main() {
 	}
 
 	tick := time.Duration(env.TickMinutes) * time.Minute
-	sharder, err := resync.New(tick, wqClient)
+	sharder, err := resync.New(tick, wqClient, resync.WithPriority(env.Priority))
 	if err != nil {
 		clog.FatalContextf(ctx, "Failed to create resync sharder: %v", err)
 	}

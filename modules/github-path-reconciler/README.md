@@ -288,4 +288,5 @@ No resources.
 | ---- | ----------- |
 | <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue. |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The workqueue receiver object for connecting triggers. |
+| <a name="output_receiver_uri"></a> [receiver\_uri](#output\_receiver\_uri) | URI of the workqueue receiver in the primary region. service\_account is already allowed to invoke it, so other jobs running as it can enqueue without their own grant. |
 <!-- END_TF_DOCS -->
