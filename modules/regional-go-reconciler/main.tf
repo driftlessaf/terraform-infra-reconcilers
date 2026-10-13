@@ -4,23 +4,9 @@ SPDX-License-Identifier: Apache-2.0
 */
 
 terraform {
-  required_version = ">= 1.9"
-
   required_providers {
     ko     = { source = "ko-build/ko" }
     cosign = { source = "chainguard-dev/cosign" }
-    google = {
-      source  = "hashicorp/google"
-      version = ">= 7.21.0"
-    }
-    google-beta = {
-      source  = "hashicorp/google-beta"
-      version = ">= 7.21.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = ">= 3.9.0"
-    }
   }
 }
 
@@ -28,7 +14,7 @@ terraform {
 // In long mode the reconciler runs as a sidecar in a Cloud Run Job instead.
 module "reconciler" {
   count              = var.mode == "short" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
 
   project_id         = var.project_id
@@ -67,5 +53,4 @@ module "reconciler" {
   notification_channels = var.notification_channels
 
   resource_manager_tags = var.resource_manager_tags
-  version               = "1.61.1"
 }

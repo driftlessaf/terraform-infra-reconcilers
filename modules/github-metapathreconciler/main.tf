@@ -1,7 +1,3 @@
-terraform {
-  required_version = ">= 1.9"
-}
-
 /*
 Copyright 2026 Chainguard, Inc.
 SPDX-License-Identifier: Apache-2.0
