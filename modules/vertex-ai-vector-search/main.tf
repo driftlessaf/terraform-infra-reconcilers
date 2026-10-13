@@ -4,6 +4,8 @@ SPDX-License-Identifier: Apache-2.0
 */
 
 terraform {
+  required_version = ">= 1.9"
+
   required_providers {
     google = {
       source = "hashicorp/google"

@@ -1,7 +1,14 @@
 terraform {
+  required_version = ">= 1.9"
+
   required_providers {
     ko = {
-      source = "ko-build/ko"
+      source  = "ko-build/ko"
+      version = ">= 0.0.21"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">= 2.29.0"
     }
   }
 }
@@ -22,7 +29,7 @@ resource "kubernetes_manifest" "svc-acct" {
 }
 
 resource "ko_build" "inmem" {
-  base_image  = "chainguard/static:latest"
+  base_image  = "cgr.dev/chainguard/static:latest"
   importpath  = "./cmd/inmem"
   working_dir = "${path.module}/../"
   platforms   = var.ko_platforms
