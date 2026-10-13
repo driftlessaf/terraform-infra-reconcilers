@@ -1,3 +1,7 @@
+terraform {
+  required_version = ">= 1.9"
+}
+
 module "workqueue-state" {
   source = "../../../../../public/terraform-infra-common/modules/dashboard/sections/workqueue"
 

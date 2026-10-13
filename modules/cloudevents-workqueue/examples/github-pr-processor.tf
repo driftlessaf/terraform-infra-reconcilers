@@ -1,3 +1,7 @@
+terraform {
+  required_version = ">= 1.9"
+}
+
 # Example: GitHub Pull Request Processor using CloudEvents
 
 # This example shows how to process GitHub pull request events

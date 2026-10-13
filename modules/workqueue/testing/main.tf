@@ -1,7 +1,14 @@
 terraform {
+  required_version = ">= 1.9"
+
   required_providers {
     ko = {
-      source = "ko-build/ko"
+      source  = "ko-build/ko"
+      version = ">= 0.0.21"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">= 2.29.0"
     }
   }
 }
