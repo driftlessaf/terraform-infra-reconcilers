@@ -76,8 +76,6 @@ module "cloudevents-issues" {
   notification_channels = var.notification_channels
   deletion_protection   = var.deletion_protection
 
-  depends_on = [module.reconciler]
-
   team    = var.team
   product = var.product
 
@@ -110,8 +108,6 @@ module "cloudevents-comments" {
 
   notification_channels = var.notification_channels
   deletion_protection   = var.deletion_protection
-
-  depends_on = [module.reconciler]
 
   team    = var.team
   product = var.product

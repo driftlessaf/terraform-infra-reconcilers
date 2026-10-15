@@ -73,14 +73,10 @@ module "cron-trigger-calls-dispatcher" {
 
   project_id = local.project_id
   region     = each.key
-  name       = local.dispatcher_service_name
+  // Read off the service, so the binding waits for its create.
+  name = module.dispatcher-service[0].names[each.key]
 
   service-account = google_service_account.cron-trigger[0].email
-
-  // The binding only references the service name as a string, so without this
-  // Terraform schedules the IAM call in parallel with the Cloud Run service
-  // create and races on first apply.
-  depends_on = [module.dispatcher-service]
 }
 
 resource "google_cloud_scheduler_job" "cron" {
@@ -160,12 +156,10 @@ module "change-trigger-calls-dispatcher" {
 
   project_id = local.project_id
   region     = each.key
-  name       = local.dispatcher_service_name
+  // Read off the service, so the binding waits for its create.
+  name = module.dispatcher-service[0].names[each.key]
 
   service-account = google_service_account.change-trigger[0].email
-
-  // See cron-trigger-calls-dispatcher above — same race.
-  depends_on = [module.dispatcher-service]
 }
 
 resource "google_pubsub_subscription" "global-this" {

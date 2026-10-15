@@ -104,8 +104,6 @@ module "cloudevents-prs" {
   notification_channels = var.notification_channels
   deletion_protection   = var.paused
 
-  depends_on = [module.reconciler]
-
   team    = var.team
   product = var.product
 

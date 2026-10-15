@@ -177,7 +177,7 @@ module "trigger" {
   broker     = each.value.broker
 
   private-service = {
-    name   = var.name
+    name   = module.subscriber.names[each.value.region]
     region = each.value.region
   }
 
@@ -199,5 +199,4 @@ module "trigger" {
 
   resource_manager_tags = var.resource_manager_tags
 
-  depends_on = [module.subscriber]
 }

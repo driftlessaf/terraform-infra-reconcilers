@@ -101,7 +101,7 @@ module "push-subscription" {
 
   private-service = {
     region = each.value.region
-    name   = "${var.name}-push"
+    name   = module.push-listener.names[each.value.region]
   }
 
   project_id = var.project_id
@@ -112,5 +112,4 @@ module "push-subscription" {
   notification_channels = var.notification_channels
   resource_manager_tags = var.resource_manager_tags
 
-  depends_on = [module.push-listener]
 }
