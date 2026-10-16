@@ -67,6 +67,7 @@ module "workqueue" {
   error_event_ingress = var.error_event_ingress
 
   resource_manager_tags = var.resource_manager_tags
+  project_number        = var.project_number
 }
 
 # Service account for hyperqueue router
@@ -125,4 +126,5 @@ module "hyperqueue-service" {
   notification_channels = var.notification_channels
 
   resource_manager_tags = var.resource_manager_tags
+  project_number        = var.project_number
 }

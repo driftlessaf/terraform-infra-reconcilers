@@ -302,6 +302,7 @@ No requirements.
 | <a name="input_primary-region"></a> [primary-region](#input\_primary-region) | The primary region for single-homed resources like the reenqueue job. Defaults to the first region in the regions map. | `string` | `null` | no |
 | <a name="input_product"></a> [product](#input\_product) | Product label to apply to the service. | `string` | `"unknown"` | no |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | n/a | `string` | n/a | yes |
+| <a name="input_project_number"></a> [project\_number](#input\_project\_number) | Optional project number of project\_id, used to build tag binding parents. When<br/>set, the module does not read the google\_project data source. Pass it when a<br/>caller uses a module-level depends\_on, which would otherwise defer the data<br/>source to apply and force every tag binding to be replaced. Must be known at<br/>plan time (for example the number of an existing project read from a<br/>`google_project` data source with no `depends_on`); leave it unset when the<br/>project is created in the same apply. | `string` | `null` | no |
 | <a name="input_queue_readers"></a> [queue\_readers](#input\_queue\_readers) | IAM members granted read-only access (roles/storage.objectViewer) to the<br/>workqueue bucket. For producers that read the queue's depth to decide whether<br/>to enqueue more — see gcs.QueuedDepth. The two other bindings onto this bucket<br/>both grant delete, which is more than a count needs. | `list(string)` | `[]` | no |
 | <a name="input_receiver_ingress"></a> [receiver\_ingress](#input\_receiver\_ingress) | The ingress traffic setting for the workqueue receiver service. INGRESS\_TRAFFIC\_ALL allows callers outside the VPC (e.g. Cloud Run services without VPC egress) to enqueue work. | `string` | `"INGRESS_TRAFFIC_INTERNAL_ONLY"` | no |
 | <a name="input_reconciler-service"></a> [reconciler-service](#input\_reconciler-service) | The name of the reconciler service that the workqueue will dispatch work to. | <pre>object({<br/>    name = string<br/>  })</pre> | n/a | yes |
@@ -321,4 +322,5 @@ No requirements.
 | <a name="output_dispatcher"></a> [dispatcher](#output\_dispatcher) | n/a |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | n/a |
 | <a name="output_scheduled_wait_warning_threshold"></a> [scheduled\_wait\_warning\_threshold](#output\_scheduled\_wait\_warning\_threshold) | The threshold after which scheduled work emits a waiting warning. |
+| <a name="output_tag_binding_parents"></a> [tag\_binding\_parents](#output\_tag\_binding\_parents) | The parent of every Pub/Sub tag binding, keyed by binding, region and tag key. |
 <!-- END_TF_DOCS -->

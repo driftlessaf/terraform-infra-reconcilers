@@ -61,6 +61,7 @@ module "subscriber" {
   product = var.product
 
   resource_manager_tags = var.resource_manager_tags
+  project_number        = var.project_number
 
   containers = {
     "subscriber" = {
@@ -198,5 +199,6 @@ module "trigger" {
   product = var.product
 
   resource_manager_tags = var.resource_manager_tags
+  project_number        = var.project_number
 
 }

@@ -89,6 +89,7 @@ No requirements.
 | <a name="input_observability_role"></a> [observability\_role](#input\_observability\_role) | Fully-qualified id of a single role (e.g. from the observability-role module) to grant the service account in place of the three built-in observability roles (monitoring.metricWriter, cloudtrace.agent, cloudprofiler.agent). Collapsing to one role keeps large projects under the 1,500-member IAM policy limit. | `string` | `null` | no |
 | <a name="input_product"></a> [product](#input\_product) | Product label to apply to the service. | `string` | `"unknown"` | no |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | n/a | `string` | n/a | yes |
+| <a name="input_project_number"></a> [project\_number](#input\_project\_number) | Optional project number of project\_id, used to build tag binding parents. When<br/>set, the module does not read the google\_project data source. Pass it when a<br/>caller uses a module-level depends\_on, which would otherwise defer the data<br/>source to apply and force every tag binding to be replaced. Must be known at<br/>plan time (for example the number of an existing project read from a<br/>`google_project` data source with no `depends_on`); leave it unset when the<br/>project is created in the same apply. | `string` | `null` | no |
 | <a name="input_reconciler-service"></a> [reconciler-service](#input\_reconciler-service) | The name of the reconciler service that the workqueue will dispatch work to. | <pre>object({<br/>    name = string<br/>  })</pre> | n/a | yes |
 | <a name="input_regional-concurrent-work"></a> [regional-concurrent-work](#input\_regional-concurrent-work) | Optional cap on concurrent work in each dispatcher region, distributed across shards. Must be a positive integer when set. The global concurrent-work cap also applies. | `number` | `null` | no |
 | <a name="input_regions"></a> [regions](#input\_regions) | A map from region names to a network and subnetwork. | <pre>map(object({<br/>    network = string<br/>    subnet  = string<br/>  }))</pre> | n/a | yes |
@@ -102,4 +103,5 @@ No requirements.
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The hyperqueue router service (clients queue work here) |
+| <a name="output_tag_binding_parents"></a> [tag\_binding\_parents](#output\_tag\_binding\_parents) | The parent of every shard workqueue Pub/Sub tag binding, keyed by shard. |
 <!-- END_TF_DOCS -->

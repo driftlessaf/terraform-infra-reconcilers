@@ -17,6 +17,14 @@ output "scheduled_wait_warning_threshold" {
   value       = var.scheduled_wait_warning_threshold
 }
 
+output "tag_binding_parents" {
+  description = "The parent of every Pub/Sub tag binding, keyed by binding, region and tag key."
+  value = merge(
+    { for k, b in google_tags_tag_binding.global_object_change_topic : "topic/${k}" => b.parent },
+    { for k, b in google_tags_tag_binding.global_subscription : "subscription/${k}" => b.parent },
+  )
+}
+
 output "bucket" {
   description = "The name of the GCS bucket backing the workqueue."
   value       = google_storage_bucket.global-workqueue[0].name

@@ -93,4 +93,5 @@ module "reenqueue" {
   deletion_protection   = local.deletion_protection
 
   resource_manager_tags = var.resource_manager_tags
+  project_number        = var.project_number
 }

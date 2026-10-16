@@ -79,4 +79,5 @@ module "dispatcher-service" {
   notification_channels = local.notification_channels
 
   resource_manager_tags = var.resource_manager_tags
+  project_number        = var.project_number
 }

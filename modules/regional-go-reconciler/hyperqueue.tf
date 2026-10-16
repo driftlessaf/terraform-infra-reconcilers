@@ -41,4 +41,5 @@ module "workqueue-sharded" {
   error_event_ingress = var.error_event_ingress
 
   resource_manager_tags = var.resource_manager_tags
+  project_number        = var.project_number
 }
