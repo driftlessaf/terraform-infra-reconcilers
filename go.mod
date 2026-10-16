@@ -10,7 +10,7 @@ require (
 	github.com/chainguard-dev/terraform-infra-common v1.25.0
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/google/go-github/v88 v88.0.0
-	github.com/prometheus/client_golang v1.24.1
+	github.com/prometheus/client_golang v1.25.0
 	github.com/sethvargo/go-envconfig v1.4.3
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/sync v0.23.0
@@ -59,7 +59,7 @@ require (
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.9.2 // indirect
 	github.com/go-git/go-git/v5 v5.19.3 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.5 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
@@ -94,9 +94,9 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
-	github.com/prometheus/common v0.70.1 // indirect
+	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
-	github.com/prometheus/procfs v0.21.1 // indirect
+	github.com/prometheus/procfs v0.22.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.8 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
