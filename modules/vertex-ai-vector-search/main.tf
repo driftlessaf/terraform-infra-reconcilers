@@ -14,7 +14,7 @@ terraform {
       # schema from 7.9.0 onward. Floor the requirement so consumers on
       # an older pin fail at init with a clear constraint error rather
       # than a confusing "Unsupported block type" schema error.
-      version = ">= 7.9.0"
+      version = ">= 8.7.0"
     }
   }
 }

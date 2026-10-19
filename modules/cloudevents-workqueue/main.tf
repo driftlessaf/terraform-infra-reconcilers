@@ -5,7 +5,7 @@ terraform {
     cosign = { source = "chainguard-dev/cosign" }
     google = {
       source  = "hashicorp/google"
-      version = ">= 7.21.0"
+      version = ">= 8.7.0"
     }
     random = { source = "hashicorp/random" }
     # Declare transitive providers so test mocks attach at this module's root.
