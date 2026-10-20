@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"os/signal"
-	"path"
 	"syscall"
 	"time"
 
@@ -272,15 +271,19 @@ func (h *cronHandler) runRepo(ctx context.Context, cfg patterns.RepoConfig) erro
 	}
 	defaultBranch := repo.GetDefaultBranch()
 
-	files, err := listFiles(ctx, ghClient.Git, cfg.Owner, cfg.Repo, defaultBranch, "")
+	// Get repository tree at default branch
+	tree, _, err := ghClient.Git.GetTree(ctx, cfg.Owner, cfg.Repo, defaultBranch, true)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get repository tree for %s/%s: %w", cfg.Owner, cfg.Repo, err)
 	}
 
 	// Accumulate unique keys
 	keySet := make(map[string]struct{})
-	for _, file := range files {
-		if key := cfg.MatchPath(file); key != "" {
+	for _, entry := range tree.Entries {
+		if entry.GetType() != "blob" {
+			continue
+		}
+		if key := cfg.MatchPath(entry.GetPath()); key != "" {
 			url := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s", cfg.Owner, cfg.Repo, defaultBranch, key)
 			keySet[url] = struct{}{}
 		}
@@ -291,47 +294,6 @@ func (h *cronHandler) runRepo(ctx context.Context, cfg patterns.RepoConfig) erro
 	}
 	clog.InfoContextf(ctx, "Considered %d keys for resync", len(keySet))
 	return nil
-}
-
-// listFiles returns the paths of the files in the tree treeish, prefixed with
-// dir. GitHub truncates a recursive tree past 100,000 entries or 7 MB, which
-// would skip every path past the cut, so a truncated tree is listed one level
-// deep instead and each subtree is listed the same way. Subtrees are fetched
-// by SHA, so the whole walk reads the one commit treeish resolved to, and
-// directory names never go into a request URL.
-func listFiles(ctx context.Context, git *github.GitService, owner, repo, treeish, dir string) ([]string, error) {
-	tree, _, err := git.GetTree(ctx, owner, repo, treeish, true)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tree %q (%s) of %s/%s: %w", dir, treeish, owner, repo, err)
-	}
-	truncated := tree.GetTruncated()
-	if truncated {
-		if tree, _, err = git.GetTree(ctx, owner, repo, tree.GetSHA(), false); err != nil {
-			return nil, fmt.Errorf("failed to get tree %q (%s) of %s/%s: %w", dir, treeish, owner, repo, err)
-		}
-		if tree.GetTruncated() {
-			return nil, fmt.Errorf("tree %q (%s) of %s/%s is truncated even one level deep", dir, treeish, owner, repo)
-		}
-	}
-
-	var paths []string
-	for _, entry := range tree.Entries {
-		entryPath := path.Join(dir, entry.GetPath())
-		switch entry.GetType() {
-		case "blob":
-			paths = append(paths, entryPath)
-		case "tree":
-			if !truncated {
-				continue
-			}
-			sub, err := listFiles(ctx, git, owner, repo, entry.GetSHA(), entryPath)
-			if err != nil {
-				return nil, err
-			}
-			paths = append(paths, sub...)
-		}
-	}
-	return paths, nil
 }
 
 func buildClientCache(app *githubreconciler.App) *githubreconciler.ClientCache {
