@@ -77,6 +77,7 @@ No requirements.
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_batch-size"></a> [batch-size](#input\_batch-size) | Optional cap on how much work to launch per dispatcher pass. | `number` | `null` | no |
+| <a name="input_bucket_location"></a> [bucket\_location](#input\_bucket\_location) | Optional Cloud Storage location for the workqueue bucket, either a region (for example 'us-central1') or a multi-region ('US', 'EU', 'ASIA'). When null, the bucket uses multi\_regional\_location. WARNING: changing the location of an existing queue replaces the bucket (force\_destroy is true), which discards every queued, in-progress and dead-letter object. Only set it on a new queue or after draining the queue. | `string` | `null` | no |
 | <a name="input_concurrent-work"></a> [concurrent-work](#input\_concurrent-work) | The amount of concurrent work to dispatch at a given time (distributed across shards). | `number` | n/a | yes |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Whether to enable delete protection for the service. | `bool` | `true` | no |
 | <a name="input_enable_dead_letter_alerting"></a> [enable\_dead\_letter\_alerting](#input\_enable\_dead\_letter\_alerting) | Whether to enable alerting for dead-lettered keys. | `bool` | `true` | no |

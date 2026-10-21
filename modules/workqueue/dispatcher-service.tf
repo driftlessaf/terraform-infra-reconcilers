@@ -16,7 +16,7 @@ locals {
 // Not used in long mode, where the dispatcher runs inside a Cloud Run Job.
 module "dispatcher-service" {
   count              = local.dispatcher_service_enabled ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-service"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-service"
   observability_role = var.observability_role
   project_id         = local.project_id
   name               = local.dispatcher_service_name
@@ -80,5 +80,4 @@ module "dispatcher-service" {
 
   resource_manager_tags = var.resource_manager_tags
   project_number        = var.project_number
-  version               = "1.70.0"
 }

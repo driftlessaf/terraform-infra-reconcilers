@@ -12,7 +12,7 @@ resource "google_storage_bucket" "global-workqueue" {
 
   name          = "${local.name}-${random_string.bucket_suffix[0].result}"
   project       = local.project_id
-  location      = local.multi_regional_location
+  location      = local.bucket_location
   force_destroy = true
   labels        = local.merged_labels
 

@@ -194,6 +194,17 @@ variable "multi_regional_location" {
   }
 }
 
+variable "bucket_location" {
+  description = "Optional Cloud Storage location for the workqueue bucket, either a region (for example 'us-central1') or a multi-region ('US', 'EU', 'ASIA'). When null, the bucket uses multi_regional_location. WARNING: changing the location of an existing queue replaces the bucket (force_destroy is true), which discards every queued, in-progress and dead-letter object. Only set it on a new queue or after draining the queue."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.bucket_location == null || can(regex("^([a-z]+-[a-z]+[0-9]+|US|EU|ASIA)$", var.bucket_location))
+    error_message = "bucket_location must be null, a GCS region such as 'us-central1', or one of 'US', 'EU', 'ASIA'."
+  }
+}
+
 variable "cpu_idle" {
   description = "Set to false for a region in order to use instance-based billing. Defaults to true."
   type        = map(map(bool))
