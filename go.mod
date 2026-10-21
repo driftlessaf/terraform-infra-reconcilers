@@ -5,7 +5,7 @@ go 1.27.0
 require (
 	chainguard.dev/driftlessaf v0.7.1
 	chainguard.dev/go-grpc-kit v0.20.0
-	cloud.google.com/go/storage v1.67.0
+	cloud.google.com/go/storage v1.69.0
 	github.com/chainguard-dev/clog v1.8.1
 	github.com/chainguard-dev/terraform-infra-common v1.25.0
 	github.com/cloudevents/sdk-go/v2 v2.16.2

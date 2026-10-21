@@ -26,8 +26,8 @@ cloud.google.com/go/monitoring v1.30.0 h1:r/d+JUbyKmJ8b07iznuKfzVzrIXTWxHQ3lBRm3
 cloud.google.com/go/monitoring v1.30.0/go.mod h1:htlUR0QWVMrjFzZmN4LGnMAve9xB/eduwjmINxVZ8RM=
 cloud.google.com/go/profiler v0.6.0 h1:Vwxqgnp8CQwBNcKjO8luwLCh7qblEkcZCtMUvhU9Yik=
 cloud.google.com/go/profiler v0.6.0/go.mod h1:cJV7Qfj0o9PAC7q/xQTkM6qn2FO9So3TFk4P5O5yLis=
-cloud.google.com/go/storage v1.67.0 h1:8xD3NvKuHE4c+b/kmSIVBdTc0BiOjplx+KecKGR9fr8=
-cloud.google.com/go/storage v1.67.0/go.mod h1:UsS9OgFg/XHOSYakQ8ZtLWWeyGkk1WnmD/GsGfN0BHM=
+cloud.google.com/go/storage v1.69.0 h1:jAAMC1411HEh78nKsU0Zns+eFj3TnhjAWIhg5Ud/XBM=
+cloud.google.com/go/storage v1.69.0/go.mod h1:PELYsxTYm2peE4mwLEC1+mS1dA/kUSRUxNv56rOy44g=
 cloud.google.com/go/trace v1.16.0 h1:GmQovzFc5F0CNfl0VLgL64aoTtu7xsM0YajW2GlG9+E=
 cloud.google.com/go/trace v1.16.0/go.mod h1:r+bdAn16dKLSV1G2D5v3e58IlQlizfxWrUfjx7kM7X0=
 dario.cat/mergo v1.0.2 h1:85+piFYR1tMbRrLcDwR18y4UKJ3aH1Tbzi24VRW1TK8=
@@ -266,8 +266,8 @@ go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.46.0 h1:KrC1Y
 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.46.0/go.mod h1:zDSEzoEqsOrgBeGvH66KRgxh90VonFyJqBHA0Pk3+rM=
 go.opentelemetry.io/otel/exporters/prometheus v0.68.0 h1:QOf2IftqQwITVRJpnn0M7M9ZCbgWfxz4P7i9C9yc2N4=
 go.opentelemetry.io/otel/exporters/prometheus v0.68.0/go.mod h1:bgSvqu2TWGXiz7yr5UTMfObH8oqxJWHTnubQ3ef9BO4=
-go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.44.0 h1:hqxVTu/GtBF+vJ8d1fzW7fRxZFvgoDjWcxwwCaFDYpU=
-go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.44.0/go.mod h1:z5fVEF4X5v0ESvlJqBrrFlBVoj5EQuefZpzsu7R+x5Q=
+go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.45.0 h1:dm9iyzn6tioYZtwqaiBSU0TSI8Yu/8dTIbfG0+B49DY=
+go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.45.0/go.mod h1:xAvxYjYK28qvt+yu4BYZ/zMmAjwMXINXD6JiMyeB8iI=
 go.opentelemetry.io/otel/log v1.47.0 h1:cOTS1CcLbSQeZKanGJ+0JpF/+t4PELi3O3bbl2lqCcI=
 go.opentelemetry.io/otel/log v1.47.0/go.mod h1:9byitSQ5pLC6PpqwGXjqdMKya6ZTswHRZh2vvXT33nw=
 go.opentelemetry.io/otel/metric v1.47.0 h1:4PptaldXx3Eat1XjMZ68pPJEs5wrhlemctZE9a3UdWY=
