@@ -61,6 +61,12 @@ variable "enable_dead_letter_alerting" {
   default     = true
 }
 
+variable "dead_letter_alert_threshold" {
+  description = "Number of dead-lettered keys above which the alert fires."
+  type        = number
+  default     = 1
+}
+
 variable "concurrent-work" {
   description = "The amount of concurrent work to dispatch at a given time."
   type        = number

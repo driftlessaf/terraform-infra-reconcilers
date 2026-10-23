@@ -33,6 +33,7 @@ module "reconciler" {
   multi_regional_location     = var.multi_regional_location
   egress                      = var.egress
   enable_dead_letter_alerting = var.enable_dead_letter_alerting
+  dead_letter_alert_threshold = var.dead_letter_alert_threshold
   labels                      = var.labels
   team                        = var.team
   product                     = var.product
