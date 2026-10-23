@@ -122,6 +122,11 @@ variables {
 run "short_mode_alert_filters_on_dispatcher_service" {
   command = plan
 
+  assert {
+    condition     = startswith(google_monitoring_alert_policy.dead_letter_queue[0].documentation[0].content, "The `fixture-wq` workqueue is holding")
+    error_message = "An unset documentation input must preserve the generic alert guidance."
+  }
+
   variables {
     mode = "short"
   }
@@ -136,7 +141,13 @@ run "long_mode_alert_filters_on_reconciler_job" {
   command = plan
 
   variables {
-    mode = "long"
+    mode                            = "long"
+    dead_letter_alert_documentation = "Check the [service runbook](https://example.com/runbook) before retrying."
+  }
+
+  assert {
+    condition     = startswith(google_monitoring_alert_policy.dead_letter_queue[0].documentation[0].content, "Check the [service runbook](https://example.com/runbook) before retrying.\n\nThe `fixture-wq` workqueue is holding")
+    error_message = "Long-mode alerts must prepend service-specific precautions without replacing generic guidance."
   }
 
   assert {

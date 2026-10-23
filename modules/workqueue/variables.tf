@@ -125,6 +125,13 @@ variable "dead_letter_alert_threshold" {
   default     = 1
 }
 
+variable "dead_letter_alert_documentation" {
+  description = "Service-specific recovery guidance prepended to the dead-letter alert documentation. Include a runbook link and any precautions to take before reenqueueing keys."
+  type        = string
+  default     = ""
+  nullable    = false
+}
+
 variable "dead_letter_alert_duration" {
   description = "How long the dead-lettered keys count must stay above the threshold before the alert fires (e.g. '0s', '600s')."
   type        = string

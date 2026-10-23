@@ -71,7 +71,9 @@ resource "google_monitoring_alert_policy" "dead_letter_queue" {
   documentation {
     subject = "Workqueue ${local.name} has dead-lettered keys"
 
-    content = <<-EOT
+    content = join("\n\n", compact([
+      var.dead_letter_alert_documentation,
+      <<-EOT
       The `${local.name}` workqueue is holding more than ${local.dead_letter_alert_threshold} dead-lettered key(s), reported by `${local.dead_letter_alert_service_name}`.
 
       A key is dead-lettered after `max-retry` failed reconciliations, or immediately when the reconciler returns a `DeadLetterError`. It is then parked under the `dead-letter/` prefix of the workqueue bucket and is never retried on its own, so whatever that key represents has stopped being reconciled until someone acts.
@@ -85,7 +87,8 @@ resource "google_monitoring_alert_policy" "dead_letter_queue" {
       3. **Decide whether the failure was transient.** A capacity blip, an upstream 5xx, or a dependency that has since been fixed will succeed on a retry. Execute the `${local.reenqueue_job_name}` job (link below) to requeue every dead-lettered key with a fresh attempt counter: keys that succeed clean themselves up, and anything genuinely broken dead-letters again and re-fires this alert.
       4. **Otherwise fix the reconciler, then reenqueue.** A key that comes back after a reenqueue is a real bug or a permanently-invalid key. Check the reconciler's error classification before blaming the key — treating a transient failure as permanent parks keys that a rerun would have cleared.
       5. **If the alert flaps** — closing and reopening on a count that never changed — do not shorten `auto_close`. In long mode the gauge is published only while a dispatch job is alive and only when there is a backlog to report, and the silence between those reports is what closes the incident; see the comment on `alert_strategy` in this module's `alerts.tf`.
-    EOT
+      EOT
+    ]))
 
     links {
       display_name = "Dead-lettered keys in GCS"
