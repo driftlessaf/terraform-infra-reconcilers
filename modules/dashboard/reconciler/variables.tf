@@ -68,17 +68,15 @@ variable "sections" {
   default = {}
 }
 
-// Alert configuration
+// An alert chart references a policy, it does not create one: the caller owns
+// the google_monitoring_alert_policy, and the description and troubleshooting
+// steps its documentation has to carry. The map key titles the chart.
+//
+// Same shape as the sibling dashboard/service and dashboard/workqueue modules.
 variable "alerts" {
-  description = "Map of alert names to alert configurations"
-  type = map(object({
-    displayName         = string
-    documentation       = string
-    userLabels          = map(string)
-    project             = string
-    notificationChannel = string
-  }))
-  default = {}
+  description = "A mapping from alerting policy names to the alert ids to add to the dashboard"
+  type        = map(string)
+  default     = {}
 }
 
 variable "notification_channels" {

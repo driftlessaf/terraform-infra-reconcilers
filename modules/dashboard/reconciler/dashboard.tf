@@ -1,5 +1,17 @@
 terraform {
   required_version = ">= 1.9"
+
+  // This module builds google_monitoring_dashboard resources through its child
+  // modules. Naming the provider here is what lets a terraform test mock it:
+  // a mock_provider only substitutes for a provider the root module requires,
+  // and without this the children configure the real one and a plan-only test
+  // goes looking for credentials. Constraint matches dashboard's own.
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 8.7.0"
+    }
+  }
 }
 
 /*

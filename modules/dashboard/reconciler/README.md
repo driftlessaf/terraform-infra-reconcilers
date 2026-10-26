@@ -92,7 +92,10 @@ module "my-reconciler-dashboard" {
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
-No requirements.
+| Name | Version |
+| ---- | ------- |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.9 |
+| <a name="requirement_google"></a> [google](#requirement\_google) | >= 8.7.0 |
 
 ## Providers
 
@@ -128,7 +131,7 @@ No resources.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_alerts"></a> [alerts](#input\_alerts) | Map of alert names to alert configurations | <pre>map(object({<br/>    displayName         = string<br/>    documentation       = string<br/>    userLabels          = map(string)<br/>    project             = string<br/>    notificationChannel = string<br/>  }))</pre> | `{}` | no |
+| <a name="input_alerts"></a> [alerts](#input\_alerts) | A mapping from alerting policy names to the alert ids to add to the dashboard | `map(string)` | `{}` | no |
 | <a name="input_concurrent_work"></a> [concurrent\_work](#input\_concurrent\_work) | The amount of concurrent work the workqueue dispatches | `number` | `20` | no |
 | <a name="input_labels"></a> [labels](#input\_labels) | Additional labels to add to the dashboard | `map(string)` | `{}` | no |
 | <a name="input_max_retry"></a> [max\_retry](#input\_max\_retry) | The maximum number of retry attempts for workqueue tasks | `number` | `20` | no |
