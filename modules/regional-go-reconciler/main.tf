@@ -61,6 +61,7 @@ module "reconciler" {
   request_timeout_seconds = var.request_timeout_seconds
   execution_environment   = var.execution_environment
   launch_stage            = var.launch_stage
+  manage_traffic          = var.manage_traffic
 
   slo = var.slo
 

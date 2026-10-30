@@ -604,6 +604,12 @@ variable "slo" {
   default = {}
 }
 
+variable "manage_traffic" {
+  description = "Whether Terraform owns the reconciler service's traffic split (short mode): 100% to the latest ready revision, which reverts an out-of-band traffic pin on the next apply. With false, a pin survives deploys and new revisions never serve."
+  type        = bool
+  default     = false
+}
+
 variable "launch_stage" {
   description = "The launch stage of the Cloud Run service and, in long mode, of the Cloud Run job (e.g. BETA to leverage features like disk volumes)."
   type        = string
