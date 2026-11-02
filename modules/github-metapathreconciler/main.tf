@@ -1,13 +1,5 @@
 terraform {
   required_version = ">= 1.9"
-
-  required_providers {
-    ko     = { source = "ko-build/ko" }
-    cosign = { source = "chainguard-dev/cosign" }
-    # Declare transitive providers so test mocks attach at this module's root.
-    google      = { source = "hashicorp/google" }
-    google-beta = { source = "hashicorp/google-beta" }
-  }
 }
 
 /*
@@ -25,19 +17,6 @@ locals {
     { type = "dev.chainguard.github.check_run", action = "completed" },
     { type = "dev.chainguard.github.check_suite", action = "completed" },
   ]
-
-  # Conversation comments get their own trigger set. They cannot share the PR
-  # one: that one is limited to branches this reconciler authored, and GitHub
-  # does not put the branch in a comment event.
-  pr_comments_enabled = !var.paused && var.pr_conversation_comments
-  pr_comment_event = {
-    type   = "dev.chainguard.github.issue_comment"
-    action = "created"
-  }
-  pr_comment_filters = length(var.repos) > 0 ? [
-    for r in var.repos : merge({ subject = "${r.owner}/${r.repo}" }, local.pr_comment_event)
-  ] : [local.pr_comment_event]
-  pr_comment_filter_not = [{ key = "actortype", value = "Bot" }]
 }
 
 # Regional Go reconciler for processing GitHub paths
@@ -118,42 +97,6 @@ module "cloudevents-prs" {
   extension_key = "pullrequesturl"
 
   # Send to the reconciler's workqueue
-  workqueue = module.reconciler.receiver
-
-  priority = var.pr_priority
-
-  notification_channels = var.notification_channels
-  deletion_protection   = var.paused
-
-  team    = var.team
-  product = var.product
-
-  resource_manager_tags = var.resource_manager_tags
-}
-
-# CloudEvents to Workqueue bridge for new comments in a pull request's conversation
-module "cloudevents-pr-comments" {
-  count              = local.pr_comments_enabled ? 1 : 0
-  source             = "../cloudevents-workqueue"
-  observability_role = var.observability_role
-
-  project_id = var.project_id
-  name       = "${var.name}-prc"
-  regions    = var.regions
-
-  broker            = var.broker
-  extra_brokers     = var.extra_brokers
-  drop_shared_types = var.drop_shared_types
-
-  filters = local.pr_comment_filters
-
-  # Skip comments written by bots, including this reconciler's own, so a reply
-  # cannot wake the reconciler again.
-  filter_not = local.pr_comment_filter_not
-
-  # Use pull request URL as the workqueue key
-  extension_key = "pullrequesturl"
-
   workqueue = module.reconciler.receiver
 
   priority = var.pr_priority
