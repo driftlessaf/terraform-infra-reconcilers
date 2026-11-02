@@ -11,6 +11,7 @@ No providers.
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
+| <a name="module_cloudevents-pr-comments"></a> [cloudevents-pr-comments](#module\_cloudevents-pr-comments) | ../cloudevents-workqueue | n/a |
 | <a name="module_cloudevents-prs"></a> [cloudevents-prs](#module\_cloudevents-prs) | ../cloudevents-workqueue | n/a |
 | <a name="module_dashboard"></a> [dashboard](#module\_dashboard) | ../dashboard/reconciler | n/a |
 | <a name="module_reconciler"></a> [reconciler](#module\_reconciler) | ../github-path-reconciler | n/a |
@@ -46,6 +47,7 @@ No resources.
 | <a name="input_otel_resources"></a> [otel\_resources](#input\_otel\_resources) | The resource clause for the otel sidecar container. Null inherits the reconciler default. | <pre>object({<br/>    limits = optional(object(<br/>      {<br/>        cpu    = string<br/>        memory = string<br/>      }<br/>    ), null)<br/>    cpu_idle          = optional(bool)<br/>    startup_cpu_boost = optional(bool)<br/>  })</pre> | `null` | no |
 | <a name="input_own_prs_only"></a> [own\_prs\_only](#input\_own\_prs\_only) | Scope the PR-event subscription to PRs this reconciler authored — those on<br/>branches named "<octo\_sts\_identity>/..." (changemanager's convention). The push<br/>listener has its own subscription, which this does not affect.<br/><br/>Defaults true, since most reconcilers only act on their own PRs. Set false for<br/>reconcilers that act on PRs they did NOT author — e.g. those running in a review<br/>or config mode — since scoping to own branches would hide the very PRs they<br/>exist to review. | `bool` | `true` | no |
 | <a name="input_paused"></a> [paused](#input\_paused) | Whether to pause the reconciler and event subscriptions | `bool` | `false` | no |
+| <a name="input_pr_conversation_comments"></a> [pr\_conversation\_comments](#input\_pr\_conversation\_comments) | Also deliver new comments left in the conversation of a pull request, so the<br/>reconciler wakes up when a person comments.<br/><br/>Only new comments from people are delivered. Edits, deletes and comments from<br/>bots (including this reconciler's own) are skipped. The subscription has no<br/>head-branch filter because GitHub does not put the branch in a comment event;<br/>the reconciler checks that it owns the PR after the event arrives.<br/><br/>When on, every new comment from a person on any pull request in the watched<br/>repos reaches the reconciler and costs it one pull request fetch.<br/><br/>Defaults false, so the PR subscription is exactly the default one. | `bool` | `false` | no |
 | <a name="input_pr_priority"></a> [pr\_priority](#input\_pr\_priority) | Priority for PR events in the workqueue | `number` | `200` | no |
 | <a name="input_primary-region"></a> [primary-region](#input\_primary-region) | Primary region for the service | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | Product label for the service | `string` | n/a | yes |
