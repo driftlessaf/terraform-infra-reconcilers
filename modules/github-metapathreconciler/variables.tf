@@ -365,3 +365,22 @@ variable "resource_manager_tags" {
     error_message = "resource_manager_tags keys must be tagKeys/<numeric-id> and values must be tagValues/<numeric-id>."
   }
 }
+
+variable "pr_conversation_comments" {
+  description = <<EOD
+Also deliver new comments left in the conversation of a pull request, so the
+reconciler wakes up when a person comments.
+
+Only new comments from people are delivered. Edits, deletes and comments from
+bots (including this reconciler's own) are skipped. The subscription has no
+head-branch filter because GitHub does not put the branch in a comment event;
+the reconciler checks that it owns the PR after the event arrives.
+
+When on, every new comment from a person on any pull request in the watched
+repos reaches the reconciler and costs it one pull request fetch.
+
+Defaults false, so the PR subscription is exactly the default one.
+EOD
+  type        = bool
+  default     = false
+}

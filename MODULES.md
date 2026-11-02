@@ -42,7 +42,7 @@ Use this when building a reconciler that processes GitHub issues and/or pull req
 
 Opinionated composition of `github-path-reconciler` + `cloudevents-workqueue` + dashboard, pre-wired for both **path-based reconciliation** (push + cron) and **PR event processing**. PR events are routed to the same workqueue at a configurable priority.
 
-Use this when your reconciler needs to react to both file-level changes (path patterns) and pull request events in the same GitHub repository.
+Use this when your reconciler needs to react to both file-level changes (path patterns) and pull request events in the same GitHub repository. Set `pr_conversation_comments` to also wake on new comments in a PR's conversation.
 
 ## Linear Integration
 
