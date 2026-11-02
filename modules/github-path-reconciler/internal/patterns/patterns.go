@@ -9,37 +9,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"regexp"
 	"time"
 
+	"chainguard.dev/driftlessaf/reconcilers/pathpatterns"
 	"gopkg.in/yaml.v3"
 )
 
 // RepoConfig holds the compiled path patterns for a single repository.
 type RepoConfig struct {
-	Owner           string
-	Repo            string
-	Patterns        []*regexp.Regexp
-	ExcludePatterns []*regexp.Regexp
+	Owner   string
+	Repo    string
+	Matcher *pathpatterns.Matcher
 	// Period is the per-repo resync period. Required; every repo declares
 	// its own value either in its REPOS_CONFIG entry or in .{identity}.yaml.
 	Period time.Duration
-}
-
-// MatchPath returns the first captured key from path, or "" if the path is
-// excluded or no include pattern matches.
-func (r *RepoConfig) MatchPath(path string) string {
-	for _, re := range r.ExcludePatterns {
-		if re.MatchString(path) {
-			return ""
-		}
-	}
-	for _, re := range r.Patterns {
-		if m := re.FindStringSubmatch(path); len(m) > 1 {
-			return m[1]
-		}
-	}
-	return ""
 }
 
 // repoConfigJSON is the JSON wire format for a single repo entry in REPOS_CONFIG.
@@ -69,39 +52,22 @@ func ParseRepoConfigs(configStr string) ([]RepoConfig, error) {
 		if len(r.PathPatterns) == 0 {
 			return nil, fmt.Errorf("repo %s/%s: no valid patterns found", r.Owner, r.Repo)
 		}
-		pats, err := compilePatterns(r.PathPatterns)
+		matcher, err := pathpatterns.New(r.PathPatterns, r.ExcludePatterns)
 		if err != nil {
 			return nil, fmt.Errorf("repo %s/%s: %w", r.Owner, r.Repo, err)
-		}
-		excludePats, err := compileMatchPatterns(r.ExcludePatterns)
-		if err != nil {
-			return nil, fmt.Errorf("repo %s/%s exclude_patterns: %w", r.Owner, r.Repo, err)
 		}
 		period, err := periodFromHours(r.ResyncPeriodHours)
 		if err != nil {
 			return nil, fmt.Errorf("repo %s/%s: %w", r.Owner, r.Repo, err)
 		}
 		configs = append(configs, RepoConfig{
-			Owner:           r.Owner,
-			Repo:            r.Repo,
-			Patterns:        pats,
-			ExcludePatterns: excludePats,
-			Period:          period,
+			Owner:   r.Owner,
+			Repo:    r.Repo,
+			Matcher: matcher,
+			Period:  period,
 		})
 	}
 	return configs, nil
-}
-
-// Parse parses a JSON array of regex patterns and validates that each has exactly one capture group.
-func Parse(patternsStr string) ([]*regexp.Regexp, error) {
-	var patternStrings []string
-	if err := json.Unmarshal([]byte(patternsStr), &patternStrings); err != nil {
-		return nil, fmt.Errorf("failed to parse patterns JSON: %w", err)
-	}
-	if len(patternStrings) == 0 {
-		return nil, errors.New("no valid patterns found")
-	}
-	return compilePatterns(patternStrings)
 }
 
 // repoConfigFile is the YAML format of the per-repo config file
@@ -123,19 +89,15 @@ func ParseRepoConfigFile(content []byte, owner, repo string) (RepoConfig, error)
 	if len(raw.PathPatterns) == 0 {
 		return RepoConfig{}, fmt.Errorf("repo config file for %s/%s has no path_patterns", owner, repo)
 	}
-	pats, err := compilePatterns(raw.PathPatterns)
+	matcher, err := pathpatterns.New(raw.PathPatterns, raw.ExcludePatterns)
 	if err != nil {
 		return RepoConfig{}, fmt.Errorf("%s/%s: %w", owner, repo, err)
-	}
-	excludePats, err := compileMatchPatterns(raw.ExcludePatterns)
-	if err != nil {
-		return RepoConfig{}, fmt.Errorf("%s/%s exclude_patterns: %w", owner, repo, err)
 	}
 	period, err := periodFromHours(raw.ResyncPeriodHours)
 	if err != nil {
 		return RepoConfig{}, fmt.Errorf("%s/%s: %w", owner, repo, err)
 	}
-	return RepoConfig{Owner: owner, Repo: repo, Patterns: pats, ExcludePatterns: excludePats, Period: period}, nil
+	return RepoConfig{Owner: owner, Repo: repo, Matcher: matcher, Period: period}, nil
 }
 
 // periodFromHours converts a positive hour count to a Duration. Zero or
@@ -145,43 +107,4 @@ func periodFromHours(hours int) (time.Duration, error) {
 		return 0, fmt.Errorf("resync_period_hours must be positive, got %d", hours)
 	}
 	return time.Duration(hours) * time.Hour, nil
-}
-
-func compilePatterns(patternStrings []string) ([]*regexp.Regexp, error) {
-	compiled := make([]*regexp.Regexp, 0, len(patternStrings))
-	for _, patternStr := range patternStrings {
-		// Add implicit ^ and $ anchors unconditionally
-		anchored := "^" + patternStr + "$"
-
-		regex, err := regexp.Compile(anchored)
-		if err != nil {
-			return nil, fmt.Errorf("invalid regex %q: %w", anchored, err)
-		}
-
-		// Ensure it has exactly one capture group
-		if numCaptures := regex.NumSubexp(); numCaptures != 1 {
-			return nil, fmt.Errorf("regex %q must have exactly one capture group, got %d", anchored, numCaptures)
-		}
-
-		compiled = append(compiled, regex)
-	}
-	return compiled, nil
-}
-
-// compileMatchPatterns compiles patterns for match-only use (no capture group required).
-// Returns nil for an empty slice since exclude patterns are optional.
-func compileMatchPatterns(patternStrings []string) ([]*regexp.Regexp, error) {
-	if len(patternStrings) == 0 {
-		return nil, nil
-	}
-	compiled := make([]*regexp.Regexp, 0, len(patternStrings))
-	for _, patternStr := range patternStrings {
-		anchored := "^" + patternStr + "$"
-		regex, err := regexp.Compile(anchored)
-		if err != nil {
-			return nil, fmt.Errorf("invalid regex %q: %w", anchored, err)
-		}
-		compiled = append(compiled, regex)
-	}
-	return compiled, nil
 }

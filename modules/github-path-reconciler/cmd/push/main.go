@@ -245,7 +245,7 @@ func (h *pushHandler) handlePushEvent(ctx context.Context, event cloudevents.Eve
 	// Match changed files against this repo's patterns
 	keySet := make(map[string]struct{})
 	for file := range changedFiles {
-		if key := cfg.MatchPath(file); key != "" {
+		if key, ok := cfg.Matcher.Match(file); ok {
 			url := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s", owner, repo, defaultBranch, key)
 			keySet[url] = struct{}{}
 		}

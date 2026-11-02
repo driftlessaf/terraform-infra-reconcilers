@@ -280,7 +280,7 @@ func (h *cronHandler) runRepo(ctx context.Context, cfg patterns.RepoConfig) erro
 	// Accumulate unique keys
 	keySet := make(map[string]struct{})
 	for _, file := range files {
-		if key := cfg.MatchPath(file); key != "" {
+		if key, ok := cfg.Matcher.Match(file); ok {
 			url := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s", cfg.Owner, cfg.Repo, defaultBranch, key)
 			keySet[url] = struct{}{}
 		}
