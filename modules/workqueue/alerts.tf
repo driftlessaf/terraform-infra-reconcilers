@@ -76,17 +76,17 @@ resource "google_monitoring_alert_policy" "dead_letter_queue" {
       <<-EOT
       The `${local.name}` workqueue is holding more than ${local.dead_letter_alert_threshold} dead-lettered key(s), reported by `${local.dead_letter_alert_service_name}`.
 
-      A key is dead-lettered after `max-retry` failed reconciliations, or immediately when the reconciler returns a `DeadLetterError`. It is then parked under the `dead-letter/` prefix of the workqueue bucket and is never retried on its own, so whatever that key represents has stopped being reconciled until someone acts.
+      A key is dead-lettered after `max-retry` failed reconciliations, or at once on a `DeadLetterError`. It waits under the `dead-letter/` prefix of the workqueue bucket and is not retried until someone acts.
 
-      This alert reports a level, not an event. It stays open while the backlog stands and closes on its own an hour after the last report once the keys are gone, so it may be telling you that something broke a while ago and is still broken rather than that something just broke.
+      This alert reports a level, not an event. It stays open while keys remain and closes an hour after the last report once they are gone, so the failure may be old.
 
       ## Troubleshooting
 
-      1. **See what is stuck.** List the `dead-letter/` prefix of the workqueue bucket (link below). The object name is the key; its `failed-time` metadata records when it was parked.
-      2. **Find out why.** Open the reconciler error logs (link below) and search for that key. The last failure before it was parked is the one that matters.
-      3. **Decide whether the failure was transient.** A capacity blip, an upstream 5xx, or a dependency that has since been fixed will succeed on a retry. Execute the `${local.reenqueue_job_name}` job (link below) to requeue every dead-lettered key with a fresh attempt counter: keys that succeed clean themselves up, and anything genuinely broken dead-letters again and re-fires this alert.
-      4. **Otherwise fix the reconciler, then reenqueue.** A key that comes back after a reenqueue is a real bug or a permanently-invalid key. Check the reconciler's error classification before blaming the key — treating a transient failure as permanent parks keys that a rerun would have cleared.
-      5. **If the alert flaps** — closing and reopening on a count that never changed — do not shorten `auto_close`. In long mode the gauge is published only while a dispatch job is alive and only when there is a backlog to report, and the silence between those reports is what closes the incident; see the comment on `alert_strategy` in this module's `alerts.tf`.
+      1. **See what is stuck.** List the bucket's `dead-letter/` prefix (link below). The object name is the key; its `failed-time` metadata records when it was parked.
+      2. **Find out why.** Search the reconciler error logs (link below) for the key. The last failure before it was parked is the one that matters.
+      3. **If the failure was transient** (a capacity blip, an upstream 5xx, a since-fixed dependency), execute the `${local.reenqueue_job_name}` job (link below). It requeues every dead-lettered key with a fresh attempt counter; a key that fails again re-fires this alert.
+      4. **Otherwise fix the reconciler, then reenqueue.** A key that returns after a reenqueue is a bug or a permanently invalid key. Check the reconciler's error classification: a transient failure treated as permanent parks keys a rerun would clear.
+      5. **If the alert flaps** on an unchanged count, do not shorten `auto_close`. See `alert_strategy` in this module's `alerts.tf`.
       EOT
     ]))
 
