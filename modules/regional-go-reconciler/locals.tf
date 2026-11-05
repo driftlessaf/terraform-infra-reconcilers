@@ -91,6 +91,9 @@ locals {
   dispatcher_batch_size = var.batch-size != null ? var.batch-size : ceil(var.concurrent-work / length(var.regions))
   reenqueue_region      = coalesce(var.primary-region, keys(var.regions)[0])
 
+  // The dispatcher runs as var.service_account in both modes, so it needs no
+  // account of its own.
+  dedicated_dispatcher_sa   = false
   dispatcher_sa_email       = var.service_account
   additional_bucket_members = ["serviceAccount:${var.service_account}"]
   dlq_operator_members      = var.dlq_operators

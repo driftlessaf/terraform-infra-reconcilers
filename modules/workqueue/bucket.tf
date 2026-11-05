@@ -21,17 +21,16 @@ resource "google_storage_bucket" "global-workqueue" {
 }
 
 locals {
-  // Splats rather than [0] indexes, because regional-go-reconciler sets
-  // workqueue_enabled false whenever it is sharded, and this expression is
-  // evaluated either way. A [0] index would have to survive the unchosen
-  // branch of the count below to be safe; [*] yields an empty list when
-  // the account is not created and needs no such guarantee.
-  queue_writer_members = concat(
-    [for sa in concat(
-      google_service_account.receiver[*].email,
-      google_service_account.dispatcher[*].email,
-    ) : "serviceAccount:${sa}"],
-    local.additional_bucket_members,
+  // Keyed by role, so that adding or removing one identity never shifts
+  // another's address. A shifted address replaces the grant, and the identity
+  // loses access to the queue for the length of the apply. Splats rather than
+  // [0] indexes: an account that is not created, as when regional-go-reconciler
+  // is sharded, leaves its entry out on its own.
+  queue_extra_writers = local.workqueue_enabled ? local.additional_bucket_members : []
+  queue_writer_members = merge(
+    { for sa in google_service_account.receiver[*].email : "receiver" => "serviceAccount:${sa}" },
+    { for sa in google_service_account.dispatcher[*].email : "dispatcher" => "serviceAccount:${sa}" },
+    { for i, m in local.queue_extra_writers : "extra-${i}" => m },
   )
 }
 
@@ -61,24 +60,22 @@ locals {
 //
 // The members are fewer identities than they look. In a standalone workqueue
 // the receiver and dispatcher have dedicated accounts and
-// additional_bucket_members is empty. Where the dispatcher is inlined as a
-// sidecar -- regional-go-reconciler -- it runs as the reconciler service's own
-// account, and that account is what appears in additional_bucket_members. So
-// the extra member is the dispatcher wearing the service's identity, with the
-// same object-scoped needs, not a third party with unexamined ones.
+// additional_bucket_members is empty. regional-go-reconciler runs its
+// dispatcher as the reconciler's own account, as a separate service in short
+// mode and inside the reconciler Job in long mode, so that account appears in
+// additional_bucket_members instead of a dispatcher account. So the extra
+// member is the dispatcher wearing the reconciler's identity, with the same
+// object-scoped needs, not a third party with unexamined ones.
 resource "google_storage_bucket_iam_member" "queue-writers" {
-  // count rather than for_each, and that is forced rather than chosen. A
-  // service account's email is not known until apply, so a for_each keyed on
-  // these members leaves Terraform unable to name the instances it would
-  // create, and the plan fails outright on any queue whose accounts do not yet
-  // exist. The list's length is known even when its contents are not, so count
-  // plans cleanly. The cost is positional addresses: reordering
-  // additional_bucket_members re-keys the grants after it.
-  count = local.workqueue_enabled ? length(local.queue_writer_members) : 0
+  // Keyed by role rather than by member: a service account's email is not
+  // known until apply, so it cannot be a for_each key on a queue whose
+  // accounts do not yet exist. Extra members are keyed by position, so
+  // reordering additional_bucket_members re-keys the grants after it.
+  for_each = local.queue_writer_members
 
   bucket = google_storage_bucket.global-workqueue[0].name
   role   = "roles/storage.objectUser"
-  member = local.queue_writer_members[count.index]
+  member = each.value
 }
 
 // Read-only access to the bucket, for producers that need to see the queue's

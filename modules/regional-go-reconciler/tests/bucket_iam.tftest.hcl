@@ -41,17 +41,17 @@ variables {
 
 # The inlined dispatcher runs as var.service_account, so that account needs the
 # same object access the standalone dispatcher's own account gets -- and no
-# more. Three grants: receiver, dispatcher, reconciler.
+# more. Two grants: receiver and reconciler, with no dedicated dispatcher account.
 run "inlined_dispatcher_identity_gets_object_user" {
   command = plan
 
   assert {
-    condition     = length(google_storage_bucket_iam_member.queue-writers) == 3
-    error_message = "the reconciler service account must get a write grant alongside the receiver and dispatcher"
+    condition     = length(google_storage_bucket_iam_member.queue-writers) == 2
+    error_message = "the reconciler service account must get a write grant alongside the receiver"
   }
   assert {
     condition = contains(
-      google_storage_bucket_iam_member.queue-writers[*].member,
+      values(google_storage_bucket_iam_member.queue-writers)[*].member,
       "serviceAccount:fixture@fixture-project.iam.gserviceaccount.com",
     )
     error_message = "additional_bucket_members must reach the write grants"
@@ -61,6 +61,14 @@ run "inlined_dispatcher_identity_gets_object_user" {
       for m in google_storage_bucket_iam_member.queue-writers : m.role == "roles/storage.objectUser"
     ])
     error_message = "the inlined dispatcher must hold objectUser, not a broader role"
+  }
+  assert {
+    condition     = keys(google_storage_bucket_iam_member.queue-writers) == ["extra-0", "receiver"]
+    error_message = "write grants must be keyed by role, so removing one never shifts another"
+  }
+  assert {
+    condition     = length(google_service_account.dispatcher) == 0
+    error_message = "the dispatcher runs as the reconciler's account, so it needs no dedicated account"
   }
 }
 
@@ -75,7 +83,7 @@ run "dlq_operators_hold_a_separate_additive_role" {
   }
 
   assert {
-    condition     = length(google_storage_bucket_iam_member.queue-writers) == 3
+    condition     = length(google_storage_bucket_iam_member.queue-writers) == 2
     error_message = "a dlq operator must not enter the queue-writer grants"
   }
   assert {
@@ -123,7 +131,7 @@ run "the_inlined_dispatcher_keeps_its_write_grant" {
 
   assert {
     condition = contains(
-      google_storage_bucket_iam_member.queue-writers[*].member,
+      values(google_storage_bucket_iam_member.queue-writers)[*].member,
       "serviceAccount:fixture@fixture-project.iam.gserviceaccount.com",
     )
     error_message = "the reconciler service account must hold a write grant"

@@ -1,16 +1,17 @@
 // Compute a suffix that satisfies the regex:
 // ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$
 resource "random_string" "dispatcher" {
-  count = local.workqueue_enabled ? 1 : 0
+  count = local.workqueue_enabled && local.dedicated_dispatcher_sa ? 1 : 0
 
   length  = 30 - length(local.sa_prefix)
   special = false
   upper   = false
 }
 
-// Create a dedicated GSA for the dispatcher service.
+// Create a dedicated GSA for the dispatcher service, unless the dispatcher runs
+// as another module's account.
 resource "google_service_account" "dispatcher" {
-  count   = local.workqueue_enabled ? 1 : 0
+  count   = local.workqueue_enabled && local.dedicated_dispatcher_sa ? 1 : 0
   project = local.project_id
 
   account_id   = "${local.sa_prefix}${random_string.dispatcher[0].result}"

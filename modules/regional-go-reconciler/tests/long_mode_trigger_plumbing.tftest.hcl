@@ -130,10 +130,6 @@ run "long_mode_builds_no_trigger_plumbing" {
     condition     = length(google_service_account.cron-trigger) == 0
     error_message = "long mode has no dispatcher cron, so it needs no cron-trigger account"
   }
-  assert {
-    condition     = length(google_service_account.dispatcher) == 1
-    error_message = "the dispatcher account stays until its bucket grant can be removed without shifting the others"
-  }
 }
 
 run "short_mode_keeps_trigger_plumbing" {

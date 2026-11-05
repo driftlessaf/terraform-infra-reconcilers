@@ -58,6 +58,10 @@ run "receiver_and_dispatcher_hold_object_user_additively" {
     ])
     error_message = "queue writers must hold objectUser, not a broader role"
   }
+  assert {
+    condition     = keys(google_storage_bucket_iam_member.queue-writers) == ["dispatcher", "receiver"]
+    error_message = "write grants must be keyed by role, so renaming or removing one never replaces a live grant"
+  }
 }
 
 # A queue reader must not be swept into the write grants. This module grants

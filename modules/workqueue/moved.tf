@@ -60,3 +60,14 @@ moved {
   from = module.reenqueue
   to   = module.reenqueue[0]
 }
+
+// queue-writers was a count over a positional list: receiver, dispatcher, then
+// additional_bucket_members. It is now keyed by role.
+moved {
+  from = google_storage_bucket_iam_member.queue-writers[0]
+  to   = google_storage_bucket_iam_member.queue-writers["receiver"]
+}
+moved {
+  from = google_storage_bucket_iam_member.queue-writers[1]
+  to   = google_storage_bucket_iam_member.queue-writers["dispatcher"]
+}

@@ -79,9 +79,14 @@ locals {
   reenqueue_region      = coalesce(var.primary-region, keys(var.regions)[0])
 
   // dispatcher_sa_email is the identity that calls the reconciler and error broker.
-  // In standalone mode this is the dispatcher's dedicated SA; modules that inline
-  // the dispatcher as a sidecar override this with their own service account.
+  // In standalone mode this is the dispatcher's dedicated SA. Modules that run
+  // the dispatcher as their own service account override this.
   dispatcher_sa_email = google_service_account.dispatcher[0].email
+
+  // dedicated_dispatcher_sa controls whether the dispatcher gets its own
+  // service account. Modules that run the dispatcher as their own account
+  // turn it off.
+  dedicated_dispatcher_sa = true
 
   // additional_bucket_members are extra IAM members granted objectUser on the
   // workqueue bucket, alongside the receiver and dispatcher. Inline deployments
