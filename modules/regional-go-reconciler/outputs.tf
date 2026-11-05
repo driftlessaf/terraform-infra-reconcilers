@@ -22,7 +22,7 @@ output "bucket" {
 }
 
 output "access_policy" {
-  description = "Receiver access policy and dispatcher and reenqueue invocation grants for the inline workqueue; null when sharded. Excludes inherited and out-of-band IAM grants."
+  description = "Receiver access policy and dispatcher and reenqueue invocation grants for the inline workqueue. Null when sharded. Excludes inherited and out-of-band IAM grants."
   value = local.workqueue_enabled ? {
     receiver = module.receiver-service[0].access_policy
     dispatcher = {
