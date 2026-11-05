@@ -134,15 +134,6 @@ the same variable is the permanent opt-out.
 
 See [variables.tf](./variables.tf) for all available configuration options.
 
-## Outputs
-
-| Name | Description |
-|------|-------------|
-| `workqueue-receiver` | The name of the workqueue receiver service |
-| `reconciler-uri` | The URI of the reconciler service |
-| `workqueue-topic` | The workqueue topic name |
-| `workqueue-dashboards` | Dashboard outputs for monitoring |
-
 ## Prebuilt sidecars
 
 In `mode = "short"`, use `raw_containers` to attach prebuilt images to the
