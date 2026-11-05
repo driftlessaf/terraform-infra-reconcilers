@@ -68,8 +68,10 @@ override_module {
 }
 
 override_module {
-  target  = module.reenqueue
-  outputs = {}
+  target = module.reenqueue
+  outputs = {
+    name = "fixture-wq-req-cron"
+  }
 }
 
 override_module {

@@ -43,6 +43,17 @@ run "default_documentation_keeps_generic_guidance" {
     condition     = startswith(google_monitoring_alert_policy.dead_letter_queue[0].documentation[0].content, "The `fixture` workqueue is holding")
     error_message = "An unset documentation input must leave the generic alert content first."
   }
+  assert {
+    condition     = strcontains(google_monitoring_alert_policy.dead_letter_queue[0].documentation[0].content, "execute the `fixture-req-cron` job")
+    error_message = "the alert text must name the reenqueue job by the name the cron module gives it"
+  }
+  assert {
+    condition = anytrue([
+      for l in google_monitoring_alert_policy.dead_letter_queue[0].documentation[0].links :
+      strcontains(l.url, "/fixture-req-cron/executions")
+    ])
+    error_message = "the alert must link to the reenqueue job by the name the cron module gives it"
+  }
 }
 
 # Slack omits a documentation section over 3,000 characters, and callers

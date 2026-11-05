@@ -84,7 +84,7 @@ resource "google_monitoring_alert_policy" "dead_letter_queue" {
 
       1. **See what is stuck.** List the bucket's `dead-letter/` prefix (link below). The object name is the key; its `failed-time` metadata records when it was parked.
       2. **Find out why.** Search the reconciler error logs (link below) for the key. The last failure before it was parked is the one that matters.
-      3. **If the failure was transient** (a capacity blip, an upstream 5xx, a since-fixed dependency), execute the `${local.reenqueue_job_name}` job (link below). It requeues every dead-lettered key with a fresh attempt counter; a key that fails again re-fires this alert.
+      3. **If the failure was transient** (a capacity blip, an upstream 5xx, a since-fixed dependency), execute the `${module.reenqueue[0].name}` job (link below). It requeues every dead-lettered key with a fresh attempt counter; a key that fails again re-fires this alert.
       4. **Otherwise fix the reconciler, then reenqueue.** A key that returns after a reenqueue is a bug or a permanently invalid key. Check the reconciler's error classification: a transient failure treated as permanent parks keys a rerun would clear.
       5. **If the alert flaps** on an unchanged count, do not shorten `auto_close`. See `alert_strategy` in this module's `alerts.tf`.
       EOT
@@ -102,7 +102,7 @@ resource "google_monitoring_alert_policy" "dead_letter_queue" {
 
     links {
       display_name = "Reenqueue job"
-      url          = "https://console.cloud.google.com/run/jobs/details/${local.reenqueue_region}/${local.reenqueue_job_name}/executions?project=${local.project_id}"
+      url          = "https://console.cloud.google.com/run/jobs/details/${local.reenqueue_region}/${module.reenqueue[0].name}/executions?project=${local.project_id}"
     }
   }
 

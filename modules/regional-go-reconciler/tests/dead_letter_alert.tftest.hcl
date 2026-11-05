@@ -77,8 +77,10 @@ override_module {
 }
 
 override_module {
-  target  = module.reenqueue
-  outputs = {}
+  target = module.reenqueue
+  outputs = {
+    name = "fixture-wq-req-cron"
+  }
 }
 
 override_module {
@@ -125,6 +127,13 @@ run "short_mode_alert_filters_on_dispatcher_service" {
   assert {
     condition     = startswith(google_monitoring_alert_policy.dead_letter_queue[0].documentation[0].content, "The `fixture-wq` workqueue is holding")
     error_message = "An unset documentation input must preserve the generic alert guidance."
+  }
+  assert {
+    condition = anytrue([
+      for l in google_monitoring_alert_policy.dead_letter_queue[0].documentation[0].links :
+      strcontains(l.url, "/fixture-wq-req-cron/executions")
+    ])
+    error_message = "the alert must link to the reenqueue job by the name the cron module gives it"
   }
 
   variables {

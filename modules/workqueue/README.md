@@ -158,7 +158,7 @@ A Cloud Run Job is automatically created for each workqueue to reenqueue dead-le
 To run the reenqueue job:
 
 ```bash
-gcloud run jobs execute <workqueue-name>-reenqueue --region <region>
+gcloud run jobs execute <workqueue-name>-req-cron --region <region>
 ```
 
 The job will:
