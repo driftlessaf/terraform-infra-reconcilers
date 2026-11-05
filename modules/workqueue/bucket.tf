@@ -109,8 +109,11 @@ resource "google_storage_bucket_iam_member" "dlq-operators" {
   member = each.value
 }
 
+// The change topics and the bucket notifications that publish to them exist
+// only to wake the dispatcher through its change-trigger subscription, so they
+// follow that trigger. Long mode, which dispatches on a cron, has neither.
 resource "google_pubsub_topic" "global-object-change-notifications" {
-  for_each = local.workqueue_enabled ? local.regions : {}
+  for_each = local.dispatcher_change_trigger_enabled ? local.regions : {}
 
   name   = "${local.name}-global-${each.key}"
   labels = local.merged_labels
@@ -125,7 +128,7 @@ data "google_storage_project_service_account" "gcs_account" {
 }
 
 resource "google_pubsub_topic_iam_binding" "global-gcs-publishes-to-topic" {
-  for_each = local.workqueue_enabled ? local.regions : {}
+  for_each = local.dispatcher_change_trigger_enabled ? local.regions : {}
 
   topic   = google_pubsub_topic.global-object-change-notifications[each.key].id
   role    = "roles/pubsub.publisher"
@@ -156,7 +159,7 @@ resource "google_pubsub_topic_iam_binding" "global-gcs-publishes-to-topic" {
 // that window may go unpublished and wait for the cron pass, as a shed
 // trigger does. The overlap otherwise only sends duplicate triggers.
 resource "google_storage_notification" "global-object-change-notifications" {
-  for_each = local.workqueue_enabled ? local.regions : {}
+  for_each = local.dispatcher_change_trigger_enabled ? local.regions : {}
 
   // We depend on the IAM binding granting the GCS service account pubsub.publisher
   // on the topic. GCP IAM is eventually consistent, and the GCS notification API
@@ -178,7 +181,7 @@ resource "google_storage_notification" "global-object-change-notifications" {
 }
 
 resource "google_storage_notification" "global-lease-release-notifications" {
-  for_each = local.workqueue_enabled ? local.regions : {}
+  for_each = local.dispatcher_change_trigger_enabled ? local.regions : {}
 
   depends_on = [
     google_pubsub_topic_iam_binding.global-gcs-publishes-to-topic,

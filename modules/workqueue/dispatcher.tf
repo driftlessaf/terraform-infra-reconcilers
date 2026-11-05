@@ -47,16 +47,16 @@ module "dispatcher-calls-error-broker" {
 // Compute a suffix that satisfies the regex:
 // ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$
 resource "random_string" "cron-trigger" {
-  count = local.workqueue_enabled ? 1 : 0
+  count = local.dispatcher_cron_enabled ? 1 : 0
 
   length  = 30 - length(local.sa_prefix)
   special = false
   upper   = false
 }
 
-// Create a dedicated GSA for the cron trigger.
+// Create a dedicated GSA for the cron trigger. It only exists while the cron does.
 resource "google_service_account" "cron-trigger" {
-  count   = local.workqueue_enabled ? 1 : 0
+  count   = local.dispatcher_cron_enabled ? 1 : 0
   project = local.project_id
 
   account_id   = "${local.sa_prefix}${random_string.cron-trigger[0].result}"

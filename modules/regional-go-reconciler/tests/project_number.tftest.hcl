@@ -19,7 +19,9 @@ mock_provider "random" {}
 variables {
   project_id = "fixture-project"
   name       = "fixture"
-  mode       = "long"
+  // Short mode: the topic tag bindings asserted below only exist where the
+  // change trigger does.
+  mode = "short"
   regions = {
     "us-central1" = {
       network = "projects/fixture-project/global/networks/fixture"
