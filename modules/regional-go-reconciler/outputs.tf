@@ -21,6 +21,17 @@ output "bucket" {
   value       = var.shards > 1 ? null : google_storage_bucket.global-workqueue[0].name
 }
 
+output "access_policy" {
+  description = "Receiver access policy and dispatcher and reenqueue invocation grants for the inline workqueue; null when sharded. Excludes inherited and out-of-band IAM grants."
+  value = local.workqueue_enabled ? {
+    receiver = module.receiver-service[0].access_policy
+    dispatcher = {
+      for region, authorization in module.dispatcher-calls-target : region => authorization.invocation_grant
+    }
+    reenqueue = module.reenqueue[0].invocation_grants
+  } : null
+}
+
 // Shaped for the workqueue module's reconciler-service input, so a caller
 // attaching a second workqueue to this reconciler -- a priority lane, say --
 // can order its roles/run.invoker grant after the service exists by passing
