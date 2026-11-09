@@ -59,7 +59,8 @@ matches it, and `filter_not` does not exclude it) gets a parallel trigger on
 that type's topic in its region, with the same filter clauses and subscriber. The shared-broker triggers stay, so delivery continues on
 whichever topic the broker ingress publishes the type to. Each parallel
 subscription is billed for its topic's full volume, so list only types this
-subscriber consumes. Regions not in `regions` are ignored.
+subscriber consumes. Regions not in `regions` are ignored unless
+`fan_in_region` is set.
 
   extra_brokers = {
     "dev.chainguard.github.check_run" = {
@@ -69,6 +70,36 @@ subscriber consumes. Regions not in `regions` are ignored.
 EOD
   type        = map(map(string))
   default     = {}
+}
+
+variable "fan_in_region" {
+  description = <<EOD
+A region in `regions` whose subscriber receives the events published in
+`broker` and `extra_brokers` regions that are not in `regions`. By default
+those regions get no triggers, and events published there never reach this
+subscriber. Set it when the subscriber runs in fewer regions than the broker
+publishes to, for example a single-region project reading a three-region
+broker in another project:
+
+  regions       = { "us-central1" = { ... } }
+  fan_in_region = "us-central1"
+  broker = {
+    for r in ["us-central1", "us-east4", "us-west1"] :
+    r => "projects/<broker-project>/topics/<broker>-$${r}"
+  }
+
+A broker in another project must grant this project's deployer
+`pubsub.topics.attachSubscription` on each topic. The added triggers are named
+by their broker region, so setting this input only adds triggers and leaves
+every existing trigger as it is.
+EOD
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.fan_in_region == null || contains(keys(var.regions), coalesce(var.fan_in_region, "-"))
+    error_message = "fan_in_region must be a key of regions."
+  }
 }
 
 variable "drop_shared_types" {

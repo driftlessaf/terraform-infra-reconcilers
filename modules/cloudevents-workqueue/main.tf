@@ -111,18 +111,25 @@ locals {
   // one trigger per (region, filter).
   filter_prefix_sets = length(var.filter_prefixes) > 0 ? var.filter_prefixes : [var.filter_prefix]
 
+  // With fan_in_region set, a broker region with no subscriber of its own still
+  // gets triggers, delivered to the fan_in_region subscriber. Its triggers are
+  // keyed and named by the broker region, which no existing key uses, so
+  // turning this on only adds triggers.
+  trigger_regions = var.fan_in_region == null ? keys(var.regions) : setunion(keys(var.regions), keys(var.broker))
+
   // Prefix is the outer dimension and filter the inner one, so the trigger index
   // of every existing (region, filter) pair is unchanged when a caller adds a
   // second prefix. Ordering it the other way would renumber the trailing filters
   // and destroy/recreate their live subscriptions.
   trigger_index = {
     for triple in setproduct(
-      keys(var.regions),
+      local.trigger_regions,
       range(length(local.filter_prefix_sets)),
       range(length(var.filters))
     ) :
     "${triple[0]}-${triple[1] * length(var.filters) + triple[2]}" => {
       region = triple[0]
+      target = contains(keys(var.regions), triple[0]) ? triple[0] : var.fan_in_region
       filter = var.filters[triple[2]]
       prefix = local.filter_prefix_sets[triple[1]]
       index  = triple[1] * length(var.filters) + triple[2]
@@ -178,8 +185,8 @@ module "trigger" {
   broker     = each.value.broker
 
   private-service = {
-    name   = module.subscriber.names[each.value.region]
-    region = each.value.region
+    name   = module.subscriber.names[each.value.target]
+    region = each.value.target
   }
 
   // Pass the filter and ensure extension key exists
