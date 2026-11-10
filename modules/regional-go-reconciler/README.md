@@ -281,6 +281,7 @@ No requirements.
 | <a name="output_access_policy"></a> [access\_policy](#output\_access\_policy) | Receiver access policy and dispatcher and reenqueue invocation grants for the inline workqueue. Null when sharded. Excludes inherited and out-of-band IAM grants. |
 | <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue (null when sharded; each shard manages its own bucket). |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The workqueue receiver object for connecting triggers. When sharded, this is the hyperqueue router. |
+| <a name="output_receiver-uris"></a> [receiver-uris](#output\_receiver-uris) | The URIs of the workqueue receiver service by region. When sharded, these are the hyperqueue router's URIs. |
 | <a name="output_reconciler-service"></a> [reconciler-service](#output\_reconciler-service) | The reconciler that workqueue dispatchers deliver to, shaped for the workqueue module's reconciler-service input. In short mode the value depends on the reconciler Cloud Run service; in long mode the reconciler is a Job and the name is a literal. |
 | <a name="output_reconciler-uris"></a> [reconciler-uris](#output\_reconciler-uris) | The URIs of the reconciler service by region (short mode only). |
 <!-- END_TF_DOCS -->

@@ -105,4 +105,5 @@ No requirements.
 | ---- | ----------- |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The hyperqueue router service (clients queue work here) |
 | <a name="output_tag_binding_parents"></a> [tag\_binding\_parents](#output\_tag\_binding\_parents) | The parent of every shard workqueue Pub/Sub tag binding, keyed by shard. |
+| <a name="output_uris"></a> [uris](#output\_uris) | The URIs of the hyperqueue router service by region. |
 <!-- END_TF_DOCS -->
