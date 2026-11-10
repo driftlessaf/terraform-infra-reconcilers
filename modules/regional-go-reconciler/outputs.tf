@@ -63,3 +63,13 @@ output "reconciler-service" {
     name = local.reconciler_service_name
   }
 }
+
+output "runtime_tag_bindings" {
+  description = "Cloud Run tag bindings for the reconciler and inline workqueue runtimes, keyed by role then region/tag key."
+  value = {
+    reconciler = var.mode == "short" ? module.reconciler[0].tag_bindings : module.reconciler-job[0].tag_bindings
+    receiver   = merge(module.receiver-service[*].tag_bindings...)
+    dispatcher = merge(module.dispatcher-service[*].tag_bindings...)
+    reenqueue  = merge(module.reenqueue[*].tag_bindings...)
+  }
+}

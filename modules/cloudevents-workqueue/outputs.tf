@@ -12,6 +12,19 @@ output "subscriber_service_account" {
   value       = google_service_account.subscriber.email
 }
 
+output "product_env" {
+  description = "Rendered CHAINGUARD_PRODUCT for the subscriber, keyed by region."
+  sensitive   = true
+  value = { for region, containers in module.subscriber.containers : region => one(flatten([
+    for container in containers : [for env in container.env : env.value if env.name == "CHAINGUARD_PRODUCT"]
+  ])) }
+}
+
+output "tag_bindings" {
+  description = "Subscriber Cloud Run tag binding parents, values and locations, keyed by region/tag key."
+  value       = module.subscriber.tag_bindings
+}
+
 output "trigger_targets" {
   description = "For each trigger key, the broker region whose topic it subscribes to and the subscriber region it pushes to. They differ only for regions fanned in to fan_in_region."
   value = {

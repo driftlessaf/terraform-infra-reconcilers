@@ -275,7 +275,9 @@ No requirements.
 
 | Name | Description |
 | ---- | ----------- |
+| <a name="output_product_env"></a> [product\_env](#output\_product\_env) | Rendered CHAINGUARD\_PRODUCT for the subscriber, keyed by region. |
 | <a name="output_subscriber"></a> [subscriber](#output\_subscriber) | n/a |
 | <a name="output_subscriber_service_account"></a> [subscriber\_service\_account](#output\_subscriber\_service\_account) | Subscriber service account for read grants on caller-owned state. |
+| <a name="output_tag_bindings"></a> [tag\_bindings](#output\_tag\_bindings) | Subscriber Cloud Run tag binding parents, values and locations, keyed by region/tag key. |
 | <a name="output_trigger_targets"></a> [trigger\_targets](#output\_trigger\_targets) | For each trigger key, the broker region whose topic it subscribes to and the subscriber region it pushes to. They differ only for regions fanned in to fan\_in\_region. |
 <!-- END_TF_DOCS -->
