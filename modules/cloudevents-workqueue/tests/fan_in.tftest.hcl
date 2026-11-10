@@ -46,6 +46,14 @@ run "other_broker_regions_ignored_by_default" {
     condition     = alltrue([for t in values(local.trigger_index) : t.target == t.region])
     error_message = "without fan_in_region, every trigger must deliver to its own region"
   }
+
+  assert {
+    condition = output.trigger_targets == {
+      "us-central1-0" = { region = "us-central1", target = "us-central1" }
+      "us-central1-1" = { region = "us-central1", target = "us-central1" }
+    }
+    error_message = "trigger_targets must list each trigger with its broker region and push target"
+  }
 }
 
 run "fan_in_subscribes_every_broker_region" {
@@ -74,6 +82,18 @@ run "fan_in_subscribes_every_broker_region" {
       for k, t in local.trigger_index : t.broker == "projects/other/topics/shared-${t.region}"
     ])
     error_message = "each trigger must subscribe to its own broker region's topic"
+  }
+
+  assert {
+    condition = output.trigger_targets == {
+      "us-central1-0" = { region = "us-central1", target = "us-central1" }
+      "us-central1-1" = { region = "us-central1", target = "us-central1" }
+      "us-east4-0"    = { region = "us-east4", target = "us-central1" }
+      "us-east4-1"    = { region = "us-east4", target = "us-central1" }
+      "us-west1-0"    = { region = "us-west1", target = "us-central1" }
+      "us-west1-1"    = { region = "us-west1", target = "us-central1" }
+    }
+    error_message = "trigger_targets must show every fanned-in trigger pushing to the fan_in_region subscriber"
   }
 }
 

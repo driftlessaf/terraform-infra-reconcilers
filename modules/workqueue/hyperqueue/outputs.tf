@@ -15,8 +15,3 @@ output "receiver" {
     name = "${var.name}-hq"
   }
 }
-
-output "uris" {
-  description = "The URIs of the hyperqueue router service by region."
-  value       = module.hyperqueue-service.uris
-}

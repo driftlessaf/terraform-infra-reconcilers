@@ -277,4 +277,5 @@ No requirements.
 | ---- | ----------- |
 | <a name="output_subscriber"></a> [subscriber](#output\_subscriber) | n/a |
 | <a name="output_subscriber_service_account"></a> [subscriber\_service\_account](#output\_subscriber\_service\_account) | Subscriber service account for read grants on caller-owned state. |
+| <a name="output_trigger_targets"></a> [trigger\_targets](#output\_trigger\_targets) | For each trigger key, the broker region whose topic it subscribes to and the subscriber region it pushes to. They differ only for regions fanned in to fan\_in\_region. |
 <!-- END_TF_DOCS -->

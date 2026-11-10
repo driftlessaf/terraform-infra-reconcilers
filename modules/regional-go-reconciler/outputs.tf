@@ -16,14 +16,6 @@ output "reconciler-uris" {
   value       = var.mode == "short" ? module.reconciler[0].uris : {}
 }
 
-output "receiver-uris" {
-  description = "The URIs of the workqueue receiver service by region. When sharded, these are the hyperqueue router's URIs."
-  value = tomap(one(concat(
-    module.receiver-service[*].uris,
-    module.workqueue-sharded[*].uris,
-  )))
-}
-
 output "bucket" {
   description = "The name of the GCS bucket backing the workqueue (null when sharded; each shard manages its own bucket)."
   value       = var.shards > 1 ? null : google_storage_bucket.global-workqueue[0].name
