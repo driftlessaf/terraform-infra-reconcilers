@@ -53,8 +53,7 @@ func TestWithDeadline(t *testing.T) {
 
 // A reconcile that runs out its deadline spends one of the key's attempts, so a
 // key whose reconcile always hangs dead-letters after maxRetry passes rather
-// than coming back forever, as it does when the job's own shutdown interrupts
-// it.
+// than coming back forever.
 func TestDeadlineDeadLettersHungKey(t *testing.T) {
 	const maxRetry = 3
 	synctest.Test(t, func(t *testing.T) {
