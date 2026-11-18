@@ -1,7 +1,9 @@
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
-No requirements.
+| Name | Version |
+| ---- | ------- |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.9 |
 
 ## Providers
 
@@ -30,9 +32,12 @@ No resources.
 | <a name="input_dashboard_alerts"></a> [dashboard\_alerts](#input\_dashboard\_alerts) | Alert configurations for the dashboard | `any` | `{}` | no |
 | <a name="input_dashboard_labels"></a> [dashboard\_labels](#input\_dashboard\_labels) | Additional labels for the dashboard | `map(string)` | `{}` | no |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Enable deletion protection | `bool` | `true` | no |
+| <a name="input_drop_shared_types"></a> [drop\_shared\_types](#input\_drop\_shared\_types) | ce-types whose shared-broker PR-event subscriptions to remove once the broker ingress routes them to their extra\_brokers topics. Only subscriptions filtered on exactly that type are removed. Forwarded to cloudevents-workqueue. | `set(string)` | `[]` | no |
 | <a name="input_egress"></a> [egress](#input\_egress) | Which type of egress traffic to send through the VPC. | `string` | `"PRIVATE_RANGES_ONLY"` | no |
 | <a name="input_enable_dead_letter_alerting"></a> [enable\_dead\_letter\_alerting](#input\_enable\_dead\_letter\_alerting) | Whether to enable alerting for dead-lettered keys. | `bool` | `true` | no |
 | <a name="input_error_event_ingress"></a> [error\_event\_ingress](#input\_error\_event\_ingress) | Optional CloudEvents ingress for emitting reconciler error events. Set to null to disable. | <pre>object({<br/>    name = string<br/>  })</pre> | `null` | no |
+| <a name="input_extra_brokers"></a> [extra\_brokers](#input\_extra\_brokers) | Additional broker topics keyed by ce-type then region, such as entries from the cloudevent-broker `dedicated` output. The PR-event subscription gets a parallel subscription on that topic for each listed type it consumes, alongside the shared-broker one. Forwarded to cloudevents-workqueue. | `map(map(string))` | `{}` | no |
+| <a name="input_fan_in_region"></a> [fan\_in\_region](#input\_fan\_in\_region) | Optional serving region for broker regions without a local subscriber. Applies to push and PR events, including conversation comments when enabled. Null keeps subscriptions limited to serving regions. Cross-project brokers must grant the deployer pubsub.topics.attachSubscription. | `string` | `null` | no |
 | <a name="input_github_app_id"></a> [github\_app\_id](#input\_github\_app\_id) | GitHub App ID. When non-zero, the push listener and resync cron authenticate using the app instead of Octo STS. | `number` | `0` | no |
 | <a name="input_github_app_key"></a> [github\_app\_key](#input\_github\_app\_key) | Key URI for the GitHub App private key (e.g. gcpkms://...). Required when github\_app\_id is non-zero. | `string` | `""` | no |
 | <a name="input_job_timeout"></a> [job\_timeout](#input\_job\_timeout) | Maximum time allowed for a single long-mode job execution (e.g. "3600s"). Only used when mode is "long". | `string` | `"3600s"` | no |
@@ -67,6 +72,7 @@ No resources.
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue. |
+| <a name="output_push_trigger_targets"></a> [push\_trigger\_targets](#output\_push\_trigger\_targets) | For each push subscription, the broker region and the push listener region that receives its events. |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The workqueue receiver object for connecting triggers. |
 | <a name="output_receiver_uri"></a> [receiver\_uri](#output\_receiver\_uri) | URI of the workqueue receiver in the primary region. service\_account is already allowed to invoke it, so other jobs running as it can enqueue without their own grant. |
 <!-- END_TF_DOCS -->

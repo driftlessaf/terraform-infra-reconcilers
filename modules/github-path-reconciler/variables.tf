@@ -505,6 +505,17 @@ variable "broker" {
   type        = map(string)
 }
 
+variable "fan_in_region" {
+  description = "Optional serving region that receives push events from broker regions without a local listener. Null keeps subscriptions limited to serving regions. Cross-project brokers must grant the deployer pubsub.topics.attachSubscription."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.fan_in_region == null || contains(keys(var.regions), coalesce(var.fan_in_region, "-"))
+    error_message = "fan_in_region must be a key of regions."
+  }
+}
+
 variable "error_event_ingress" {
   description = "Optional CloudEvents ingress for emitting reconciler error events. Set to null to disable."
   type = object({

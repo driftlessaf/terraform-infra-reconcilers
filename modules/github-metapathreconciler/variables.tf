@@ -42,6 +42,12 @@ variable "extra_brokers" {
   default     = {}
 }
 
+variable "fan_in_region" {
+  description = "Optional serving region for broker regions without a local subscriber. Applies to push and PR events, including conversation comments when enabled. Null keeps subscriptions limited to serving regions. Cross-project brokers must grant the deployer pubsub.topics.attachSubscription."
+  type        = string
+  default     = null
+}
+
 variable "drop_shared_types" {
   description = "ce-types whose shared-broker PR-event subscriptions to remove once the broker ingress routes them to their extra_brokers topics. Only subscriptions filtered on exactly that type are removed. Forwarded to cloudevents-workqueue."
   type        = set(string)

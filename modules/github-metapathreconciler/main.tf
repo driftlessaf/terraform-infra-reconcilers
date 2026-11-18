@@ -82,6 +82,7 @@ module "reconciler" {
 
   resync_floor_hours    = var.resync_floor_hours
   broker                = var.broker
+  fan_in_region         = var.fan_in_region
   paused                = var.paused
   error_event_ingress   = var.error_event_ingress
   trace_event_ingress   = var.trace_event_ingress
@@ -101,6 +102,7 @@ module "cloudevents-prs" {
 
   broker            = var.broker
   extra_brokers     = var.extra_brokers
+  fan_in_region     = var.fan_in_region
   drop_shared_types = var.drop_shared_types
   # One trigger per (subject × type); when repos is empty the allowlist flows for
   # any repo. The pullrequesturl attribute requirement still excludes branch CI.
@@ -143,6 +145,7 @@ module "cloudevents-pr-comments" {
 
   broker            = var.broker
   extra_brokers     = var.extra_brokers
+  fan_in_region     = var.fan_in_region
   drop_shared_types = var.drop_shared_types
 
   filters = local.pr_comment_filters

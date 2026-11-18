@@ -55,6 +55,13 @@ module "push-listener" {
 }
 
 locals {
+  # Preserve local delivery where a listener exists; fan in only remote topics.
+  push_broker_regions = var.fan_in_region == null ? toset(keys(var.regions)) : setunion(keys(var.regions), keys(var.broker))
+  push_target_regions = {
+    for region in local.push_broker_regions :
+    region => contains(keys(var.regions), region) ? region : var.fan_in_region
+  }
+
   # Subscription map for push triggers.
   #
   # When var.repos is non-empty, create one trigger per (repo, region) pair
@@ -68,15 +75,17 @@ locals {
   # cloudevents-prs in the github-metapathreconciler module.
   push_subscriptions = var.paused || !var.enable_push_listener ? {} : (
     length(var.repos) > 0 ? {
-      for pair in setproduct(keys(var.regions), var.repos) :
+      for pair in setproduct(keys(local.push_target_regions), var.repos) :
       "${pair[1].owner}/${pair[1].repo}/${pair[0]}" => {
         region  = pair[0]
+        target  = local.push_target_regions[pair[0]]
         subject = "${pair[1].owner}/${pair[1].repo}"
       }
       } : {
-      for region in keys(var.regions) :
+      for region, target in local.push_target_regions :
       region => {
         region  = region
+        target  = target
         subject = null
       }
     }
@@ -100,8 +109,8 @@ module "push-subscription" {
   }
 
   private-service = {
-    region = each.value.region
-    name   = module.push-listener.names[each.value.region]
+    region = each.value.target
+    name   = module.push-listener.names[each.value.target]
   }
 
   project_id = var.project_id
