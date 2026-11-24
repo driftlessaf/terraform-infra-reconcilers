@@ -163,7 +163,7 @@ gcloud run jobs execute <workqueue-name>-req-cron --region <region>
 
 The job will:
 1. Enumerate all dead-lettered keys in the workqueue
-2. Re-queue each key with a fresh attempt counter (preserving the original priority)
+2. Re-queue each key that is neither queued nor in progress, with a fresh attempt counter (preserving the original priority)
 3. When the requeued key succeeds, the dead-letter entry is automatically cleaned up
 
 ## Bucket IAM is additive
