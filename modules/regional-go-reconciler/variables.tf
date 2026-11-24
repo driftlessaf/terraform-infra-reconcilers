@@ -622,12 +622,6 @@ variable "dlq_operators" {
   default     = []
 }
 
-variable "reconciler_invokers" {
-  description = "IAM members granted roles/run.invoker on the reconciler Cloud Run Job in long mode, allowing them to execute it by hand to drain the workqueue without waiting for its schedule. Ignored in short mode. Format: \"user:email\", \"group:email\", or \"serviceAccount:email\"."
-  type        = list(string)
-  default     = []
-}
-
 variable "reenqueue_invokers" {
   description = "IAM members granted roles/run.invoker on the (manually-triggered) reenqueue Cloud Run job, allowing them to execute it to requeue dead-lettered workqueue items. Format: \"user:email\", \"group:email\", or \"serviceAccount:email\"."
   type        = list(string)
