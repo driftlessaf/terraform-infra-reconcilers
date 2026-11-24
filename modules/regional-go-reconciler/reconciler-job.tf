@@ -41,7 +41,7 @@ locals {
 
 module "reconciler-job" {
   count              = var.mode == "long" ? 1 : 0
-  source             = "chainguard-dev/common/infra//modules/regional-go-cron"
+  source             = "../../../../public/terraform-infra-common/modules/regional-go-cron"
   observability_role = var.observability_role
 
   project_id = var.project_id
@@ -65,6 +65,7 @@ module "reconciler-job" {
   regions = var.regions
 
   regional-cronspec = local.job_cronspec
+  invokers          = var.reconciler_invokers
 
   containers = merge(
     // Dispatcher-job as the entry-point container.
@@ -125,5 +126,4 @@ module "reconciler-job" {
 
   resource_manager_tags = var.resource_manager_tags
   project_number        = var.project_number
-  version               = "1.102.0"
 }
