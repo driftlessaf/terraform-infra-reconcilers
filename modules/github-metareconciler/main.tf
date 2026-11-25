@@ -7,6 +7,17 @@ Copyright 2026 Chainguard, Inc.
 SPDX-License-Identifier: Apache-2.0
 */
 
+terraform {
+  required_providers {
+    ko     = { source = "ko-build/ko" }
+    cosign = { source = "chainguard-dev/cosign" }
+    # Declare transitive providers so test mocks attach at this module's root.
+    google      = { source = "hashicorp/google" }
+    google-beta = { source = "hashicorp/google-beta" }
+    random      = { source = "hashicorp/random" }
+  }
+}
+
 locals {
   # PR event types this reconciler consumes. check_run/check_suite scoped to
   # "completed" — non-terminal check events only cause wasted reconciles.
@@ -35,6 +46,7 @@ module "reconciler" {
 
   # Workqueue configuration
   mode            = var.mode
+  paused          = var.paused
   concurrent-work = var.concurrent-work
   max-retry       = var.max-retry
   claim_window    = var.claim_window
@@ -62,6 +74,7 @@ module "reconciler" {
 
 # CloudEvents to Workqueue bridge for issue events
 module "cloudevents-issues" {
+  count              = var.paused == true ? 0 : 1
   source             = "../cloudevents-workqueue"
   observability_role = var.observability_role
 
@@ -69,8 +82,9 @@ module "cloudevents-issues" {
   name       = "${var.name}-ce"
   regions    = var.regions
 
-  broker  = var.broker
-  filters = var.filters
+  broker        = var.broker
+  fan_in_region = var.fan_in_region
+  filters       = var.filters
 
   # Use issue URL as the workqueue key
   extension_key = "issueurl"
@@ -81,7 +95,8 @@ module "cloudevents-issues" {
   priority = var.issue_priority
 
   notification_channels = var.notification_channels
-  deletion_protection   = var.deletion_protection
+  # Pausing removes intake subscriptions; protect the workqueue independently.
+  deletion_protection = false
 
   team    = var.team
   product = var.product
@@ -91,6 +106,7 @@ module "cloudevents-issues" {
 
 # CloudEvents to Workqueue bridge for pull request events
 module "cloudevents-prs" {
+  count              = var.paused == true ? 0 : 1
   source             = "../cloudevents-workqueue"
   observability_role = var.observability_role
 
@@ -99,6 +115,7 @@ module "cloudevents-prs" {
   regions    = var.regions
 
   broker            = var.broker
+  fan_in_region     = var.fan_in_region
   extra_brokers     = var.extra_brokers
   drop_shared_types = var.drop_shared_types
   # One trigger per (subject × type); the issues subscription keeps the unscoped
@@ -124,12 +141,22 @@ module "cloudevents-prs" {
   priority = var.pr_priority
 
   notification_channels = var.notification_channels
-  deletion_protection   = var.deletion_protection
+  deletion_protection   = false
 
   team    = var.team
   product = var.product
 
   resource_manager_tags = var.resource_manager_tags
+}
+
+moved {
+  from = module.cloudevents-issues
+  to   = module.cloudevents-issues[0]
+}
+
+moved {
+  from = module.cloudevents-prs
+  to   = module.cloudevents-prs[0]
 }
 
 # Dashboard for monitoring the reconciler

@@ -150,3 +150,68 @@ run "short_mode_keeps_trigger_plumbing" {
     error_message = "short mode's dispatcher cron needs its cron-trigger account"
   }
 }
+
+run "pause_stops_short_mode_dispatch" {
+  command = plan
+
+  variables {
+    mode   = "short"
+    paused = true
+  }
+
+  assert {
+    condition = (
+      length(google_cloud_scheduler_job.cron) > 0 &&
+      alltrue([for job in google_cloud_scheduler_job.cron : job.paused]) &&
+      length(google_pubsub_subscription.global-this) == 0 &&
+      local.reenqueue_paused
+    )
+    error_message = "Pause must stop both scheduled and object-change dispatch without reenqueueing dead letters."
+  }
+}
+
+run "pause_stops_long_mode_schedule" {
+  command = plan
+
+  variables {
+    mode   = "long"
+    paused = true
+  }
+
+  assert {
+    condition     = alltrue([for spec in values(local.job_cronspec) : spec.paused]) && local.reenqueue_paused
+    error_message = "Long-mode cron specifications and dead-letter reenqueue must remain paused."
+  }
+}
+
+run "default_preserves_dispatcher_pause_management" {
+  command = plan
+
+  variables {
+    mode = "short"
+  }
+
+  assert {
+    condition     = local.dispatcher_paused == null
+    error_message = "Default callers must preserve manually paused dispatcher schedules."
+  }
+}
+
+run "explicit_resume_restores_dispatch" {
+  command = plan
+
+  variables {
+    mode               = "short"
+    paused             = false
+    reenqueue_schedule = "*/5 * * * *"
+  }
+
+  assert {
+    condition = (
+      alltrue([for job in google_cloud_scheduler_job.cron : job.paused == false]) &&
+      length(google_pubsub_subscription.global-this) > 0 &&
+      !local.reenqueue_paused
+    )
+    error_message = "Explicit resume must restore cron and object-change dispatch and configured reenqueue."
+  }
+}

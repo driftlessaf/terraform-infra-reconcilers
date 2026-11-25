@@ -113,6 +113,9 @@ locals {
   // overrides these via var.reenqueue_schedule to opt into periodic auto-drain.
   reenqueue_schedule = "0 0 * * *"
   reenqueue_paused   = true
+  # Bare queues leave existing scheduler pauses unmanaged. The regional
+  # reconciler supplies its explicit pause control to the shared dispatcher.
+  dispatcher_paused = null
 
   // workqueue_enabled controls whether this module's workqueue resources
   // (bucket, receiver, dispatcher, reenqueue, alerts) are created.  The

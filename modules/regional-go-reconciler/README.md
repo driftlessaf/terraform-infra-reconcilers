@@ -153,15 +153,20 @@ configured. Use an image with a suitable entrypoint.
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
-No requirements.
+| Name | Version |
+| ---- | ------- |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.9 |
+| <a name="requirement_google"></a> [google](#requirement\_google) | >= 8.7.0 |
+| <a name="requirement_google-beta"></a> [google-beta](#requirement\_google-beta) | >= 8.7.0 |
+| <a name="requirement_random"></a> [random](#requirement\_random) | >= 3.9.1 |
 
 ## Providers
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_google"></a> [google](#provider\_google) | 8.6.0 |
-| <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | 8.6.0 |
-| <a name="provider_random"></a> [random](#provider\_random) | 3.9.1 |
+| <a name="provider_google"></a> [google](#provider\_google) | >= 8.7.0 |
+| <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | >= 8.7.0 |
+| <a name="provider_random"></a> [random](#provider\_random) | >= 3.9.1 |
 
 ## Modules
 
@@ -248,6 +253,7 @@ No requirements.
 | <a name="input_notification_channels"></a> [notification\_channels](#input\_notification\_channels) | The channels to send notifications to. List of channel IDs | `list(string)` | `[]` | no |
 | <a name="input_observability_role"></a> [observability\_role](#input\_observability\_role) | Fully-qualified id of a single role (e.g. from the observability-role module) to grant the service account in place of the three built-in observability roles (monitoring.metricWriter, cloudtrace.agent, cloudprofiler.agent). Collapsing to one role keeps large projects under the 1,500-member IAM policy limit. | `string` | `null` | no |
 | <a name="input_otel_resources"></a> [otel\_resources](#input\_otel\_resources) | The resource clause for the otel sidecar container. Short mode applies it to the reconciler service; long mode applies its limits to the reconciler job. Null takes the default of the module that runs the sidecar. | <pre>object({<br/>    limits = optional(object(<br/>      {<br/>        cpu    = string<br/>        memory = string<br/>      }<br/>    ), null)<br/>    cpu_idle          = optional(bool)<br/>    startup_cpu_boost = optional(bool)<br/>  })</pre> | `null` | no |
+| <a name="input_paused"></a> [paused](#input\_paused) | Controls automatic dispatch and dead-letter reenqueue for an unsharded workqueue. Null preserves existing scheduling behavior; true pauses and false explicitly resumes. Already-running reconciles can finish; manual invocations remain available. | `bool` | `null` | no |
 | <a name="input_primary-region"></a> [primary-region](#input\_primary-region) | The primary region for single-homed resources like the reenqueue job. Defaults to the first region in the regions map. | `string` | `null` | no |
 | <a name="input_product"></a> [product](#input\_product) | The product that this service belongs to. | `string` | `""` | no |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | n/a | `string` | n/a | yes |
@@ -281,6 +287,7 @@ No requirements.
 | ---- | ----------- |
 | <a name="output_access_policy"></a> [access\_policy](#output\_access\_policy) | Receiver access policy and dispatcher and reenqueue invocation grants for the inline workqueue. Null when sharded. Excludes inherited and out-of-band IAM grants. |
 | <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue (null when sharded; each shard manages its own bucket). |
+| <a name="output_dispatch_paused"></a> [dispatch\_paused](#output\_dispatch\_paused) | Configured pause state for automatic workqueue dispatch. Already-running reconciles and manual invocations can finish. |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The workqueue receiver object for connecting triggers. When sharded, this is the hyperqueue router. |
 | <a name="output_receiver-uris"></a> [receiver-uris](#output\_receiver-uris) | The URIs of the workqueue receiver service by region. When sharded, these are the hyperqueue router's URIs. |
 | <a name="output_reconciler-service"></a> [reconciler-service](#output\_reconciler-service) | The reconciler that workqueue dispatchers deliver to, shaped for the workqueue module's reconciler-service input. In short mode the value depends on the reconciler Cloud Run service; in long mode the reconciler is a Job and the name is a literal. |

@@ -42,6 +42,18 @@ variable "extra_brokers" {
   default     = {}
 }
 
+variable "fan_in_region" {
+  description = "Optional serving region for events from broker regions without a local subscriber. Null subscribes only in serving regions. Cross-project topics require the deployer to have pubsub.topics.attachSubscription."
+  type        = string
+  default     = null
+}
+
+variable "paused" {
+  description = "Removes issue/PR intake services, subscriptions and their Pub/Sub backlogs and dead letters, and stops automatic dispatch. Drain or export intake before pausing. Unpausing does not replay discarded or missed events; use a fresh event or explicit enqueue. Workqueue keys remain, and already-running reconciles can finish. Set false explicitly to resume dispatch; removing the setting restores null and can leave the scheduler paused. Null preserves intake and existing scheduling behavior."
+  type        = bool
+  default     = null
+}
+
 variable "drop_shared_types" {
   description = "ce-types whose shared-broker PR-event subscriptions to remove once the broker ingress routes them to their extra_brokers topics. Only subscriptions filtered on exactly that type are removed. Forwarded to cloudevents-workqueue."
   type        = set(string)
@@ -265,7 +277,7 @@ variable "notification_channels" {
 
 variable "deletion_protection" {
   type        = bool
-  description = "Enable deletion protection"
+  description = "Protect the reconciler and workqueue from deletion. Intake subscriber services are unprotected so paused can remove them; drain or export their Pub/Sub backlogs and dead letters before pausing."
   default     = true
 }
 

@@ -25,3 +25,8 @@ output "push_trigger_targets" {
     key => { region = subscription.region, target = subscription.target }
   }
 }
+
+output "dispatch_paused" {
+  description = "Configured automatic dispatch control; null preserves existing scheduling behavior."
+  value       = module.reconciler.dispatch_paused
+}

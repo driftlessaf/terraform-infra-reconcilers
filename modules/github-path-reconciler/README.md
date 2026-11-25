@@ -64,7 +64,7 @@ module "path-reconciler" {
   - **Periodic**: Full repository scan on a configurable schedule
 - **Built-in Workqueue**: Integrated workqueue with priority support
 - **Regional Deployment**: Deploy reconciler services across multiple regions
-- **Pausable**: Single control to pause both cron and push listeners
+- **Pausable**: `paused` stops resync and push intake. `dispatch_paused` separately controls automatic dispatch and dead-letter reenqueue; its null default preserves existing scheduling behavior. Running reconciles can finish.
 
 ## Architecture
 
@@ -189,7 +189,8 @@ Key variables:
 - `octo_sts_identity`: Octo STS identity for GitHub authentication
 - `broker`: Map of region to CloudEvents broker topic
 - `resync_period_hours`: How often to run full reconciliation (1-744)
-- `paused`: Pause both cron and push listeners
+- `paused`: Stop resync and push intake
+- `dispatch_paused`: Set true to stop automatic workqueue dispatch, false to resume, or leave null to preserve existing scheduling behavior
 - `enable_push_listener`: Set false to reconcile only on resync, e.g. when most pushes to matched paths are the reconciler's own writes
 - `deletion_protection`: Prevent accidental deletion (disable during initial rollout)
 
@@ -245,6 +246,7 @@ No resources.
 | <a name="input_containers"></a> [containers](#input\_containers) | The containers to run in the service.  Each container will be run in each region. | <pre>map(object({<br/>    source = object({<br/>      base_image  = optional(string, "cgr.dev/chainguard/git:latest@sha256:3f0d26b94f771fa99a083105ebad14e2386e7860e68d13e5e70ae1fb42629e25")<br/>      working_dir = string<br/>      importpath  = string<br/>      env         = optional(list(string), [])<br/>    })<br/>    args = optional(list(string), [])<br/>    ports = optional(list(object({<br/>      name           = optional(string, "h2c")<br/>      container_port = number<br/>    })), [])<br/>    resources = optional(<br/>      object(<br/>        {<br/>          limits = optional(object(<br/>            {<br/>              cpu    = string<br/>              memory = string<br/>            }<br/>          ), null)<br/>          cpu_idle          = optional(bool)<br/>          startup_cpu_boost = optional(bool, true)<br/>        }<br/>      ),<br/>      {}<br/>    )<br/>    env = optional(list(object({<br/>      name  = string<br/>      value = optional(string)<br/>      value_source = optional(object({<br/>        secret_key_ref = object({<br/>          secret  = string<br/>          version = string<br/>        })<br/>      }), null)<br/>    })), [])<br/>    regional-env = optional(list(object({<br/>      name  = string<br/>      value = map(string)<br/>    })), [])<br/>    regional-cpu-idle = optional(map(bool), {})<br/>    volume_mounts = optional(list(object({<br/>      name       = string<br/>      mount_path = string<br/>    })), [])<br/>    startup_probe = optional(object({<br/>      initial_delay_seconds = optional(number)<br/>      timeout_seconds       = optional(number, 240)<br/>      period_seconds        = optional(number, 240)<br/>      failure_threshold     = optional(number, 1)<br/>      tcp_socket = optional(object({<br/>        port = optional(number)<br/>      }), null)<br/>      grpc = optional(object({<br/>        port    = optional(number)<br/>        service = optional(string)<br/>      }), null)<br/>    }), null)<br/>    liveness_probe = optional(object({<br/>      initial_delay_seconds = optional(number)<br/>      timeout_seconds       = optional(number)<br/>      period_seconds        = optional(number)<br/>      failure_threshold     = optional(number)<br/>      http_get = optional(object({<br/>        path = optional(string)<br/>        http_headers = optional(list(object({<br/>          name  = string<br/>          value = string<br/>        })), [])<br/>      }), null)<br/>      grpc = optional(object({<br/>        port    = optional(number)<br/>        service = optional(string)<br/>      }), null)<br/>    }), null)<br/>  }))</pre> | `{}` | no |
 | <a name="input_dead_letter_alert_threshold"></a> [dead\_letter\_alert\_threshold](#input\_dead\_letter\_alert\_threshold) | Number of dead-lettered keys above which the alert fires. | `number` | `1` | no |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Whether to enable delete protection for the service. | `bool` | `true` | no |
+| <a name="input_dispatch_paused"></a> [dispatch\_paused](#input\_dispatch\_paused) | Controls automatic workqueue dispatch and dead-letter reenqueue. Null preserves existing scheduling behavior; true pauses and false explicitly resumes. | `bool` | `null` | no |
 | <a name="input_egress"></a> [egress](#input\_egress) | Which type of egress traffic to send through the VPC.<br/><br/>- ALL\_TRAFFIC sends all traffic through regional VPC network. This should be used if service is not expected to egress to the Internet.<br/>- PRIVATE\_RANGES\_ONLY sends only traffic to private IP addresses through regional VPC network | `string` | `"ALL_TRAFFIC"` | no |
 | <a name="input_enable_dead_letter_alerting"></a> [enable\_dead\_letter\_alerting](#input\_enable\_dead\_letter\_alerting) | Whether to enable alerting for dead-lettered keys. | `bool` | `true` | no |
 | <a name="input_enable_profiler"></a> [enable\_profiler](#input\_enable\_profiler) | Enable continuous profiling for the service.  This has a small performance impact, which shouldn't matter for production services. | `bool` | `true` | no |
@@ -265,7 +267,7 @@ No resources.
 | <a name="input_observability_role"></a> [observability\_role](#input\_observability\_role) | Fully-qualified id of a single role (e.g. from the observability-role module) to grant the service account in place of the three built-in observability roles (monitoring.metricWriter, cloudtrace.agent, cloudprofiler.agent). Collapsing to one role keeps large projects under the 1,500-member IAM policy limit. | `string` | `null` | no |
 | <a name="input_octo_sts_identity"></a> [octo\_sts\_identity](#input\_octo\_sts\_identity) | Octo STS identity for GitHub authentication. Also used as the config file name. | `string` | n/a | yes |
 | <a name="input_otel_resources"></a> [otel\_resources](#input\_otel\_resources) | The resource clause for the otel sidecar container. Null inherits the reconciler default. | <pre>object({<br/>    limits = optional(object(<br/>      {<br/>        cpu    = string<br/>        memory = string<br/>      }<br/>    ), null)<br/>    cpu_idle          = optional(bool)<br/>    startup_cpu_boost = optional(bool)<br/>  })</pre> | `null` | no |
-| <a name="input_paused"></a> [paused](#input\_paused) | Whether to pause both the cron service and push listener | `bool` | `false` | no |
+| <a name="input_paused"></a> [paused](#input\_paused) | Stops resync and push intake. Workqueue dispatch is controlled separately by dispatch\_paused. | `bool` | `false` | no |
 | <a name="input_primary-region"></a> [primary-region](#input\_primary-region) | The primary region to run the cron job in | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | The product that this service belongs to. | `string` | `""` | no |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | n/a | `string` | n/a | yes |
@@ -291,6 +293,7 @@ No resources.
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_bucket"></a> [bucket](#output\_bucket) | The name of the GCS bucket backing the workqueue. |
+| <a name="output_dispatch_paused"></a> [dispatch\_paused](#output\_dispatch\_paused) | Configured automatic dispatch control; null preserves existing scheduling behavior. |
 | <a name="output_push_trigger_targets"></a> [push\_trigger\_targets](#output\_push\_trigger\_targets) | For each push subscription, the broker region and the push listener region that receives its events. |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The workqueue receiver object for connecting triggers. |
 | <a name="output_receiver_uri"></a> [receiver\_uri](#output\_receiver\_uri) | URI of the workqueue receiver in the primary region. service\_account is already allowed to invoke it, so other jobs running as it can enqueue without their own grant. |

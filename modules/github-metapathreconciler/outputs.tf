@@ -22,3 +22,8 @@ output "push_trigger_targets" {
   description = "For each push subscription, the broker region and the push listener region that receives its events."
   value       = module.reconciler.push_trigger_targets
 }
+
+output "dispatch_paused" {
+  description = "Configured automatic-dispatch pause; null preserves existing scheduler management."
+  value       = module.reconciler.dispatch_paused
+}

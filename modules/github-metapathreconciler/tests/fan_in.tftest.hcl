@@ -104,3 +104,17 @@ run "paused_keeps_pr_and_comment_subscriptions_off" {
     error_message = "Fan-in must not subscribe paused PR or conversation-comment bridges."
   }
 }
+
+run "dispatch_pause_reaches_the_workqueue" {
+  command = plan
+
+  variables {
+    paused          = true
+    dispatch_paused = true
+  }
+
+  assert {
+    condition     = module.reconciler.dispatch_paused == true
+    error_message = "The explicit dispatcher pause must reach the path reconciler's real workqueue."
+  }
+}

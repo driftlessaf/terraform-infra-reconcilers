@@ -11,6 +11,11 @@ output "receiver" {
   }
 }
 
+output "dispatch_paused" {
+  description = "Configured pause state for automatic workqueue dispatch. Already-running reconciles and manual invocations can finish."
+  value       = local.dispatcher_paused
+}
+
 output "reconciler-uris" {
   description = "The URIs of the reconciler service by region (short mode only)."
   value       = var.mode == "short" ? module.reconciler[0].uris : {}

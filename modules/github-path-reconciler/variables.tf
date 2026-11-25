@@ -495,9 +495,15 @@ variable "enable_push_listener" {
 }
 
 variable "paused" {
-  description = "Whether to pause both the cron service and push listener"
+  description = "Stops resync and push intake. Workqueue dispatch is controlled separately by dispatch_paused."
   type        = bool
   default     = false
+}
+
+variable "dispatch_paused" {
+  description = "Controls automatic workqueue dispatch and dead-letter reenqueue. Null preserves existing scheduling behavior; true pauses and false explicitly resumes."
+  type        = bool
+  default     = null
 }
 
 variable "broker" {

@@ -283,9 +283,15 @@ variable "resync_floor_hours" {
 }
 
 variable "paused" {
-  description = "Whether to pause the reconciler and event subscriptions"
+  description = "Stops resync and event intake. Workqueue dispatch is controlled separately by dispatch_paused."
   type        = bool
   default     = false
+}
+
+variable "dispatch_paused" {
+  description = "Controls automatic workqueue dispatch and dead-letter reenqueue. Null preserves existing scheduling behavior; true pauses and false explicitly resumes."
+  type        = bool
+  default     = null
 }
 
 # PR-specific variables

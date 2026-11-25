@@ -1,7 +1,9 @@
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
-No requirements.
+| Name | Version |
+| ---- | ------- |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.9 |
 
 ## Providers
 
@@ -33,10 +35,13 @@ No resources.
 | <a name="input_dashboard_service_sections"></a> [dashboard\_service\_sections](#input\_dashboard\_service\_sections) | Service-specific dashboard sections (outputs of dashboard/sections/* modules) appended to this reconciler's dashboard. A reconciler whose own metrics answer a question the generic sections cannot renders them here rather than in a second dashboard nobody opens. | `list(any)` | `[]` | no |
 | <a name="input_dead_letter_alert_duration"></a> [dead\_letter\_alert\_duration](#input\_dead\_letter\_alert\_duration) | How long the dead-lettered keys count must stay above the threshold before the alert fires (e.g. '0s', '600s'). | `string` | `"0s"` | no |
 | <a name="input_dead_letter_alert_threshold"></a> [dead\_letter\_alert\_threshold](#input\_dead\_letter\_alert\_threshold) | Number of dead-lettered keys above which the alert fires. | `number` | `1` | no |
-| <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Enable deletion protection | `bool` | `true` | no |
+| <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Protect the reconciler and workqueue from deletion. Intake subscriber services are unprotected so paused can remove them; drain or export their Pub/Sub backlogs and dead letters before pausing. | `bool` | `true` | no |
 | <a name="input_dlq_operators"></a> [dlq\_operators](#input\_dlq\_operators) | IAM members granted roles/storage.objectAdmin on the workqueue bucket for dead-letter queue operations (inspect, drain, purge). Format: "user:email" or "serviceAccount:email". | `list(string)` | `[]` | no |
+| <a name="input_drop_shared_types"></a> [drop\_shared\_types](#input\_drop\_shared\_types) | ce-types whose shared-broker PR-event subscriptions to remove once the broker ingress routes them to their extra\_brokers topics. Only subscriptions filtered on exactly that type are removed. Forwarded to cloudevents-workqueue. | `set(string)` | `[]` | no |
 | <a name="input_egress"></a> [egress](#input\_egress) | Which type of egress traffic to send through the VPC. | `string` | `"PRIVATE_RANGES_ONLY"` | no |
 | <a name="input_error_event_ingress"></a> [error\_event\_ingress](#input\_error\_event\_ingress) | Optional CloudEvents ingress for emitting reconciler error events. Set to null to disable. | <pre>object({<br/>    name = string<br/>  })</pre> | `null` | no |
+| <a name="input_extra_brokers"></a> [extra\_brokers](#input\_extra\_brokers) | Additional broker topics keyed by ce-type then region, such as entries from the cloudevent-broker `dedicated` output. The PR-event subscription gets a parallel subscription on that topic for each listed type it consumes, alongside the shared-broker one. Forwarded to cloudevents-workqueue. | `map(map(string))` | `{}` | no |
+| <a name="input_fan_in_region"></a> [fan\_in\_region](#input\_fan\_in\_region) | Optional serving region for events from broker regions without a local subscriber. Null subscribes only in serving regions. Cross-project topics require the deployer to have pubsub.topics.attachSubscription. | `string` | `null` | no |
 | <a name="input_filters"></a> [filters](#input\_filters) | CloudEvents filters for selecting events to process (applied to both issue and PR events) | `list(map(string))` | `[]` | no |
 | <a name="input_issue_priority"></a> [issue\_priority](#input\_issue\_priority) | Priority for issue events in the workqueue | `number` | `50` | no |
 | <a name="input_launch_stage"></a> [launch\_stage](#input\_launch\_stage) | The launch stage of the Cloud Run service (e.g. BETA to leverage features like disk volumes). | `string` | `"GA"` | no |
@@ -48,6 +53,7 @@ No resources.
 | <a name="input_observability_role"></a> [observability\_role](#input\_observability\_role) | Fully-qualified id of a single role (e.g. from the observability-role module) to grant the service account in place of the three built-in observability roles (monitoring.metricWriter, cloudtrace.agent, cloudprofiler.agent). Collapsing to one role keeps large projects under the 1,500-member IAM policy limit. | `string` | `null` | no |
 | <a name="input_octo_sts_identity"></a> [octo\_sts\_identity](#input\_octo\_sts\_identity) | The reconciler's octo-sts identity (the same value passed to the binary as<br/>OCTO\_IDENTITY). Used only to scope PR events when own\_prs\_only is set, since<br/>changemanager names this reconciler's branches "<octo\_sts\_identity>/...".<br/>Filter-only here: unlike github-metapathreconciler this module wires no auth to<br/>it (the binary handles GitHub auth itself). | `string` | `""` | no |
 | <a name="input_own_prs_only"></a> [own\_prs\_only](#input\_own\_prs\_only) | Scope the PR-event subscription to PRs this reconciler authored — those on<br/>branches named "<octo\_sts\_identity>/...". Never affects the issues subscription<br/>(issue events carry no headbranch).<br/><br/>Defaults true, since most reconcilers only act on their own PRs. Set false for<br/>reconcilers that act on PRs they did NOT author, since scoping to own branches<br/>would hide those PRs. | `bool` | `true` | no |
+| <a name="input_paused"></a> [paused](#input\_paused) | Removes issue/PR intake services, subscriptions and their Pub/Sub backlogs and dead letters, and stops automatic dispatch. Drain or export intake before pausing. Unpausing does not replay discarded or missed events; use a fresh event or explicit enqueue. Workqueue keys remain, and already-running reconciles can finish. Set false explicitly to resume dispatch; removing the setting restores null and can leave the scheduler paused. Null preserves intake and existing scheduling behavior. | `bool` | `null` | no |
 | <a name="input_pr_priority"></a> [pr\_priority](#input\_pr\_priority) | Priority for PR events in the workqueue | `number` | `200` | no |
 | <a name="input_primary-region"></a> [primary-region](#input\_primary-region) | Primary region for the service | `string` | n/a | yes |
 | <a name="input_product"></a> [product](#input\_product) | Product label for the service | `string` | n/a | yes |
@@ -64,5 +70,7 @@ No resources.
 
 | Name | Description |
 | ---- | ----------- |
+| <a name="output_dispatch_paused"></a> [dispatch\_paused](#output\_dispatch\_paused) | Configured automatic-dispatch pause; null preserves existing scheduler management. |
+| <a name="output_intake_targets"></a> [intake\_targets](#output\_intake\_targets) | Issue and PR event targets by source region; empty while paused. |
 | <a name="output_receiver"></a> [receiver](#output\_receiver) | The workqueue receiver object for connecting triggers. |
 <!-- END_TF_DOCS -->

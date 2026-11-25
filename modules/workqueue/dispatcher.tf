@@ -23,28 +23,26 @@ resource "google_service_account" "dispatcher" {
 module "dispatcher-calls-target" {
   for_each = local.dispatcher_calls_target_enabled ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
   name       = local.reconciler_service_name
 
   service-account = local.dispatcher_sa_email
-  version         = "1.102.1"
 }
 
 // Authorize the dispatcher service account to call the error event broker.
 module "dispatcher-calls-error-broker" {
   for_each = local.workqueue_enabled && local.error_event_ingress != null ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
   name       = local.error_event_ingress.name
 
   service-account = local.dispatcher_sa_email
-  version         = "1.102.1"
 }
 
 // Compute a suffix that satisfies the regex:
@@ -72,7 +70,7 @@ resource "google_service_account" "cron-trigger" {
 module "cron-trigger-calls-dispatcher" {
   for_each = local.dispatcher_cron_enabled ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
@@ -80,7 +78,6 @@ module "cron-trigger-calls-dispatcher" {
   name = module.dispatcher-service[0].names[each.key]
 
   service-account = google_service_account.cron-trigger[0].email
-  version         = "1.102.1"
 }
 
 resource "google_cloud_scheduler_job" "cron" {
@@ -92,6 +89,7 @@ resource "google_cloud_scheduler_job" "cron" {
   // because otherwise we risk delaying tasks with a NotBefore for up to 30m
   // if the workqueue is otherwise idle.
   schedule         = "* * * * *"
+  paused           = local.dispatcher_paused
   time_zone        = "America/New_York"
   attempt_deadline = "1800s" // The maximum
   region           = each.key
@@ -156,7 +154,7 @@ resource "google_service_account_iam_binding" "allow-pubsub-to-mint-tokens" {
 module "change-trigger-calls-dispatcher" {
   for_each = local.dispatcher_change_trigger_enabled ? local.regions : {}
 
-  source = "chainguard-dev/common/infra//modules/authorize-private-service"
+  source = "../../../../public/terraform-infra-common/modules/authorize-private-service"
 
   project_id = local.project_id
   region     = each.key
@@ -164,7 +162,6 @@ module "change-trigger-calls-dispatcher" {
   name = module.dispatcher-service[0].names[each.key]
 
   service-account = google_service_account.change-trigger[0].email
-  version         = "1.102.1"
 }
 
 resource "google_pubsub_subscription" "global-this" {

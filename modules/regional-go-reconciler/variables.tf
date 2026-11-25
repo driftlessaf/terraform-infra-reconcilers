@@ -3,6 +3,17 @@ Copyright 2026 Chainguard, Inc.
 SPDX-License-Identifier: Apache-2.0
 */
 
+variable "paused" {
+  description = "Controls automatic dispatch and dead-letter reenqueue for an unsharded workqueue. Null preserves existing scheduling behavior; true pauses and false explicitly resumes. Already-running reconciles can finish; manual invocations remain available."
+  type        = bool
+  default     = null
+
+  validation {
+    condition     = var.paused != true || var.shards == 1
+    error_message = "paused currently supports unsharded workqueues only."
+  }
+}
+
 variable "project_id" {
   type = string
 }

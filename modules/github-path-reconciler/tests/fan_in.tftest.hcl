@@ -52,6 +52,11 @@ run "default_keeps_regional_subscriptions" {
   command = plan
 
   assert {
+    condition     = module.reconciler.dispatch_paused == null
+    error_message = "Default path callers must preserve existing dispatcher scheduling behavior."
+  }
+
+  assert {
     condition     = toset(keys(module.push-subscription)) == toset(["fixture/fixture/us-central1"]) && local.push_subscriptions["fixture/fixture/us-central1"].target == "us-central1"
     error_message = "Default callers must retain only their existing regional push subscription."
   }
@@ -117,13 +122,45 @@ run "paused_keeps_subscriptions_off" {
   command = plan
 
   variables {
-    fan_in_region = "us-central1"
-    paused        = true
+    fan_in_region   = "us-central1"
+    paused          = true
+    dispatch_paused = true
   }
 
   assert {
     condition     = length(module.push-subscription) == 0
     error_message = "Fan-in must not subscribe a paused reconciler."
+  }
+
+  assert {
+    condition     = module.reconciler.dispatch_paused
+    error_message = "Pause must reach the child workqueue dispatcher as well as the push listener."
+  }
+}
+
+run "intake_pause_keeps_dispatcher_unmanaged" {
+  command = plan
+
+  variables {
+    paused = true
+  }
+
+  assert {
+    condition     = module.reconciler.dispatch_paused == null && length(module.push-subscription) == 0
+    error_message = "The legacy intake pause must not take over an operator's dispatcher pause."
+  }
+}
+
+run "explicit_dispatch_resume_reaches_the_child" {
+  command = plan
+
+  variables {
+    dispatch_paused = false
+  }
+
+  assert {
+    condition     = module.reconciler.dispatch_paused == false
+    error_message = "Explicit resume must reach the dispatcher rather than reverting to unmanaged state."
   }
 }
 

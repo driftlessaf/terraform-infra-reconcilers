@@ -104,14 +104,15 @@ locals {
   // auto-draining its dead-letter queue on that cron; leaving it null keeps the
   // reenqueue job paused for manual invocation only (the historical default).
   reenqueue_schedule = coalesce(var.reenqueue_schedule, "0 0 * * *")
-  reenqueue_paused   = var.reenqueue_schedule == null
+  reenqueue_paused   = var.paused == true || var.reenqueue_schedule == null
+  dispatcher_paused  = var.paused
 
   // When shards > 1 the inline workqueue (bucket, receiver, dispatcher,
   // reenqueue, alerts) is replaced by hyperqueue instances.
   workqueue_enabled = var.shards == 1
 
   // In long mode the PubSub change trigger is replaced by the per-minute cron.
-  dispatcher_change_trigger_enabled = var.mode == "short" && local.workqueue_enabled
+  dispatcher_change_trigger_enabled = var.paused != true && var.mode == "short" && local.workqueue_enabled
   // In long mode the HTTP-based cron trigger is replaced by a job invocation.
   dispatcher_cron_enabled = var.mode == "short" && local.workqueue_enabled
   // In long mode the reconciler is a Job, not a Service, so no run.invoker grant.

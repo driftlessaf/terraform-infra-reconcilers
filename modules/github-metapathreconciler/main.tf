@@ -84,6 +84,7 @@ module "reconciler" {
   broker                = var.broker
   fan_in_region         = var.fan_in_region
   paused                = var.paused
+  dispatch_paused       = var.dispatch_paused
   error_event_ingress   = var.error_event_ingress
   trace_event_ingress   = var.trace_event_ingress
   resource_manager_tags = var.resource_manager_tags

@@ -12,6 +12,11 @@ output "subscriber_service_account" {
   value       = google_service_account.subscriber.email
 }
 
+output "subscriber_deletion_protection" {
+  description = "Configured deletion protection for the subscriber services."
+  value       = var.deletion_protection
+}
+
 output "product_env" {
   description = "Rendered CHAINGUARD_PRODUCT for the subscriber, keyed by region."
   sensitive   = true
