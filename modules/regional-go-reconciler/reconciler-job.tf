@@ -65,6 +65,7 @@ module "reconciler-job" {
   regions = var.regions
 
   regional-cronspec = local.job_cronspec
+  invokers          = var.reconciler_invokers
 
   containers = merge(
     // Dispatcher-job as the entry-point container.

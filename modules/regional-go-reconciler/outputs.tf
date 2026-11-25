@@ -73,3 +73,8 @@ output "runtime_tag_bindings" {
     reenqueue  = merge(module.reenqueue[*].tag_bindings...)
   }
 }
+
+output "reconciler_invocation_grants" {
+  description = "In long mode, the run.invoker binding on the reconciler Cloud Run Job, keyed by region: its invoker service account plus reconciler_invokers. Empty in short mode."
+  value       = var.mode == "long" ? module.reconciler-job[0].invocation_grants : {}
+}
