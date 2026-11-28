@@ -92,12 +92,12 @@ module "my-reconciler-dashboard" {
   source  = "driftlessaf/reconcilers/infra//modules/dashboard/workqueue"
   version = "~> 1.0"
 
-  name       = "my-reconciler"
-  project_id = var.project_id
+  name = "my-reconciler"
 
-  max_retry       = module.my-reconciler.max_retry
-  concurrent_work = module.my-reconciler.concurrent_work
-  scope           = module.my-reconciler.scope
+  # Use the same values passed to the reconciler module's
+  # `max-retry` and `concurrent-work` inputs.
+  max_retry       = 20
+  concurrent_work = 20
 }
 ```
 
